@@ -9,13 +9,14 @@
   "uris": [
     {
       "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
-      "signature_validation_mode": "none",
+      "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"/Users/philratcliffe/RiderProjects/CrlMonitorNX/CrlMonitor.Tests/TestData/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.8
     },
     {
       "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
-      "signature_validation_mode": "none",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path":"/Users/philratcliffe/RiderProjects/CrlMonitorNX/CrlMonitor.Tests/TestData/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.8
     },
     {
