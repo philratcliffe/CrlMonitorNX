@@ -4,8 +4,11 @@ using System.Collections.Generic;
 namespace CrlMonitor;
 
 internal sealed record RunOptions(
-    Uri UriListPath,
-    Uri CsvOutputPath,
+    bool ConsoleReports,
+    bool CsvReports,
+    string CsvOutputPath,
     bool CsvAppendTimestamp,
-    string SignatureValidationMode,
-    IReadOnlyDictionary<string, string> UriSpecificCaCertificates);
+    TimeSpan FetchTimeout,
+    int MaxParallelFetches,
+    string StateFilePath,
+    IReadOnlyList<CrlConfigEntry> Crls);
