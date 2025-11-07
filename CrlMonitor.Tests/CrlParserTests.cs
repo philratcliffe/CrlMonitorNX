@@ -63,6 +63,7 @@ public static class CrlParserTests
         Assert.True(parsed.IsDelta);
         Assert.Equal("Skipped", parsed.SignatureStatus);
         Assert.Null(parsed.SignatureError);
+        Assert.NotNull(parsed.RawCrl);
     }
 
     /// <summary>
@@ -78,6 +79,7 @@ public static class CrlParserTests
         var parsed = parser.Parse(crlBytes);
 
         Assert.Equal("Unknown", parsed.SignatureStatus);
+        Assert.NotNull(parsed.RawCrl);
     }
 
     private static byte[] CreateTestCrl(

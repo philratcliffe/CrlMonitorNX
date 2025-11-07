@@ -6,6 +6,8 @@ using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
 using CrlMonitor.Models;
 using CrlMonitor.Runner;
+using CrlMonitor.Tests.TestUtilities;
+using CrlMonitor.Validation;
 using Xunit;
 
 namespace CrlMonitor.Tests;
@@ -21,17 +23,19 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncReturnsSuccessResult()
     {
-        var parser = new StubParser();
+        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
-        var runner = new CrlCheckRunner(resolver, parser);
+        var signatureValidator = new StubSignatureValidator("Valid");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator);
         var entry = CreateEntry("http://example.com/crl");
 
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
         Assert.Single(run.Results);
         Assert.True(run.Results[0].Succeeded);
-        Assert.Equal("Skipped", run.Results[0].SignatureStatus);
+        Assert.Equal("Valid", run.Results[0].SignatureStatus);
         Assert.Empty(run.Diagnostics.RuntimeWarnings);
     }
 
@@ -41,10 +45,12 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncAddsWarningWhenFetcherFails()
     {
-        var parser = new StubParser();
+        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>(), new InvalidOperationException("boom"));
         var resolver = new StubResolver(fetcher);
-        var runner = new CrlCheckRunner(resolver, parser);
+        var signatureValidator = new StubSignatureValidator("Unknown");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator);
         var entry = CreateEntry("http://example.com/crl");
 
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
@@ -98,9 +104,31 @@ public static class CrlCheckRunnerTests
 
     private sealed class StubParser : ICrlParser
     {
+        private readonly ParsedCrl _parsed;
+
+        public StubParser(ParsedCrl parsed)
+        {
+            _parsed = parsed;
+        }
+
         public ParsedCrl Parse(byte[] crlBytes)
         {
-            return new ParsedCrl("CN=Test", DateTime.UtcNow, DateTime.UtcNow.AddDays(1), Array.Empty<string>(), false, "Skipped", null);
+            return _parsed;
+        }
+    }
+
+    private sealed class StubSignatureValidator : ICrlSignatureValidator
+    {
+        private readonly string _status;
+
+        public StubSignatureValidator(string status)
+        {
+            _status = status;
+        }
+
+        public SignatureValidationResult Validate(ParsedCrl parsedCrl, CrlConfigEntry entry)
+        {
+            return new SignatureValidationResult(_status, null);
         }
     }
 }

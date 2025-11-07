@@ -9,6 +9,7 @@ using CrlMonitor.Fetching;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
 using CrlMonitor.Runner;
+using CrlMonitor.Validation;
 
 namespace CrlMonitor;
 
@@ -57,7 +58,7 @@ internal static class Program
             new FetcherMapping(FetcherSchemes.Http, httpFetcher),
             new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher)
         });
-        var runner = new CrlCheckRunner(resolver, new CrlParser(SignatureValidationMode.None));
+        var runner = new CrlCheckRunner(resolver, new CrlParser(SignatureValidationMode.CaCertificate), new CrlSignatureValidator());
         var requests = BuildRequests(options.Crls);
         var run = await runner.RunAsync(requests, cancellationToken).ConfigureAwait(false);
 

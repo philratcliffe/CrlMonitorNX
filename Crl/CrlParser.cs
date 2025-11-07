@@ -34,7 +34,7 @@ internal sealed class CrlParser : ICrlParser
 
         var signatureStatus = _validationMode == SignatureValidationMode.None ? "Skipped" : "Unknown";
 
-        return new ParsedCrl(issuer, thisUpdate, nextUpdate, revoked, isDelta, signatureStatus, null);
+        return new ParsedCrl(issuer, thisUpdate, nextUpdate, revoked, isDelta, signatureStatus, null, crl);
     }
 
     private static List<string> ExtractRevokedSerials(X509Crl crl)

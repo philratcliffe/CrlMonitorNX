@@ -8,6 +8,7 @@ using CrlMonitor.Crl;
 using CrlMonitor.Diagnostics;
 using CrlMonitor.Fetching;
 using CrlMonitor.Models;
+using CrlMonitor.Validation;
 
 namespace CrlMonitor.Runner;
 
@@ -15,11 +16,13 @@ internal sealed class CrlCheckRunner
 {
     private readonly IFetcherResolver _fetcherResolver;
     private readonly ICrlParser _parser;
+    private readonly ICrlSignatureValidator _signatureValidator;
 
-    public CrlCheckRunner(IFetcherResolver fetcherResolver, ICrlParser parser)
+    public CrlCheckRunner(IFetcherResolver fetcherResolver, ICrlParser parser, ICrlSignatureValidator signatureValidator)
     {
         _fetcherResolver = fetcherResolver ?? throw new ArgumentNullException(nameof(fetcherResolver));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+        _signatureValidator = signatureValidator ?? throw new ArgumentNullException(nameof(signatureValidator));
     }
 
     public async Task<CrlCheckRun> RunAsync(
@@ -42,8 +45,9 @@ internal sealed class CrlCheckRunner
                 var fetcher = _fetcherResolver.Resolve(entry.Uri);
                 var fetched = await fetcher.FetchAsync(entry, cancellationToken).ConfigureAwait(false);
                 var parsed = _parser.Parse(fetched.Content);
+                var signature = _signatureValidator.Validate(parsed, entry);
                 stopwatch.Stop();
-                results.Add(new CrlCheckResult(entry.Uri, true, stopwatch.Elapsed, parsed, parsed.SignatureStatus, parsed.SignatureError, null));
+                results.Add(new CrlCheckResult(entry.Uri, true, stopwatch.Elapsed, parsed, signature.Status, signature.ErrorMessage, null));
             }
             catch (LdapException ldapEx)
             {

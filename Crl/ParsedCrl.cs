@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Org.BouncyCastle.X509;
 
 namespace CrlMonitor.Crl;
 
@@ -10,4 +11,5 @@ internal sealed record ParsedCrl(
     IReadOnlyList<string> RevokedSerialNumbers,
     bool IsDelta,
     string SignatureStatus,
-    string? SignatureError);
+    string? SignatureError,
+    X509Crl RawCrl);
