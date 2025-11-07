@@ -1,0 +1,135 @@
+################################################################################
+# The standard VisualStudio.gitignore from GitHub's official repository
+# https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
+################################################################################
+
+# == Build and Output Files ==
+
+# Visual Studio and .NET build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.log
+*.pdb
+*.pidb
+*.suo
+*.user
+*.userprefs
+*.ncb
+*.aps
+
+# macOS application bundles (build artifacts from publish-macos.sh)
+*.app/
+
+# macOS system files
+.DS_Store
+
+# Obfuscated builds
+*-obfuscated/
+*-obfuscated.app/
+Mapping.txt
+
+# Distribution archives (add project-specific patterns here if needed)
+
+# Test results and coverage
+[Tt]est[Rr]esult*/
+[Cc]overage[Rr]esult*/
+
+# NuGet packages and project dependencies
+# NuGet packages directory (old style)
+**/packages/*
+# Except build/ folder in packages, which is sometimes used for MSBuild targets
+!**/packages/build/
+
+# Package files
+*.nupkg
+*.snupkg
+# Dependency Locking files
+packages.config
+# Project-specific package references (usually left in, but sometimes excluded)
+# *.nuget.g.props
+# *.nuget.g.targets
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.vsp
+*.vspx
+
+# == IDE and Editor Files ==
+
+# Visual Studio files
+# User-specific solution files
+*.suo
+# User-specific project files
+*.user
+# Visual Studio Solution User Options file (VS 2017+)
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# JetBrains Rider and ReSharper (often used on Mac/Linux)
+.idea/
+*.sln.iml
+_ReSharper*/
+
+# Visual Studio Cache Folder (VERY IMPORTANT to ignore!)
+.vs/
+# Exclude the entire .vs folder, except for certain necessary files if they exist (uncommon)
+!/.vs/
+!/.vs/LicenseData.xml
+
+# == Web, ClickOnce, and Deployment ==
+
+# Click-Once directory
+publish/
+# Publish Web Output
+*.Publish.xml
+*.pubxml
+*.azurePubxml
+
+# IIS Express files
+*.vshost.*
+
+# Azure tools
+csx/
+*.build.csdef
+
+# Windows Store app package directory
+AppPackages/
+BundleArtifacts/
+
+# == Source Control (if using nested repos) ==
+# git files
+.git/
+
+# SSH/Key files (DO NOT COMMIT SECRETS)
+*.key
+*.pem
+*.pfx
+*.cer
+*.crt
+*.p12
+
+# Environment Variables and Settings (MUST BE IGNORED)
+# Often contains secrets, API keys, and connection strings
+appsettings.Development.json
+appsettings.Staging.json
+appsettings.Production.json
+# Or any other local settings file you don't want to commit
+*.localsettings
+.env
+
+# == Custom Files ==
+# Add any other files specific to your project or tools here
+# For example, if you are using specific database tools
+# *.dbmdl
+
+# == Misc ==
+coverage/
+
+# Local config overrides
+config.local.json
