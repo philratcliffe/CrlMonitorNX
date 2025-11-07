@@ -10,6 +10,7 @@
     {
       "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "none",
+      "ca_certificate_path":"/Users/philratcliffe/RiderProjects/CrlMonitorNX/CrlMonitor.Tests/TestData/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.8
     },
     {
