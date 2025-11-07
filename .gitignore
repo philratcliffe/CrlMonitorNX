@@ -133,3 +133,4 @@ coverage/
 
 # Local config overrides
 config.local.json
+crl-report.csv
