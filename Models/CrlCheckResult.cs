@@ -10,4 +10,5 @@ internal sealed record CrlCheckResult(
     ParsedCrl? ParsedCrl,
     string? SignatureStatus,
     string? SignatureError,
+    string? HealthStatus,
     string? Error);

@@ -6,6 +6,7 @@ using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
 using CrlMonitor.Models;
 using CrlMonitor.Runner;
+using CrlMonitor.Health;
 using CrlMonitor.Tests.TestUtilities;
 using CrlMonitor.Validation;
 using Xunit;
@@ -28,7 +29,8 @@ public static class CrlCheckRunnerTests
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Valid");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator);
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
@@ -50,7 +52,8 @@ public static class CrlCheckRunnerTests
         var fetcher = new StubFetcher(Array.Empty<byte>(), new InvalidOperationException("boom"));
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Unknown");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator);
+        var healthEvaluator = new StubHealthEvaluator("Expired");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
@@ -129,6 +132,21 @@ public static class CrlCheckRunnerTests
         public SignatureValidationResult Validate(ParsedCrl parsedCrl, CrlConfigEntry entry)
         {
             return new SignatureValidationResult(_status, null);
+        }
+    }
+
+    private sealed class StubHealthEvaluator : ICrlHealthEvaluator
+    {
+        private readonly string _status;
+
+        public StubHealthEvaluator(string status)
+        {
+            _status = status;
+        }
+
+        public HealthEvaluationResult Evaluate(ParsedCrl parsedCrl, CrlConfigEntry entry, DateTime utcNow)
+        {
+            return new HealthEvaluationResult(_status, _status == "Healthy" ? null : "Health issue");
         }
     }
 }

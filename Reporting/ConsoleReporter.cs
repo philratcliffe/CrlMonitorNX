@@ -37,6 +37,7 @@ internal sealed class ConsoleReporter : IReporter
         var builder = new StringBuilder();
         builder.Append(status).Append(' ').Append(result.Uri);
         builder.Append(" [signature: ").Append(result.SignatureStatus ?? "Unknown").Append(']');
+        builder.Append(" [health: ").Append(result.HealthStatus ?? "Unknown").Append(']');
         if (!string.IsNullOrWhiteSpace(result.SignatureError))
         {
             builder.Append(" :: ").Append(result.SignatureError);
