@@ -36,8 +36,8 @@ public static class CrlCheckRunnerTests
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
         Assert.Single(run.Results);
-        Assert.True(run.Results[0].Succeeded);
-        Assert.Equal("Valid", run.Results[0].SignatureStatus);
+        Assert.Equal("OK", run.Results[0].Status);
+        Assert.Null(run.Results[0].ErrorInfo);
         Assert.Empty(run.Diagnostics.RuntimeWarnings);
     }
 
@@ -58,8 +58,8 @@ public static class CrlCheckRunnerTests
 
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
-        Assert.False(run.Results[0].Succeeded);
-        Assert.Equal("Unknown", run.Results[0].SignatureStatus);
+        Assert.Equal("ERROR", run.Results[0].Status);
+        Assert.False(string.IsNullOrEmpty(run.Results[0].ErrorInfo));
         Assert.NotEmpty(run.Diagnostics.RuntimeWarnings);
     }
 

@@ -55,34 +55,25 @@ internal sealed class CrlCheckRunner
                 var signature = _signatureValidator.Validate(parsed, entry);
                 var health = _healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
                 stopwatch.Stop();
-                var signatureValid = string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase);
-                var healthOk = !string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase);
-                var succeeded = signatureValid && healthOk;
-                if (!succeeded)
-                {
-                    diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
-                }
-                if (!healthOk)
-                {
-                    diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' health status: {health.Status} ({health.Message})");
-                }
 
-                var errorMessage = succeeded ? null : CombineErrors(signature.ErrorMessage, health.Status, health.Message);
-                results.Add(new CrlCheckResult(entry.Uri, succeeded, stopwatch.Elapsed, parsed, signature.Status, signature.ErrorMessage, health.Status, errorMessage));
+                var status = DetermineStatus(entry, diagnostics, signature, health);
+                var errorInfo = BuildErrorInfo(signature, health, status);
+
+                results.Add(new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo));
             }
             catch (LdapException ldapEx)
             {
                 stopwatch.Stop();
                 var friendly = ConvertLdapException(entry.Uri, ldapEx);
                 diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
-                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, "Unknown", friendly, null, friendly));
+                results.Add(new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly));
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
                 var message = $"Failed to process '{entry.Uri}': {ex.Message}";
                 diagnostics.AddRuntimeWarning(message);
-                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, "Unknown", ex.Message, null, ex.Message));
+                results.Add(new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message));
             }
 #pragma warning restore CA1031
         }
@@ -99,19 +90,48 @@ internal sealed class CrlCheckRunner
         };
     }
 
-    private static string? CombineErrors(string? signatureError, string? healthStatus, string? healthMessage)
+    private static string DetermineStatus(
+        CrlConfigEntry entry,
+        RunDiagnostics diagnostics,
+        SignatureValidationResult signature,
+        HealthEvaluationResult health)
     {
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(signatureError))
+        if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase))
         {
-            parts.Add(signatureError);
+            diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
+            return "ERROR";
         }
 
-        if (string.Equals(healthStatus, "Expired", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(healthMessage))
+        if (string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase))
         {
-            parts.Add(healthMessage);
+            diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' expired: {health.Message}");
+            return "EXPIRED";
         }
 
-        return parts.Count == 0 ? null : string.Join("; ", parts);
+        if (string.Equals(health.Status, "Expiring", StringComparison.OrdinalIgnoreCase))
+        {
+            return "EXPIRING";
+        }
+
+        if (string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' health unknown: {health.Message}");
+            return "ERROR";
+        }
+
+        return "OK";
+    }
+
+    private static string? BuildErrorInfo(
+        SignatureValidationResult signature,
+        HealthEvaluationResult health,
+        string status)
+    {
+        return status switch
+        {
+            "ERROR" => signature.ErrorMessage ?? health.Message,
+            "EXPIRING" or "EXPIRED" => health.Message,
+            _ => null
+        };
     }
 }

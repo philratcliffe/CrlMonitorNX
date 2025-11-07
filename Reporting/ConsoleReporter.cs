@@ -33,19 +33,11 @@ internal sealed class ConsoleReporter : IReporter
 
     private static void WriteResult(CrlCheckResult result)
     {
-        var status = result.Succeeded ? "OK" : "ERROR";
         var builder = new StringBuilder();
-        builder.Append(status).Append(' ').Append(result.Uri);
-        builder.Append(" [signature: ").Append(result.SignatureStatus ?? "Unknown").Append(']');
-        builder.Append(" [health: ").Append(result.HealthStatus ?? "Unknown").Append(']');
-        if (!string.IsNullOrWhiteSpace(result.SignatureError))
+        builder.Append(result.Status).Append(' ').Append(result.Uri);
+        if (!string.IsNullOrWhiteSpace(result.ErrorInfo))
         {
-            builder.Append(" :: ").Append(result.SignatureError);
-        }
-
-        if (!result.Succeeded && !string.IsNullOrWhiteSpace(result.Error))
-        {
-            builder.Append(" :: ").Append(result.Error);
+            builder.Append(" :: ").Append(result.ErrorInfo);
         }
 
 #pragma warning disable CA1303
