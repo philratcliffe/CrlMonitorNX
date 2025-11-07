@@ -6,7 +6,7 @@ using Org.BouncyCastle.X509;
 
 namespace CrlMonitor.Crl;
 
-internal sealed class CrlParser
+internal sealed class CrlParser : ICrlParser
 {
     private readonly SignatureValidationMode _validationMode;
 
