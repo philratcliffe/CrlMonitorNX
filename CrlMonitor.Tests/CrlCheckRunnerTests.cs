@@ -63,6 +63,27 @@ public static class CrlCheckRunnerTests
         Assert.NotEmpty(run.Diagnostics.RuntimeWarnings);
     }
 
+    /// <summary>
+    /// Ensures disabled signature validation yields a warning.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncReturnsWarningWhenSignatureSkipped()
+    {
+        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
+        var fetcher = new StubFetcher(Array.Empty<byte>());
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var entry = CreateEntry("http://example.com/crl");
+
+        var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
+
+        Assert.Equal("WARNING", run.Results[0].Status);
+        Assert.Equal("Signature validation disabled.", run.Results[0].ErrorInfo);
+    }
+
     private static CrlConfigEntry CreateEntry(string uri)
     {
         return new CrlConfigEntry(new Uri(uri), SignatureValidationMode.None, null, 0.8, null);
@@ -123,15 +144,21 @@ public static class CrlCheckRunnerTests
     private sealed class StubSignatureValidator : ICrlSignatureValidator
     {
         private readonly string _status;
+        private readonly string? _message;
 
-        public StubSignatureValidator(string status)
+        public StubSignatureValidator(string status) : this(status, null)
+        {
+        }
+
+        public StubSignatureValidator(string status, string? message)
         {
             _status = status;
+            _message = message;
         }
 
         public SignatureValidationResult Validate(ParsedCrl parsedCrl, CrlConfigEntry entry)
         {
-            return new SignatureValidationResult(_status, null);
+            return new SignatureValidationResult(_status, _message);
         }
     }
 

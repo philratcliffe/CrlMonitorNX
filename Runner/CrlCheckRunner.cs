@@ -98,6 +98,11 @@ internal sealed class CrlCheckRunner
     {
         if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase))
         {
+            if (string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
+            {
+                return "WARNING";
+            }
+
             diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
             return "ERROR";
         }
@@ -130,6 +135,7 @@ internal sealed class CrlCheckRunner
         return status switch
         {
             "ERROR" => signature.ErrorMessage ?? health.Message,
+            "WARNING" => signature.ErrorMessage ?? health.Message,
             "EXPIRING" or "EXPIRED" => health.Message,
             _ => null
         };
