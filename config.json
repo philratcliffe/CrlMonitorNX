@@ -8,13 +8,24 @@
   "state_file_path": "crlmonitor-state.json",
   "uris": [
     {
-      "uri": "http://crl.example.com/root.crl",
+      "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "none",
       "expiry_threshold": 0.8
     },
     {
+      "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
+      "signature_validation_mode": "none",
+      "expiry_threshold": 0.8
+    },
+    {
+      "uri": "http://c.pki.goog/we1/ty82fqB0hAw.crl",
+      "signature_validation_mode": "none",
+      "expiry_threshold": 0.8
+    },
+    {
+    {
       "uri": "ldap://dc1.example.com/CN=Example,O=Example Corp",
-      "signature_validation_mode": "ca-cert",
+      "signature_validation_mode": "none",
       "ca_certificate_path": "certs/example-ca.pem",
       "expiry_threshold": 0.95,
       "ldap": {
