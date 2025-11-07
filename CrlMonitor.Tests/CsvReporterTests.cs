@@ -25,7 +25,8 @@ public static class CsvReporterTests
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new System.Uri("http://example.com"), true, System.TimeSpan.FromSeconds(1), null, null)
+                new CrlCheckResult(new System.Uri("http://example.com"), true, System.TimeSpan.FromSeconds(1), null, null),
+                new CrlCheckResult(new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"), false, System.TimeSpan.FromMilliseconds(5), null, "Could not connect")
             },
             new RunDiagnostics());
 
@@ -33,7 +34,7 @@ public static class CsvReporterTests
 
         Assert.True(File.Exists(path));
         var content = await File.ReadAllTextAsync(path);
-        Assert.Contains("http://example.com", content, StringComparison.Ordinal);
+        Assert.Contains("\"ldap://dc1.example.com/CN=Example,O=Example Corp\"", content, StringComparison.Ordinal);
     }
 
     private sealed class TempFolder : System.IDisposable

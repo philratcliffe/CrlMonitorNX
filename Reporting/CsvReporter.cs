@@ -1,9 +1,10 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CsvHelper;
+using CsvHelper.Configuration;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
@@ -33,16 +34,31 @@ internal sealed class CsvReporter : IReporter
         }
 
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        using var writer = new StreamWriter(stream, new UTF8Encoding(false));
-        await writer.WriteLineAsync("uri,status,duration_ms,error").ConfigureAwait(false);
+        using var writer = new StreamWriter(stream);
+        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            NewLine = Environment.NewLine,
+            HasHeaderRecord = true
+        };
+
+        using var csv = new CsvWriter(writer, csvConfig);
+        csv.WriteField("uri");
+        csv.WriteField("status");
+        csv.WriteField("duration_ms");
+        csv.WriteField("error");
+        await csv.NextRecordAsync().ConfigureAwait(false);
+
         foreach (var result in run.Results)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var status = result.Succeeded ? "OK" : "ERR";
-            var duration = result.Duration.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture);
-            var line = $"{result.Uri},{status},{duration},\"{result.Error ?? string.Empty}\"";
-            await writer.WriteLineAsync(line).ConfigureAwait(false);
+            csv.WriteField(result.Uri.ToString());
+            csv.WriteField(status);
+            csv.WriteField(result.Duration.TotalMilliseconds);
+            csv.WriteField(result.Error ?? string.Empty);
+            await csv.NextRecordAsync().ConfigureAwait(false);
         }
+        await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static string AppendTimestamp(string path)

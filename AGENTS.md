@@ -45,6 +45,7 @@
 - UK spelling - code, docs - unless given special exception.
 - Make sure NO tests silently skip!
 - Check and validate all inputs to prevent attacks through invalid size inputs, invalid data input
+- Do NOT reinvent the wheel when proven libraries exist; e.g., use CsvHelper for CSV output or BouncyCastle for ASN.1/CRL handling instead of custom parsers.
 
 
 ## Coding Style & Naming Conventions
