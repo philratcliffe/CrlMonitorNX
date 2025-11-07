@@ -31,6 +31,7 @@ public static class CrlCheckRunnerTests
 
         Assert.Single(run.Results);
         Assert.True(run.Results[0].Succeeded);
+        Assert.Equal("Skipped", run.Results[0].SignatureStatus);
         Assert.Empty(run.Diagnostics.RuntimeWarnings);
     }
 
@@ -49,6 +50,7 @@ public static class CrlCheckRunnerTests
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
         Assert.False(run.Results[0].Succeeded);
+        Assert.Equal("Unknown", run.Results[0].SignatureStatus);
         Assert.NotEmpty(run.Diagnostics.RuntimeWarnings);
     }
 

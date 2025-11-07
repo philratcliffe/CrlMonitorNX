@@ -33,9 +33,15 @@ internal sealed class ConsoleReporter : IReporter
 
     private static void WriteResult(CrlCheckResult result)
     {
-        var status = result.Succeeded ? "OK " : "ERR";
+        var status = result.Succeeded ? "OK" : "ERROR";
         var builder = new StringBuilder();
         builder.Append(status).Append(' ').Append(result.Uri);
+        builder.Append(" [signature: ").Append(result.SignatureStatus ?? "Unknown").Append(']');
+        if (!string.IsNullOrWhiteSpace(result.SignatureError))
+        {
+            builder.Append(" :: ").Append(result.SignatureError);
+        }
+
         if (!result.Succeeded && !string.IsNullOrWhiteSpace(result.Error))
         {
             builder.Append(" :: ").Append(result.Error);

@@ -43,21 +43,21 @@ internal sealed class CrlCheckRunner
                 var fetched = await fetcher.FetchAsync(entry, cancellationToken).ConfigureAwait(false);
                 var parsed = _parser.Parse(fetched.Content);
                 stopwatch.Stop();
-                results.Add(new CrlCheckResult(entry.Uri, true, stopwatch.Elapsed, parsed, null));
+                results.Add(new CrlCheckResult(entry.Uri, true, stopwatch.Elapsed, parsed, parsed.SignatureStatus, parsed.SignatureError, null));
             }
             catch (LdapException ldapEx)
             {
                 stopwatch.Stop();
                 var friendly = ConvertLdapException(entry.Uri, ldapEx);
                 diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
-                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, friendly));
+                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, "Unknown", friendly, friendly));
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
                 var message = $"Failed to process '{entry.Uri}': {ex.Message}";
                 diagnostics.AddRuntimeWarning(message);
-                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, ex.Message));
+                results.Add(new CrlCheckResult(entry.Uri, false, stopwatch.Elapsed, null, "Unknown", ex.Message, ex.Message));
             }
 #pragma warning restore CA1031
         }

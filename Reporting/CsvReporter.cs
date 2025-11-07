@@ -44,6 +44,8 @@ internal sealed class CsvReporter : IReporter
         using var csv = new CsvWriter(writer, csvConfig);
         csv.WriteField("uri");
         csv.WriteField("status");
+        csv.WriteField("signature_status");
+        csv.WriteField("signature_error");
         csv.WriteField("duration_ms");
         csv.WriteField("error");
         await csv.NextRecordAsync().ConfigureAwait(false);
@@ -51,9 +53,11 @@ internal sealed class CsvReporter : IReporter
         foreach (var result in run.Results)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var status = result.Succeeded ? "OK" : "ERR";
+            var status = result.Succeeded ? "OK" : "ERROR";
             csv.WriteField(result.Uri.ToString());
             csv.WriteField(status);
+            csv.WriteField(result.SignatureStatus ?? "Unknown");
+            csv.WriteField(result.SignatureError ?? string.Empty);
             csv.WriteField(result.Duration.TotalMilliseconds);
             csv.WriteField(result.Error ?? string.Empty);
             await csv.NextRecordAsync().ConfigureAwait(false);

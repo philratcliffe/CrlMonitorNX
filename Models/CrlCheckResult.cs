@@ -8,4 +8,6 @@ internal sealed record CrlCheckResult(
     bool Succeeded,
     TimeSpan Duration,
     ParsedCrl? ParsedCrl,
+    string? SignatureStatus,
+    string? SignatureError,
     string? Error);

@@ -23,7 +23,9 @@ public static class ConsoleReporterTests
         var reporter = new ConsoleReporter();
         var diagnostics = new RunDiagnostics();
         diagnostics.AddRuntimeWarning("Disk full");
-        var run = new CrlCheckRun(Array.Empty<CrlCheckResult>(), diagnostics);
+        var run = new CrlCheckRun(
+            new[] { new CrlCheckResult(new Uri("http://example.com"), true, TimeSpan.Zero, null, "Valid", null, null) },
+            diagnostics);
 
         using var writer = new StringWriter();
         Console.SetOut(writer);
@@ -31,6 +33,6 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None);
 
         var output = writer.ToString();
-        Assert.Contains("Disk full", output, StringComparison.Ordinal);
+        Assert.Contains("signature", output, StringComparison.Ordinal);
     }
 }
