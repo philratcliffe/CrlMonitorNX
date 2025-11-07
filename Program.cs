@@ -1,22 +1,31 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using CrlMonitor.Crl;
+using CrlMonitor.Fetching;
+using CrlMonitor.Models;
+using CrlMonitor.Reporting;
+using CrlMonitor.Runner;
 
 namespace CrlMonitor;
 
 internal static class Program
 {
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        return Execute(args);
+        return await ExecuteAsync(args, CancellationToken.None).ConfigureAwait(false);
     }
 
-    private static int Execute(string[] args)
+    private static async Task<int> ExecuteAsync(string[] args, CancellationToken cancellationToken)
     {
         try
         {
             var configPath = ResolveConfigPath(args);
             var options = ConfigLoader.Load(configPath);
-            Run(options);
+            await RunAsync(options, cancellationToken).ConfigureAwait(false);
             return 0;
         }
         catch (FileNotFoundException ex)
@@ -36,6 +45,47 @@ internal static class Program
         }
     }
 
+    private static async Task RunAsync(RunOptions options, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        using var httpClient = new HttpClient();
+        var httpFetcher = new HttpCrlFetcher(httpClient);
+        var ldapFetcher = new LdapCrlFetcher(new SystemLdapConnectionFactory());
+        var resolver = new FetcherResolver(new[]
+        {
+            new FetcherMapping(FetcherSchemes.Http, httpFetcher),
+            new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher)
+        });
+        var runner = new CrlCheckRunner(resolver, new CrlParser(SignatureValidationMode.None));
+        var requests = BuildRequests(options.Crls);
+        var run = await runner.RunAsync(requests, cancellationToken).ConfigureAwait(false);
+
+        var reporters = BuildReporters(options);
+        await reporters.ReportAsync(run, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IReadOnlyList<CrlConfigEntry> BuildRequests(IReadOnlyList<CrlConfigEntry> entries)
+    {
+        return entries ?? Array.Empty<CrlConfigEntry>();
+    }
+
+    private static CompositeReporter BuildReporters(RunOptions options)
+    {
+        var reporters = new List<IReporter>();
+        if (options.ConsoleReports)
+        {
+            reporters.Add(new ConsoleReporter());
+        }
+
+        if (options.CsvReports)
+        {
+            reporters.Add(new CsvReporter(options.CsvOutputPath, options.CsvAppendTimestamp));
+        }
+
+        return new CompositeReporter(reporters);
+    }
+
     private static string ResolveConfigPath(string[] args)
     {
         if (args.Length == 0)
@@ -51,15 +101,6 @@ internal static class Program
         }
 
         return Path.GetFullPath(candidate);
-    }
-
-    private static void Run(RunOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        // Placeholder runner wiring; future work will invoke the orchestrator.
-#pragma warning disable CA1303 // CLI output intentionally literal until reporters are wired.
-        Console.WriteLine($"Loaded {options.Crls.Count} CRL definitions.");
-#pragma warning restore CA1303
     }
 
     private static void ReportError(string message)
@@ -79,4 +120,10 @@ internal static class Program
         Console.WriteLine("  CrlMonitor ./configs/prod.json");
 #pragma warning restore CA1303
     }
+}
+
+internal static class FetcherSchemes
+{
+    public static readonly string[] Http = { "http", "https" };
+    public static readonly string[] Ldap = { "ldap", "ldaps" };
 }
