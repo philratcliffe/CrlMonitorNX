@@ -96,35 +96,35 @@ internal sealed class CrlCheckRunner
         SignatureValidationResult signature,
         HealthEvaluationResult health)
     {
-        if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase))
-        {
-            if (string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
-            {
-                return "WARNING";
-            }
+        var healthStatus = string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase)
+            ? "EXPIRED"
+            : string.Equals(health.Status, "Expiring", StringComparison.OrdinalIgnoreCase)
+                ? "EXPIRING"
+                : string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase)
+                    ? "WARNING"
+                    : "OK";
 
-            diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
-            return "ERROR";
-        }
-
-        if (string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase))
+        if (healthStatus == "EXPIRED")
         {
             diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' expired: {health.Message}");
-            return "EXPIRED";
         }
-
-        if (string.Equals(health.Status, "Expiring", StringComparison.OrdinalIgnoreCase))
-        {
-            return "EXPIRING";
-        }
-
-        if (string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase))
+        else if (healthStatus == "WARNING" && !string.IsNullOrWhiteSpace(health.Message))
         {
             diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' health unknown: {health.Message}");
-            return "WARNING";
         }
 
-        return "OK";
+        if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
+            {
+                diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
+                return "ERROR";
+            }
+
+            return healthStatus == "OK" ? "WARNING" : healthStatus;
+        }
+
+        return healthStatus;
     }
 
     private static string? BuildErrorInfo(
@@ -135,7 +135,9 @@ internal sealed class CrlCheckRunner
         return status switch
         {
             "ERROR" => signature.ErrorMessage ?? health.Message,
-            "WARNING" => signature.ErrorMessage ?? health.Message,
+            "WARNING" => string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase)
+                ? health.Message
+                : signature.ErrorMessage,
             "EXPIRING" or "EXPIRED" => health.Message,
             _ => null
         };

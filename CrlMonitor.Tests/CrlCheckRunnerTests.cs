@@ -84,6 +84,48 @@ public static class CrlCheckRunnerTests
         Assert.Equal("Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
+    /// <summary>
+    /// Expiring health overrides signature warnings.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncPrefersExpiringOverWarning()
+    {
+        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
+        var fetcher = new StubFetcher(Array.Empty<byte>());
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
+        var healthEvaluator = new StubHealthEvaluator("Expiring");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var entry = CreateEntry("http://example.com/crl");
+
+        var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
+
+        Assert.Equal("EXPIRING", run.Results[0].Status);
+        Assert.Equal("Health issue", run.Results[0].ErrorInfo);
+    }
+
+    /// <summary>
+    /// Expired health overrides signature warnings.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncPrefersExpiredOverWarning()
+    {
+        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
+        var fetcher = new StubFetcher(Array.Empty<byte>());
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
+        var healthEvaluator = new StubHealthEvaluator("Expired");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var entry = CreateEntry("http://example.com/crl");
+
+        var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
+
+        Assert.Equal("EXPIRED", run.Results[0].Status);
+        Assert.Equal("Health issue", run.Results[0].ErrorInfo);
+    }
+
     private static CrlConfigEntry CreateEntry(string uri)
     {
         return new CrlConfigEntry(new Uri(uri), SignatureValidationMode.None, null, 0.8, null);
