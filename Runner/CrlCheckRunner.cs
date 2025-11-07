@@ -115,13 +115,14 @@ internal sealed class CrlCheckRunner
 
         if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase))
         {
-            if (!string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
             {
-                diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
-                return "ERROR";
+                diagnostics.AddSignatureWarning($"Signature validation skipped for '{entry.Uri}': {signature.ErrorMessage}");
+                return healthStatus == "OK" ? "WARNING" : healthStatus;
             }
 
-            return healthStatus == "OK" ? "WARNING" : healthStatus;
+            diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
+            return "ERROR";
         }
 
         return healthStatus;
@@ -132,14 +133,17 @@ internal sealed class CrlCheckRunner
         HealthEvaluationResult health,
         string status)
     {
-        return status switch
+        var parts = new List<string>();
+        if (!string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(health.Message))
         {
-            "ERROR" => signature.ErrorMessage ?? health.Message,
-            "WARNING" => string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase)
-                ? health.Message
-                : signature.ErrorMessage,
-            "EXPIRING" or "EXPIRED" => health.Message,
-            _ => null
-        };
+            parts.Add(health.Message!);
+        }
+
+        if (!string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(signature.ErrorMessage))
+        {
+            parts.Add(signature.ErrorMessage!);
+        }
+
+        return parts.Count == 0 ? null : string.Join(" | ", parts);
     }
 }

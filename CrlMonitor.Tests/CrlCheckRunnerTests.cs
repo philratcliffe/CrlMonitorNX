@@ -102,7 +102,7 @@ public static class CrlCheckRunnerTests
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
         Assert.Equal("EXPIRING", run.Results[0].Status);
-        Assert.Equal("Health issue", run.Results[0].ErrorInfo);
+        Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public static class CrlCheckRunnerTests
         var run = await runner.RunAsync(new[] { entry }, CancellationToken.None);
 
         Assert.Equal("EXPIRED", run.Results[0].Status);
-        Assert.Equal("Health issue", run.Results[0].ErrorInfo);
+        Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
     private static CrlConfigEntry CreateEntry(string uri)
