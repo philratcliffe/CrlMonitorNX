@@ -47,7 +47,12 @@ internal sealed class CrlCheckRunner
                 var parsed = _parser.Parse(fetched.Content);
                 var signature = _signatureValidator.Validate(parsed, entry);
                 stopwatch.Stop();
-                results.Add(new CrlCheckResult(entry.Uri, true, stopwatch.Elapsed, parsed, signature.Status, signature.ErrorMessage, null));
+                var succeeded = string.Equals(signature.Status, "Valid", StringComparison.OrdinalIgnoreCase);
+                if (!succeeded)
+                {
+                    diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
+                }
+                results.Add(new CrlCheckResult(entry.Uri, succeeded, stopwatch.Elapsed, parsed, signature.Status, signature.ErrorMessage, succeeded ? null : signature.ErrorMessage));
             }
             catch (LdapException ldapEx)
             {
