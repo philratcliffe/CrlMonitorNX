@@ -20,14 +20,15 @@ Windows includes root certificates for all major public CAs by default:
 - Google Trust Services WE1
 
 ### macOS
-❌ **Signature validation not functional**
+⚠️ **Store-backed validation not available, but direct CA verification works**
 
-.NET on macOS cannot access certificates installed via the `security` command:
-- .NET only reads Apple's built-in `SystemRootCertificates.keychain`
-- Certificates installed to `System.keychain` or `login.keychain` are not visible
-- This is a .NET/macOS integration limitation
+.NET on macOS still cannot read certificates that you add to `System.keychain` / `login.keychain`, so anything that depends on enumerating the system stores (e.g., future full-chain validation) remains blocked.
 
-**Workaround:** Test signature validation on Windows or Linux.
+However the current `SignatureValidationMode` options keep working:
+- `none`: skips validation entirely.
+- `ca-cert`: verifies the CRL against the user-provided certificate file. Because the monitor loads that file directly, it does **not** rely on macOS keychains.
+
+**Implication:** Keep a PEM/DER copy of the issuer certificate on disk (often checked into the repo or dropped next to `config.json`) and point `PerUriCaCertificates` or `DefaultCaCertificatePath` at it. No Keychain import is required.
 
 ### Linux
 ✅ **Works with system ca-certificates**
@@ -41,6 +42,8 @@ Install CA certificates using distribution package manager (e.g., `ca-certificat
 ## Manual Installation (Private/Custom CAs Only)
 
 Only needed for private/internal CAs not included in OS defaults.
+
+> **macOS note:** You do not need to import the certificate anywhere. Store the CA file (PEM/DER) alongside your config and point the `DefaultCaCertificatePath`/`PerUriCaCertificates` settings at it so the runner can load the trust anchor directly.
 
 ### Security Note
 
@@ -154,7 +157,7 @@ Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like "*DigiCe
 
 **Chain validation failed**: Intermediate certificate missing or trust anchor not installed
 
-**macOS always fails**: Expected - .NET cannot access macOS keychains. Use Windows or Linux for testing.
+**macOS store lookup fails**: Expected - .NET cannot enumerate user-installed certs. Use `SignatureValidationMode = "none"` or provide explicit CA cert paths so the monitor can load the trust anchor directly.
 
 ## Certificate Sources
 
