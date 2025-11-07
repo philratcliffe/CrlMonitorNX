@@ -24,7 +24,7 @@ public static class ConsoleReporterTests
         var diagnostics = new RunDiagnostics();
         diagnostics.AddRuntimeWarning("Disk full");
         var run = new CrlCheckRun(
-            new[] { new CrlCheckResult(new Uri("http://example.com"), "ERROR", TimeSpan.Zero, null, "Signature invalid") },
+            new[] { new CrlCheckResult(new Uri("http://example.com"), "WARNING", TimeSpan.Zero, null, "Signature validation disabled.") },
             diagnostics);
 
         using var writer = new StringWriter();
@@ -33,8 +33,8 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None);
 
         var output = writer.ToString();
-        Assert.Contains("ERROR http://example.com", output, StringComparison.Ordinal);
-        Assert.Contains("Signature invalid", output, StringComparison.Ordinal);
+        Assert.Contains("WARNING http://example.com", output, StringComparison.Ordinal);
+        Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
         Assert.Contains("Disk full", output, StringComparison.Ordinal);
     }
 }

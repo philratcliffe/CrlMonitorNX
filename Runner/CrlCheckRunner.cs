@@ -116,7 +116,7 @@ internal sealed class CrlCheckRunner
         if (string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase))
         {
             diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' health unknown: {health.Message}");
-            return "ERROR";
+            return "WARNING";
         }
 
         return "OK";

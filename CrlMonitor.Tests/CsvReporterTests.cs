@@ -25,7 +25,7 @@ public static class CsvReporterTests
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new System.Uri("http://example.com"), "OK", System.TimeSpan.FromSeconds(1), null, null),
+                new CrlCheckResult(new System.Uri("http://example.com"), "WARNING", System.TimeSpan.FromSeconds(1), null, "Signature validation disabled."),
                 new CrlCheckResult(new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"), "ERROR", System.TimeSpan.FromMilliseconds(5), null, "Could not connect")
             },
             new RunDiagnostics());
@@ -36,8 +36,8 @@ public static class CsvReporterTests
         var content = await File.ReadAllTextAsync(path);
         Assert.Contains("error_info", content, StringComparison.Ordinal);
         Assert.Contains("\"ldap://dc1.example.com/CN=Example,O=Example Corp\"", content, StringComparison.Ordinal);
-        Assert.Contains("ERROR", content, StringComparison.Ordinal);
-        Assert.Contains("Could not connect", content, StringComparison.Ordinal);
+        Assert.Contains("WARNING", content, StringComparison.Ordinal);
+        Assert.Contains("Signature validation disabled", content, StringComparison.Ordinal);
     }
 
     private sealed class TempFolder : System.IDisposable
