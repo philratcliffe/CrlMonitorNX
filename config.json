@@ -25,6 +25,12 @@
       "expiry_threshold": 0.8
     },
     {
+      "uri": "file://./examples/crls/DemoCRL.pem",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/DemoRootCA.pem",
+      "expiry_threshold": 0.8
+    },
+    {
       "uri": "ldap://dc1.example.com/CN=Example,O=Example Corp",
       "signature_validation_mode": "none",
       "ca_certificate_path": "CA-certs/example-ca.pem",
