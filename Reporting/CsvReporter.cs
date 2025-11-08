@@ -45,7 +45,7 @@ internal sealed class CsvReporter : IReporter
         csv.WriteField("uri");
         csv.WriteField("status");
         csv.WriteField("duration_ms");
-        csv.WriteField("error_info");
+        csv.WriteField("status_info");
         await csv.NextRecordAsync().ConfigureAwait(false);
 
         foreach (var result in run.Results)

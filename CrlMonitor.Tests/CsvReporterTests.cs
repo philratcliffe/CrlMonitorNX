@@ -34,7 +34,7 @@ public static class CsvReporterTests
 
         Assert.True(File.Exists(path));
         var content = await File.ReadAllTextAsync(path);
-        Assert.Contains("error_info", content, StringComparison.Ordinal);
+        Assert.Contains("status_info", content, StringComparison.Ordinal);
         Assert.Contains("\"ldap://dc1.example.com/CN=Example,O=Example Corp\"", content, StringComparison.Ordinal);
         Assert.Contains("WARNING", content, StringComparison.Ordinal);
         Assert.Contains("Signature validation disabled", content, StringComparison.Ordinal);
