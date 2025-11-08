@@ -1,6 +1,9 @@
+import argparse
 import csv
 import json
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from dataclasses import dataclass
@@ -14,6 +17,10 @@ class CsvResult:
     row: dict[str, str]
 
 
+# Global flag to control test output cleanup
+KEEP_TEST_OUTPUT = False
+
+
 class CsvReportIntegrationTest(unittest.TestCase):
     def test_single_file_crl_outputs_expected_csv_row(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
@@ -22,53 +29,55 @@ class CsvReportIntegrationTest(unittest.TestCase):
         expected_uri = crl_path.as_uri()
         expected_issuer = "C=US,O=DigiCert Inc,OU=www.digicert.com,CN=DigiCert Global Root CA"
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir)
-            output_csv = tmp_path / "report.csv"
-            state_file = tmp_path / "state.json"
-            config_path = tmp_path / "config.json"
-            config = {
-                "console_reports": False,
-                "csv_reports": True,
-                "csv_output_path": str(output_csv),
-                "csv_append_timestamp": False,
-                "fetch_timeout_seconds": 30,
-                "max_parallel_fetches": 1,
-                "state_file_path": str(state_file),
-                "uris": [
-                    {
-                        "uri": expected_uri,
-                        "signature_validation_mode": "ca-cert",
-                        "ca_certificate_path": str(ca_path),
-                        "expiry_threshold": 0.8,
-                    }
-                ],
-            }
-            config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        test_output_dir = Path(__file__).parent / "test_output"
+        if not KEEP_TEST_OUTPUT and test_output_dir.exists():
+            shutil.rmtree(test_output_dir)
+        test_output_dir.mkdir(exist_ok=True)
+        output_csv = test_output_dir / "report.csv"
+        state_file = test_output_dir / "state.json"
+        config_path = test_output_dir / "config.json"
+        config = {
+            "console_reports": False,
+            "csv_reports": True,
+            "csv_output_path": str(output_csv),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "uris": [
+                {
+                    "uri": expected_uri,
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
-            first = self._run_and_parse(repo_root, config_path, output_csv)
-            self.assertEqual(first.row["URI"], expected_uri)
-            self.assertEqual(first.row["Issuer_Name"], expected_issuer)
-            self.assertEqual(first.row["Status"], "OK")
-            self.assertEqual(first.row["This_Update_UTC"], "2025-11-05T19:45:58Z")
-            self.assertEqual(first.row["Next_Update_UTC"], "2025-11-26T19:45:58Z")
-            self.assertEqual(first.row["CRL_Size_bytes"], str(crl_path.stat().st_size))
-            self.assertEqual(first.row["Download_Duration_ms"], "0")
-            self.assertEqual(first.row["Signature_Valid"], "True")
-            self.assertEqual(first.row["Revoked_Count"], "6")
-            self.assertEqual(first.row["Previous_Checked_Time_UTC"], "")
-            self.assertEqual(first.row["CRL_Type"], "Full")
-            self.assertEqual(first.row["Status_Details"], "")
-            first_checked = _parse_utc(first.row["Checked_Time_UTC"])
-            self._assert_header_matches_row(first.header_timestamp, first_checked)
+        first = self._run_and_parse(repo_root, config_path, output_csv)
+        self.assertEqual(first.row["URI"], expected_uri)
+        self.assertEqual(first.row["Issuer_Name"], expected_issuer)
+        self.assertEqual(first.row["Status"], "OK")
+        self.assertEqual(first.row["This_Update_UTC"], "2025-11-05T19:45:58Z")
+        self.assertEqual(first.row["Next_Update_UTC"], "2025-11-26T19:45:58Z")
+        self.assertEqual(first.row["CRL_Size_bytes"], str(crl_path.stat().st_size))
+        self.assertEqual(first.row["Download_Duration_ms"], "0")
+        self.assertEqual(first.row["Signature_Valid"], "True")
+        self.assertEqual(first.row["Revoked_Count"], "6")
+        self.assertEqual(first.row["Previous_Checked_Time_UTC"], "")
+        self.assertEqual(first.row["CRL_Type"], "Full")
+        self.assertEqual(first.row["Status_Details"], "")
+        first_checked = _parse_utc(first.row["Checked_Time_UTC"])
+        self._assert_header_matches_row(first.header_timestamp, first_checked)
 
-            second = self._run_and_parse(repo_root, config_path, output_csv)
-            self.assertEqual(second.row["Previous_Checked_Time_UTC"], first.row["Checked_Time_UTC"])
-            second_checked = _parse_utc(second.row["Checked_Time_UTC"])
-            self.assertGreaterEqual(second_checked, first_checked)
-            self._assert_header_matches_row(second.header_timestamp, second_checked)
-            self.assertEqual(second.row["CRL_Type"], "Full")
-            self.assertEqual(second.row["Status_Details"], "")
+        second = self._run_and_parse(repo_root, config_path, output_csv)
+        self.assertEqual(second.row["Previous_Checked_Time_UTC"], first.row["Checked_Time_UTC"])
+        second_checked = _parse_utc(second.row["Checked_Time_UTC"])
+        self.assertGreaterEqual(second_checked, first_checked)
+        self._assert_header_matches_row(second.header_timestamp, second_checked)
+        self.assertEqual(second.row["CRL_Type"], "Full")
+        self.assertEqual(second.row["Status_Details"], "")
 
     def _run_and_parse(self, repo_root: Path, config_path: Path, csv_path: Path) -> "CsvResult":
         subprocess.run(
@@ -106,4 +115,12 @@ def _parse_utc(value: str) -> datetime:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-keep_test_output", action="store_true", help="Keep test output files after test completion")
+    args, remaining = parser.parse_known_args()
+
+    if args.keep_test_output:
+        KEEP_TEST_OUTPUT = True
+
+    sys.argv = [sys.argv[0]] + remaining
     unittest.main()
