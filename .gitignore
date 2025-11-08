@@ -135,3 +135,4 @@ coverage/
 config.local.json
 crl-report.csv
 .venv/
+crlmonitor-state.json

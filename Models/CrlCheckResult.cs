@@ -9,4 +9,8 @@ internal sealed record CrlCheckResult(
     TimeSpan Duration,
     ParsedCrl? ParsedCrl,
     string? ErrorInfo,
-    DateTime? PreviousFetchUtc = null);
+    DateTime? PreviousFetchUtc,
+    TimeSpan? DownloadDuration,
+    long? ContentLength,
+    DateTime CheckedAtUtc,
+    string? SignatureStatus);

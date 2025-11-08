@@ -29,7 +29,17 @@ public static class ConsoleReporterTests
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new Uri("http://example.com"), "WARNING", TimeSpan.Zero, null, "Signature validation disabled.", fetchedAt)
+                new CrlCheckResult(
+                    new Uri("http://example.com"),
+                    "WARNING",
+                    TimeSpan.Zero,
+                    null,
+                    "Signature validation disabled.",
+                    fetchedAt,
+                    TimeSpan.FromMilliseconds(50),
+                    2048,
+                    generatedAt,
+                    "Skipped")
             },
             diagnostics,
             generatedAt);

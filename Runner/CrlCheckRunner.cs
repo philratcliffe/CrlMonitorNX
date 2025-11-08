@@ -84,6 +84,8 @@ internal sealed class CrlCheckRunner
     {
         var stopwatch = Stopwatch.StartNew();
         var previousFetch = await TryGetLastFetchAsync(entry, diagnostics, cancellationToken).ConfigureAwait(false);
+        TimeSpan? downloadDuration = null;
+        long? contentLength = null;
         try
         {
             var fetcher = _fetcherResolver.Resolve(entry.Uri);
@@ -94,6 +96,8 @@ internal sealed class CrlCheckRunner
             }
 
             var fetched = await fetcher.FetchAsync(entry, timeoutCts.Token).ConfigureAwait(false);
+            downloadDuration = fetched.Duration;
+            contentLength = fetched.ContentLength;
             var parsed = _parser.Parse(fetched.Content);
             var signature = _signatureValidator.Validate(parsed, entry);
             var health = _healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
@@ -104,7 +108,17 @@ internal sealed class CrlCheckRunner
             var completedAt = DateTime.UtcNow;
             await TrySaveLastFetchAsync(entry, diagnostics, completedAt, cancellationToken).ConfigureAwait(false);
 
-            return new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo, previousFetch);
+            return new CrlCheckResult(
+                entry.Uri,
+                status,
+                stopwatch.Elapsed,
+                parsed,
+                errorInfo,
+                previousFetch,
+                downloadDuration,
+                contentLength,
+                completedAt,
+                signature.Status);
         }
         catch (OperationCanceledException) when (fetchTimeout > TimeSpan.Zero)
         {
@@ -116,21 +130,51 @@ internal sealed class CrlCheckRunner
 
             var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, msg, previousFetch);
+            return new CrlCheckResult(
+                entry.Uri,
+                "ERROR",
+                stopwatch.Elapsed,
+                null,
+                msg,
+                previousFetch,
+                downloadDuration,
+                contentLength,
+                DateTime.UtcNow,
+                null);
         }
         catch (LdapException ldapEx)
         {
             stopwatch.Stop();
             var friendly = ConvertLdapException(entry.Uri, ldapEx);
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly, previousFetch);
+            return new CrlCheckResult(
+                entry.Uri,
+                "ERROR",
+                stopwatch.Elapsed,
+                null,
+                friendly,
+                previousFetch,
+                downloadDuration,
+                contentLength,
+                DateTime.UtcNow,
+                null);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
             var message = $"Failed to process '{entry.Uri}': {ex.Message}";
             diagnostics.AddRuntimeWarning(message);
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message, previousFetch);
+            return new CrlCheckResult(
+                entry.Uri,
+                "ERROR",
+                stopwatch.Elapsed,
+                null,
+                ex.Message,
+                previousFetch,
+                downloadDuration,
+                contentLength,
+                DateTime.UtcNow,
+                null);
         }
     }
 

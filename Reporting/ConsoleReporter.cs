@@ -144,6 +144,11 @@ internal sealed class ConsoleReporter : IReporter
                 parts.Add(entry.ErrorInfo!);
             }
 
+            if (parts.Count == 0)
+            {
+                continue;
+            }
+
             WriteWrappedLine($"  {uri,-45} ", string.Join(" | ", parts));
         }
     }
