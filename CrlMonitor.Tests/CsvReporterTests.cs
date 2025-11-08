@@ -75,6 +75,34 @@ public static class CsvReporterTests
         Assert.Contains("# report_generated_utc", content, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Ensures signature status column uses expected values.
+    /// </summary>
+    [Fact]
+    public static async Task ReportAsyncNormalizesSignatureStatus()
+    {
+        using var temp = new TempFolder();
+        var path = Path.Combine(temp.Path, "signatures.csv");
+        var reporter = new CsvReporter(path, appendTimestamp: false);
+        var timestamp = DateTime.UtcNow;
+        var run = new CrlCheckRun(
+            new[]
+            {
+                new CrlCheckResult(new Uri("http://valid"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Valid"),
+                new CrlCheckResult(new Uri("http://invalid"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Invalid"),
+                new CrlCheckResult(new Uri("http://skipped"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Skipped")
+            },
+            new RunDiagnostics(),
+            timestamp);
+
+        await reporter.ReportAsync(run, CancellationToken.None);
+
+        var content = await File.ReadAllTextAsync(path);
+        Assert.Contains(",VALID,", content, StringComparison.Ordinal);
+        Assert.Contains(",INVALID,", content, StringComparison.Ordinal);
+        Assert.Contains(",DISABLED,", content, StringComparison.Ordinal);
+    }
+
     private sealed class TempFolder : System.IDisposable
     {
         public string Path { get; } = System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.Guid.NewGuid().ToString())).FullName;

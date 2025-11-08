@@ -122,12 +122,17 @@ internal sealed class CsvReporter : IReporter
 
         if (status.Equals("Valid", StringComparison.OrdinalIgnoreCase))
         {
-            return "True";
+            return "VALID";
         }
 
         if (status.Equals("Invalid", StringComparison.OrdinalIgnoreCase))
         {
-            return "False";
+            return "INVALID";
+        }
+
+        if (status.Equals("Skipped", StringComparison.OrdinalIgnoreCase))
+        {
+            return "DISABLED";
         }
 
         return status;

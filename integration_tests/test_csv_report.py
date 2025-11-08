@@ -69,7 +69,7 @@ class CsvReportIntegrationTest(unittest.TestCase):
         self.assertEqual(first.row["Next_Update_UTC"], "2025-11-26T19:45:58Z")
         self.assertEqual(first.row["CRL_Size_bytes"], str(crl_path.stat().st_size))
         self.assertEqual(first.row["Download_Duration_ms"], "0")
-        self.assertEqual(first.row["Signature_Valid"], "True")
+        self.assertEqual(first.row["Signature_Valid"], "VALID")
         self.assertEqual(first.row["Revoked_Count"], "6")
         self.assertEqual(first.row["Previous_Checked_Time_UTC"], "")
         self.assertEqual(first.row["CRL_Type"], "Full")
