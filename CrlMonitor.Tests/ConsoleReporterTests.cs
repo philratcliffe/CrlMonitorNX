@@ -42,11 +42,14 @@ public static class ConsoleReporterTests
         var output = writer.ToString();
         var expectedGenerated = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         var expectedPrevious = fetchedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-        Assert.Contains("WARNING http://example.com", output, StringComparison.Ordinal);
-        Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
-        Assert.Contains("previous fetch", output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("CRL Monitor Report", output, StringComparison.Ordinal);
         Assert.Contains(expectedGenerated, output, StringComparison.Ordinal);
+        Assert.Contains("URI", output, StringComparison.Ordinal);
+        Assert.Contains("Status", output, StringComparison.Ordinal);
+        Assert.Contains("WARNING", output, StringComparison.Ordinal);
+        Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
         Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
+        Assert.Contains("Summary:", output, StringComparison.Ordinal);
         Assert.Contains("Disk full", output, StringComparison.Ordinal);
     }
 }
