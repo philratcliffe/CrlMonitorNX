@@ -27,7 +27,7 @@
     {
       "uri": "ldap://dc1.example.com/CN=Example,O=Example Corp",
       "signature_validation_mode": "none",
-      "ca_certificate_path": "certs/example-ca.pem",
+      "ca_certificate_path": "CA-certs/example-ca.pem",
       "expiry_threshold": 0.95,
       "ldap": {
         "username": "CN=CRL Reader,OU=Svc Accounts,DC=example,DC=com",
