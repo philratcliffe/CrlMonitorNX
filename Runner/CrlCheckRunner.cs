@@ -138,7 +138,7 @@ internal sealed class CrlCheckRunner
     {
         return ex.ErrorCode switch
         {
-            53 or 91 or 92 => $"Could not connect to LDAP host {uri.Host}",
+            53 or 91 or 92 => "Could not connect to LDAP host.",
             _ => $"LDAP error {ex.ErrorCode}: {ex.Message}"
         };
     }

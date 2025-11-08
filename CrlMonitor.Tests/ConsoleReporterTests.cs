@@ -47,7 +47,9 @@ public static class ConsoleReporterTests
         Assert.Contains("URI", output, StringComparison.Ordinal);
         Assert.Contains("Status", output, StringComparison.Ordinal);
         Assert.Contains("WARNING", output, StringComparison.Ordinal);
+        Assert.Contains("Result details:", output, StringComparison.Ordinal);
         Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
+        Assert.Contains("Previous:", output, StringComparison.Ordinal);
         Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
         Assert.Contains("Summary:", output, StringComparison.Ordinal);
         Assert.Contains("Disk full", output, StringComparison.Ordinal);

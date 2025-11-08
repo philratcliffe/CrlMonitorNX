@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CrlMonitor.Models;
@@ -13,10 +12,8 @@ namespace CrlMonitor.Reporting;
 internal sealed class ConsoleReporter : IReporter
 {
     private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
-    private const int NextUpdateWidth = 15;
-    private const int DaysWidth = 6;
-    private const int StatusWidth = 10;
 
     public Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
@@ -33,20 +30,20 @@ internal sealed class ConsoleReporter : IReporter
 
         Console.WriteLine();
         WriteSummary(run.Results);
+        WriteResultNotes(run.Results);
         WriteDiagnostics(run);
         return Task.CompletedTask;
     }
 
     private static void WriteBanner(DateTime generatedAtUtc, int count)
     {
-        var line = new string('=', UriColumnWidth + NextUpdateWidth + DaysWidth + StatusWidth + 10);
+        var line = new string('=', ConsoleWidth);
         var timestamp = generatedAtUtc.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture);
 #pragma warning disable CA1303
         Console.WriteLine(line);
         Console.WriteLine("CRL Monitor Report");
         Console.WriteLine(line);
         Console.WriteLine($"Generated (UTC): {timestamp}");
-        Console.WriteLine($"Entries: {count}");
         Console.WriteLine();
 #pragma warning restore CA1303
     }
@@ -55,12 +52,11 @@ internal sealed class ConsoleReporter : IReporter
     {
         var header = string.Format(
             CultureInfo.InvariantCulture,
-            "{0,-45}{1,-15}{2,-6}{3,-10}{4}",
+            "{0,-45}{1,-15}{2,-6}{3,-10}",
             "URI",
             "Next Update",
             "Days",
-            "Status",
-            "Details");
+            "Status");
 
 #pragma warning disable CA1303
         Console.WriteLine(header);
@@ -73,15 +69,13 @@ internal sealed class ConsoleReporter : IReporter
         var uri = Truncate(result.Uri.ToString(), UriColumnWidth);
         var nextUpdate = result.ParsedCrl?.NextUpdate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
         var days = CalculateDaysRemaining(result.ParsedCrl?.NextUpdate);
-        var details = BuildDetails(result);
         var line = string.Format(
             CultureInfo.InvariantCulture,
-            "{0,-45}{1,-15}{2,-6}{3,-10}{4}",
+            "{0,-45}{1,-15}{2,-6}{3,-10}",
             uri,
             nextUpdate,
             days,
-            result.Status,
-            details);
+            result.Status);
 
         var original = Console.ForegroundColor;
         Console.ForegroundColor = GetStatusColor(result.Status);
@@ -89,28 +83,6 @@ internal sealed class ConsoleReporter : IReporter
         Console.WriteLine(line);
 #pragma warning restore CA1303
         Console.ForegroundColor = original;
-    }
-
-    private static string BuildDetails(CrlCheckResult result)
-    {
-        var builder = new StringBuilder();
-        if (result.PreviousFetchUtc.HasValue)
-        {
-            builder.Append("prev: ")
-                .Append(result.PreviousFetchUtc.Value.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture));
-        }
-
-        if (!string.IsNullOrWhiteSpace(result.ErrorInfo))
-        {
-            if (builder.Length > 0)
-            {
-                builder.Append(" | ");
-            }
-
-            builder.Append(result.ErrorInfo);
-        }
-
-        return builder.ToString();
     }
 
     private static string CalculateDaysRemaining(DateTime? nextUpdate)
@@ -137,10 +109,43 @@ internal sealed class ConsoleReporter : IReporter
         Console.WriteLine("Summary:");
         Console.WriteLine($"  Total:    {total}");
         Console.WriteLine($"  OK:       {ok}");
-        Console.WriteLine($"  Warn:     {warning + expiring}");
+        Console.WriteLine($"  Warning:  {warning}");
+        Console.WriteLine($"  Expiring: {expiring}");
         Console.WriteLine($"  Expired:  {expired}");
         Console.WriteLine($"  Errors:   {errors}");
 #pragma warning restore CA1303
+    }
+
+    private static void WriteResultNotes(IReadOnlyList<CrlCheckResult> results)
+    {
+        var notes = results
+            .Where(r => r.PreviousFetchUtc.HasValue || !string.IsNullOrWhiteSpace(r.ErrorInfo))
+            .ToList();
+        if (notes.Count == 0)
+        {
+            return;
+        }
+
+#pragma warning disable CA1303
+        Console.WriteLine();
+        Console.WriteLine("Result details:");
+#pragma warning restore CA1303
+        foreach (var entry in notes)
+        {
+            var uri = Truncate(entry.Uri.ToString(), UriColumnWidth);
+            var parts = new List<string>();
+            if (entry.PreviousFetchUtc.HasValue)
+            {
+                parts.Add($"Previous: {entry.PreviousFetchUtc.Value.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.ErrorInfo))
+            {
+                parts.Add(entry.ErrorInfo!);
+            }
+
+            WriteWrappedLine($"  {uri,-45} ", string.Join(" | ", parts));
+        }
     }
 
     private static void WriteDiagnostics(CrlCheckRun run)
@@ -156,6 +161,12 @@ internal sealed class ConsoleReporter : IReporter
         var hasEntries = false;
         foreach (var warning in warnings)
         {
+            var trimmed = warning?.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                continue;
+            }
+
             if (!hasEntries)
             {
                 Console.WriteLine();
@@ -165,9 +176,7 @@ internal sealed class ConsoleReporter : IReporter
                 hasEntries = true;
             }
 
-#pragma warning disable CA1303
-            Console.WriteLine($" - {warning}");
-#pragma warning restore CA1303
+            WriteWrappedLine(" - ", trimmed);
         }
     }
 
@@ -215,6 +224,47 @@ internal sealed class ConsoleReporter : IReporter
         }
         catch (UnauthorizedAccessException)
         {
+        }
+    }
+
+    private static void WriteWrappedLine(string prefix, string content)
+    {
+        var text = content ?? string.Empty;
+        var effectivePrefix = prefix.Length > ConsoleWidth ? prefix[..ConsoleWidth] : prefix;
+        var indent = new string(' ', Math.Min(prefix.Length, ConsoleWidth));
+
+        if (string.IsNullOrEmpty(text))
+        {
+            Console.WriteLine(effectivePrefix);
+            return;
+        }
+
+        while (true)
+        {
+            var available = ConsoleWidth - effectivePrefix.Length;
+            if (available <= 0)
+            {
+                Console.WriteLine(effectivePrefix);
+                effectivePrefix = indent;
+                continue;
+            }
+
+            if (text.Length <= available)
+            {
+                Console.WriteLine(effectivePrefix + text);
+                break;
+            }
+
+            var chunk = text[..available];
+            var splitIndex = chunk.LastIndexOf(' ');
+            if (splitIndex <= 0)
+            {
+                splitIndex = available;
+            }
+
+            Console.WriteLine(effectivePrefix + text[..splitIndex]);
+            text = text[splitIndex..].TrimStart();
+            effectivePrefix = indent;
         }
     }
 }
