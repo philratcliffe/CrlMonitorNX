@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CrlMonitor.Diagnostics;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
+using CrlMonitor.Tests.TestUtilities;
 using Xunit;
 
 namespace CrlMonitor.Tests;
@@ -26,11 +27,33 @@ public static class CsvReporterTests
         var reporter = new CsvReporter(path, appendTimestamp: false);
         var previousFetch = DateTime.UtcNow.AddHours(-2);
         var generatedAt = DateTime.UtcNow;
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var checkedAt = generatedAt.AddMinutes(-5);
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new System.Uri("http://example.com"), "WARNING", System.TimeSpan.FromSeconds(1), null, "Signature validation disabled.", previousFetch),
-                new CrlCheckResult(new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"), "ERROR", System.TimeSpan.FromMilliseconds(5), null, "Could not connect", null)
+                new CrlCheckResult(
+                    new System.Uri("http://example.com"),
+                    "WARNING",
+                    System.TimeSpan.FromSeconds(1),
+                    parsed,
+                    "Signature validation disabled.",
+                    previousFetch,
+                    TimeSpan.FromMilliseconds(120),
+                    4096,
+                    checkedAt,
+                    "Valid"),
+                new CrlCheckResult(
+                    new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"),
+                    "ERROR",
+                    System.TimeSpan.FromMilliseconds(5),
+                    null,
+                    "Could not connect",
+                    null,
+                    null,
+                    null,
+                    generatedAt,
+                    null)
             },
             new RunDiagnostics(),
             generatedAt);
@@ -41,12 +64,14 @@ public static class CsvReporterTests
         var content = await File.ReadAllTextAsync(path);
         var formattedPrev = previousFetch.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         var formattedRun = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-        Assert.Contains("previous_fetch_utc", content, StringComparison.Ordinal);
-        Assert.Contains("\"ldap://dc1.example.com/CN=Example,O=Example Corp\"", content, StringComparison.Ordinal);
+        Assert.Contains("URI,Issuer_Name,Status,This_Update_UTC,Next_Update_UTC,CRL_Size_bytes,Download_Duration_ms,Signature_Valid,Revoked_Count,Checked_Time_UTC,Previous_Checked_Time_UTC,CRL_Type,Status_Details", content, StringComparison.Ordinal);
+        Assert.Contains("Issuer_Name", content, StringComparison.Ordinal);
+        Assert.Contains("CN=CA", content, StringComparison.Ordinal);
+        Assert.Contains("Full", content, StringComparison.Ordinal);
+        Assert.Contains("Signature validation disabled", content, StringComparison.Ordinal);
         Assert.Contains(formattedPrev, content, StringComparison.Ordinal);
         Assert.Contains(formattedRun, content, StringComparison.Ordinal);
-        Assert.Contains("WARNING", content, StringComparison.Ordinal);
-        Assert.Contains("Signature validation disabled", content, StringComparison.Ordinal);
+        Assert.Contains("4096", content, StringComparison.Ordinal);
         Assert.Contains("# report_generated_utc", content, StringComparison.Ordinal);
     }
 
