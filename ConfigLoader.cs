@@ -42,9 +42,9 @@ internal static class ConfigLoader
             throw new InvalidOperationException("fetch_timeout_seconds must be greater than zero.");
         }
 
-        if (maxParallel <= 0)
+        if (maxParallel < 1 || maxParallel > 64)
         {
-            throw new InvalidOperationException("max_parallel_fetches must be at least 1.");
+            throw new InvalidOperationException("max_parallel_fetches must be between 1 and 64.");
         }
 
         var entries = BuildEntries(document.Uris, configDirectory);
