@@ -113,6 +113,32 @@ public static class ConfigLoaderTests
     }
 
     /// <summary>
+    /// Ensures fetch timeout must stay within the allowed range.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenTimeoutOutOfRange()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 1000,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("fetch_timeout_seconds", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Ensures CA certificate paths are required for ca-cert validation.
     /// </summary>
     [Fact]

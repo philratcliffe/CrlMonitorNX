@@ -37,9 +37,9 @@ internal static class ConfigLoader
         var stateFilePath = RequirePath(document.StateFilePath, nameof(document.StateFilePath));
         var timeoutSeconds = document.FetchTimeoutSeconds ?? throw new InvalidOperationException("fetch_timeout_seconds is required.");
         var maxParallel = document.MaxParallelFetches ?? throw new InvalidOperationException("max_parallel_fetches is required.");
-        if (timeoutSeconds <= 0)
+        if (timeoutSeconds <= 0 || timeoutSeconds > 600)
         {
-            throw new InvalidOperationException("fetch_timeout_seconds must be greater than zero.");
+            throw new InvalidOperationException("fetch_timeout_seconds must be between 1 and 600 seconds.");
         }
 
         if (maxParallel < 1 || maxParallel > 64)

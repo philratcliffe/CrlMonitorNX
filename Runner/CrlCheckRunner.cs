@@ -102,6 +102,11 @@ internal sealed class CrlCheckRunner
         catch (OperationCanceledException) when (fetchTimeout > TimeSpan.Zero)
         {
             stopwatch.Stop();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
             return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, msg);

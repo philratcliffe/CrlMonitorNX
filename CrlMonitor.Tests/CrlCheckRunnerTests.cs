@@ -172,6 +172,26 @@ public static class CrlCheckRunnerTests
         Assert.Contains("timed out", run.Results[0].ErrorInfo, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Ensures user cancellation stops the run.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncHonorsCancellation()
+    {
+        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(baseParsed);
+        var fetcher = new TimeoutFetcher();
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Valid");
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var entry = CreateEntry("http://slow");
+        using var cts = new CancellationTokenSource();
+        cts.CancelAfter(50);
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => runner.RunAsync(new[] { entry }, TimeSpan.FromSeconds(1), 1, cts.Token));
+    }
+
     private static CrlConfigEntry CreateEntry(string uri)
     {
         return new CrlConfigEntry(new Uri(uri), SignatureValidationMode.None, null, 0.8, null);
