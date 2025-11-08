@@ -19,7 +19,8 @@ public static class CrlHealthEvaluatorTests
     public static void HealthyWhenBelowThreshold()
     {
         var evaluator = new CrlHealthEvaluator();
-        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(signWithDifferentKey: false);
+        var now = DateTime.UtcNow;
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false, now, now.AddDays(10));
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.None, null, 0.8, null);
 
         var result = evaluator.Evaluate(parsed, entry, parsed.ThisUpdate.AddHours(1));
@@ -34,10 +35,11 @@ public static class CrlHealthEvaluatorTests
     public static void ExpiringWhenPastThreshold()
     {
         var evaluator = new CrlHealthEvaluator();
-        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var now = DateTime.UtcNow;
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false, now, now.AddHours(4));
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.None, null, 0.5, null);
 
-        var result = evaluator.Evaluate(parsed, entry, parsed.ThisUpdate.AddDays(4));
+        var result = evaluator.Evaluate(parsed, entry, parsed.ThisUpdate.AddHours(3));
 
         Assert.Equal("Expiring", result.Status);
     }
@@ -49,7 +51,8 @@ public static class CrlHealthEvaluatorTests
     public static void ExpiredWhenPastNextUpdate()
     {
         var evaluator = new CrlHealthEvaluator();
-        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var now = DateTime.UtcNow;
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false, now.AddDays(-2), now.AddDays(-1));
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.None, null, 0.5, null);
 
         var result = evaluator.Evaluate(parsed, entry, parsed.NextUpdate!.Value.AddMinutes(1));

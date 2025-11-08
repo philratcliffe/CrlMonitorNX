@@ -97,7 +97,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncPrefersExpiringOverWarning()
     {
-        var (parsedExpiring, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var now = DateTime.UtcNow;
+        var (parsedExpiring, _, _, _) = CrlTestBuilder.BuildParsedCrl(false, now, now.AddMinutes(10));
         var baseParsed = parsedExpiring;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
@@ -120,7 +121,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncPrefersExpiredOverWarning()
     {
-        var (parsedExpired, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var nowExpired = DateTime.UtcNow;
+        var (parsedExpired, _, _, _) = CrlTestBuilder.BuildParsedCrl(false, nowExpired.AddDays(-1), nowExpired.AddMinutes(-10));
         var baseParsed = parsedExpired;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());

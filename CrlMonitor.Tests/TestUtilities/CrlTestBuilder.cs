@@ -13,7 +13,10 @@ namespace CrlMonitor.Tests.TestUtilities;
 
 internal static class CrlTestBuilder
 {
-    public static (ParsedCrl Parsed, X509Certificate CaCert, X509Certificate SignerCert, byte[] RawCrlBytes) BuildParsedCrl(bool signWithDifferentKey)
+    public static (ParsedCrl Parsed, X509Certificate CaCert, X509Certificate SignerCert, byte[] RawCrlBytes) BuildParsedCrl(
+        bool signWithDifferentKey,
+        DateTime? thisUpdateOverride = null,
+        DateTime? nextUpdateOverride = null)
     {
         var caKey = GenerateKeyPair();
         var caCert = GenerateCertificate("CN=CA", caKey, caKey.Public);
@@ -31,7 +34,7 @@ internal static class CrlTestBuilder
             signerCert = caCert;
         }
 
-        var crlBytes = GenerateCrl(caCert, signerKey);
+        var crlBytes = GenerateCrl(caCert, signerKey, thisUpdateOverride, nextUpdateOverride);
         var parser = new CrlParser(SignatureValidationMode.CaCertificate);
         var parsed = parser.Parse(crlBytes);
         return (parsed, caCert, signerCert, crlBytes);
@@ -58,12 +61,18 @@ internal static class CrlTestBuilder
         return generator.Generate(signatureFactory);
     }
 
-    private static byte[] GenerateCrl(X509Certificate issuerCert, AsymmetricCipherKeyPair signingKey)
+    private static byte[] GenerateCrl(
+        X509Certificate issuerCert,
+        AsymmetricCipherKeyPair signingKey,
+        DateTime? thisUpdateOverride,
+        DateTime? nextUpdateOverride)
     {
         var generator = new X509V2CrlGenerator();
         generator.SetIssuerDN(issuerCert.SubjectDN);
-        generator.SetThisUpdate(DateTime.UtcNow);
-        generator.SetNextUpdate(DateTime.UtcNow.AddDays(7));
+        var thisUpdate = thisUpdateOverride ?? DateTime.UtcNow;
+        var nextUpdate = nextUpdateOverride ?? thisUpdate.AddDays(7);
+        generator.SetThisUpdate(thisUpdate);
+        generator.SetNextUpdate(nextUpdate);
         var signatureFactory = new Asn1SignatureFactory("SHA256WITHRSA", signingKey.Private);
         var crl = generator.Generate(signatureFactory);
         return crl.GetEncoded();
