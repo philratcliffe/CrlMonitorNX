@@ -41,11 +41,14 @@ internal sealed class CsvReporter : IReporter
             HasHeaderRecord = true
         };
 
+        var generatedStamp = FormatTimestamp(run.GeneratedAtUtc);
+        await writer.WriteLineAsync($"# report_generated_utc,{generatedStamp}").ConfigureAwait(false);
         using var csv = new CsvWriter(writer, csvConfig);
         csv.WriteField("uri");
         csv.WriteField("status");
         csv.WriteField("duration_ms");
         csv.WriteField("status_info");
+        csv.WriteField("previous_fetch_utc");
         await csv.NextRecordAsync().ConfigureAwait(false);
 
         foreach (var result in run.Results)
@@ -55,9 +58,15 @@ internal sealed class CsvReporter : IReporter
             csv.WriteField(result.Status);
             csv.WriteField(result.Duration.TotalMilliseconds);
             csv.WriteField(result.ErrorInfo ?? string.Empty);
+            csv.WriteField(result.PreviousFetchUtc.HasValue ? FormatTimestamp(result.PreviousFetchUtc.Value) : string.Empty);
             await csv.NextRecordAsync().ConfigureAwait(false);
         }
         await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string FormatTimestamp(DateTime value)
+    {
+        return value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
     }
 
     private static string AppendTimestamp(string path)

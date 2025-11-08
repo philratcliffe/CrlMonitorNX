@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,22 +24,30 @@ public static class CsvReporterTests
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "run.csv");
         var reporter = new CsvReporter(path, appendTimestamp: false);
+        var previousFetch = DateTime.UtcNow.AddHours(-2);
+        var generatedAt = DateTime.UtcNow;
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new System.Uri("http://example.com"), "WARNING", System.TimeSpan.FromSeconds(1), null, "Signature validation disabled."),
-                new CrlCheckResult(new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"), "ERROR", System.TimeSpan.FromMilliseconds(5), null, "Could not connect")
+                new CrlCheckResult(new System.Uri("http://example.com"), "WARNING", System.TimeSpan.FromSeconds(1), null, "Signature validation disabled.", previousFetch),
+                new CrlCheckResult(new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"), "ERROR", System.TimeSpan.FromMilliseconds(5), null, "Could not connect", null)
             },
-            new RunDiagnostics());
+            new RunDiagnostics(),
+            generatedAt);
 
         await reporter.ReportAsync(run, CancellationToken.None);
 
         Assert.True(File.Exists(path));
         var content = await File.ReadAllTextAsync(path);
-        Assert.Contains("status_info", content, StringComparison.Ordinal);
+        var formattedPrev = previousFetch.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var formattedRun = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        Assert.Contains("previous_fetch_utc", content, StringComparison.Ordinal);
         Assert.Contains("\"ldap://dc1.example.com/CN=Example,O=Example Corp\"", content, StringComparison.Ordinal);
+        Assert.Contains(formattedPrev, content, StringComparison.Ordinal);
+        Assert.Contains(formattedRun, content, StringComparison.Ordinal);
         Assert.Contains("WARNING", content, StringComparison.Ordinal);
         Assert.Contains("Signature validation disabled", content, StringComparison.Ordinal);
+        Assert.Contains("# report_generated_utc", content, StringComparison.Ordinal);
     }
 
     private sealed class TempFolder : System.IDisposable

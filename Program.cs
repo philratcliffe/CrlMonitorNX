@@ -11,6 +11,7 @@ using CrlMonitor.Reporting;
 using CrlMonitor.Runner;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
+using CrlMonitor.State;
 
 namespace CrlMonitor;
 
@@ -61,11 +62,13 @@ internal static class Program
             new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher),
             new FetcherMapping(FetcherSchemes.File, fileFetcher)
         });
+        using var stateStore = new FileStateStore(options.StateFilePath);
         var runner = new CrlCheckRunner(
             resolver,
             new CrlParser(SignatureValidationMode.CaCertificate),
             new CrlSignatureValidator(),
-            new CrlHealthEvaluator());
+            new CrlHealthEvaluator(),
+            stateStore);
         var requests = BuildRequests(options.Crls);
         var run = await runner.RunAsync(
             requests,

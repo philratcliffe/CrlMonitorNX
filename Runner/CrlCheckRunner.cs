@@ -10,6 +10,7 @@ using CrlMonitor.Fetching;
 using CrlMonitor.Models;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
+using CrlMonitor.State;
 
 namespace CrlMonitor.Runner;
 
@@ -19,17 +20,20 @@ internal sealed class CrlCheckRunner
     private readonly ICrlParser _parser;
     private readonly ICrlSignatureValidator _signatureValidator;
     private readonly ICrlHealthEvaluator _healthEvaluator;
+    private readonly IStateStore _stateStore;
 
     public CrlCheckRunner(
         IFetcherResolver fetcherResolver,
         ICrlParser parser,
         ICrlSignatureValidator signatureValidator,
-        ICrlHealthEvaluator healthEvaluator)
+        ICrlHealthEvaluator healthEvaluator,
+        IStateStore stateStore)
     {
         _fetcherResolver = fetcherResolver ?? throw new ArgumentNullException(nameof(fetcherResolver));
         _parser = parser ?? throw new ArgumentNullException(nameof(parser));
         _signatureValidator = signatureValidator ?? throw new ArgumentNullException(nameof(signatureValidator));
         _healthEvaluator = healthEvaluator ?? throw new ArgumentNullException(nameof(healthEvaluator));
+        _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
     }
 
     public async Task<CrlCheckRun> RunAsync(
@@ -68,10 +72,10 @@ internal sealed class CrlCheckRunner
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 #pragma warning restore CA1031
-        return new CrlCheckRun(results, diagnostics);
+        return new CrlCheckRun(results, diagnostics, DateTime.UtcNow);
     }
 
-    #pragma warning disable CA1031
+#pragma warning disable CA1031
     private async Task<CrlCheckResult> ProcessEntryAsync(
         CrlConfigEntry entry,
         TimeSpan fetchTimeout,
@@ -79,6 +83,7 @@ internal sealed class CrlCheckRunner
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
+        var previousFetch = await TryGetLastFetchAsync(entry, diagnostics, cancellationToken).ConfigureAwait(false);
         try
         {
             var fetcher = _fetcherResolver.Resolve(entry.Uri);
@@ -96,8 +101,10 @@ internal sealed class CrlCheckRunner
 
             var status = DetermineStatus(entry, diagnostics, signature, health);
             var errorInfo = BuildErrorInfo(signature, health, status);
+            var completedAt = DateTime.UtcNow;
+            await TrySaveLastFetchAsync(entry, diagnostics, completedAt, cancellationToken).ConfigureAwait(false);
 
-            return new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo);
+            return new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo, previousFetch);
         }
         catch (OperationCanceledException) when (fetchTimeout > TimeSpan.Zero)
         {
@@ -109,24 +116,23 @@ internal sealed class CrlCheckRunner
 
             var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, msg);
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, msg, previousFetch);
         }
         catch (LdapException ldapEx)
         {
             stopwatch.Stop();
             var friendly = ConvertLdapException(entry.Uri, ldapEx);
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly);
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly, previousFetch);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
             var message = $"Failed to process '{entry.Uri}': {ex.Message}";
             diagnostics.AddRuntimeWarning(message);
-            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message);
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message, previousFetch);
         }
     }
-    #pragma warning restore CA1031
 
     private static string ConvertLdapException(Uri uri, LdapException ex)
     {
@@ -193,4 +199,38 @@ internal sealed class CrlCheckRunner
 
         return parts.Count == 0 ? null : string.Join(" | ", parts);
     }
+
+    #pragma warning disable CA1031
+    private async Task<DateTime?> TryGetLastFetchAsync(
+        CrlConfigEntry entry,
+        RunDiagnostics diagnostics,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _stateStore.GetLastFetchAsync(entry.Uri, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            diagnostics.AddStateWarning($"Failed to read state for '{entry.Uri}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task TrySaveLastFetchAsync(
+        CrlConfigEntry entry,
+        RunDiagnostics diagnostics,
+        DateTime fetchedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _stateStore.SaveLastFetchAsync(entry.Uri, fetchedAtUtc, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            diagnostics.AddStateWarning($"Failed to update state for '{entry.Uri}': {ex.Message}");
+        }
+    }
+#pragma warning restore CA1031
 }

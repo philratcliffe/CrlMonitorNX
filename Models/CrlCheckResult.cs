@@ -8,4 +8,5 @@ internal sealed record CrlCheckResult(
     string Status,
     TimeSpan Duration,
     ParsedCrl? ParsedCrl,
-    string? ErrorInfo);
+    string? ErrorInfo,
+    DateTime? PreviousFetchUtc = null);

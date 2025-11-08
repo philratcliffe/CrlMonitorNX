@@ -5,4 +5,5 @@ namespace CrlMonitor.Models;
 
 internal sealed record CrlCheckRun(
     IReadOnlyList<CrlCheckResult> Results,
-    RunDiagnostics Diagnostics);
+    RunDiagnostics Diagnostics,
+    DateTime GeneratedAtUtc);

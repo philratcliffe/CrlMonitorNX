@@ -10,6 +10,7 @@ using CrlMonitor.Runner;
 using CrlMonitor.Health;
 using CrlMonitor.Tests.TestUtilities;
 using CrlMonitor.Validation;
+using CrlMonitor.State;
 using Xunit;
 
 namespace CrlMonitor.Tests;
@@ -32,7 +33,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Valid");
         var healthEvaluator = new StubHealthEvaluator("Healthy");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://example.com/crl");
 
         var singleEntry = new[] { entry };
@@ -57,7 +58,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Unknown");
         var healthEvaluator = new StubHealthEvaluator("Expired");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://example.com/crl");
 
         var singleEntry = new[] { entry };
@@ -81,7 +82,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
         var healthEvaluator = new StubHealthEvaluator("Healthy");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://example.com/crl");
 
         var warningEntry = new[] { entry };
@@ -105,7 +106,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
         var healthEvaluator = new StubHealthEvaluator("Expiring");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://example.com/crl");
 
         var expiringEntry = new[] { entry };
@@ -129,7 +130,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Skipped", "Signature validation disabled.");
         var healthEvaluator = new StubHealthEvaluator("Expired");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://example.com/crl");
 
         var expiredEntry = new[] { entry };
@@ -159,7 +160,8 @@ public static class CrlCheckRunnerTests
                 resolver,
                 new CrlParser(SignatureValidationMode.CaCertificate),
                 new CrlSignatureValidator(),
-                new CrlHealthEvaluator());
+                new CrlHealthEvaluator(),
+                new NullStateStore());
 
             var entry = new CrlConfigEntry(new Uri(crlPath), SignatureValidationMode.CaCertificate, caPath, 0.8, null);
             var fileEntries = new[] { entry };
@@ -187,7 +189,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Valid");
         var healthEvaluator = new StubHealthEvaluator("Healthy");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entries = new[]
         {
             CreateEntry("http://a"),
@@ -213,7 +215,7 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Valid");
         var healthEvaluator = new StubHealthEvaluator("Healthy");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://slow");
 
         var timeoutEntries = new[] { entry };
@@ -235,13 +237,63 @@ public static class CrlCheckRunnerTests
         var resolver = new StubResolver(fetcher);
         var signatureValidator = new StubSignatureValidator("Valid");
         var healthEvaluator = new StubHealthEvaluator("Healthy");
-        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
         var entry = CreateEntry("http://slow");
         using var cts = new CancellationTokenSource();
         cts.CancelAfter(50);
 
         var cancelEntries = new[] { entry };
         await Assert.ThrowsAsync<TaskCanceledException>(() => runner.RunAsync(cancelEntries, TimeSpan.FromSeconds(1), 1, cts.Token));
+    }
+
+    /// <summary>
+    /// Successful runs persist last fetch times.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncPersistsLastFetchTimestamp()
+    {
+        var parsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(parsed);
+        var fetcher = new StubFetcher(Array.Empty<byte>());
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Valid");
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var stateStore = new RecordingStateStore
+        {
+            LastFetchToReturn = DateTime.UtcNow.AddHours(-3)
+        };
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, stateStore);
+        var entry = CreateEntry("http://example.com/crl");
+
+        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+
+        Assert.NotNull(stateStore.LastSavedAt);
+        Assert.Equal(stateStore.LastFetchToReturn, run.Results[0].PreviousFetchUtc);
+    }
+
+    /// <summary>
+    /// State failures surface in diagnostics.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncAddsWarningWhenStateStoreFails()
+    {
+        var parsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(parsed);
+        var fetcher = new StubFetcher(Array.Empty<byte>());
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Valid");
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var stateStore = new RecordingStateStore
+        {
+            LoadException = new IOException("load failed"),
+            SaveException = new IOException("save failed")
+        };
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, stateStore);
+        var entry = CreateEntry("http://example.com/crl");
+
+        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+
+        Assert.NotEmpty(run.Diagnostics.StateWarnings);
     }
 
     private static CrlConfigEntry CreateEntry(string uri)
@@ -375,4 +427,46 @@ public static class CrlCheckRunnerTests
     }
 
     private static readonly string[] FileSchemes = { "file" };
+
+    private sealed class NullStateStore : IStateStore
+    {
+        public Task<DateTime?> GetLastFetchAsync(Uri uri, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<DateTime?>(null);
+        }
+
+        public Task SaveLastFetchAsync(Uri uri, DateTime fetchedAtUtc, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class RecordingStateStore : IStateStore
+    {
+        public Exception? LoadException { get; set; }
+        public Exception? SaveException { get; set; }
+        public DateTime? LastSavedAt { get; private set; }
+        public DateTime? LastFetchToReturn { get; set; }
+
+        public Task<DateTime?> GetLastFetchAsync(Uri uri, CancellationToken cancellationToken)
+        {
+            if (LoadException != null)
+            {
+                throw LoadException;
+            }
+
+            return Task.FromResult(LastFetchToReturn);
+        }
+
+        public Task SaveLastFetchAsync(Uri uri, DateTime fetchedAtUtc, CancellationToken cancellationToken)
+        {
+            if (SaveException != null)
+            {
+                throw SaveException;
+            }
+
+            LastSavedAt = fetchedAtUtc;
+            return Task.CompletedTask;
+        }
+    }
 }

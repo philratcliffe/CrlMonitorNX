@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,11 +9,13 @@ namespace CrlMonitor.Reporting;
 
 internal sealed class ConsoleReporter : IReporter
 {
+    private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+
     public Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
         cancellationToken.ThrowIfCancellationRequested();
-        WriteHeader();
+        WriteHeader(run.GeneratedAtUtc);
         foreach (var result in run.Results)
         {
             WriteResult(result);
@@ -22,12 +25,14 @@ internal sealed class ConsoleReporter : IReporter
         return Task.CompletedTask;
     }
 
-    private static void WriteHeader()
+    private static void WriteHeader(DateTime generatedAtUtc)
     {
 #pragma warning disable CA1303
+        var formattedTimestamp = generatedAtUtc.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture);
         Console.WriteLine("╔══════════════════════════════════════════════════════╗");
         Console.WriteLine("║                     CRL RESULTS                      ║");
         Console.WriteLine("╚══════════════════════════════════════════════════════╝");
+        Console.WriteLine($"Report generated (UTC): {formattedTimestamp}");
 #pragma warning restore CA1303
     }
 
@@ -38,6 +43,12 @@ internal sealed class ConsoleReporter : IReporter
         if (!string.IsNullOrWhiteSpace(result.ErrorInfo))
         {
             builder.Append(" :: ").Append(result.ErrorInfo);
+        }
+
+        if (result.PreviousFetchUtc.HasValue)
+        {
+            builder.Append(" | previous fetch: ")
+                .Append(result.PreviousFetchUtc.Value.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture));
         }
 
 #pragma warning disable CA1303
