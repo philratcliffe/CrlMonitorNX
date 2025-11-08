@@ -65,7 +65,11 @@ internal static class Program
             new CrlSignatureValidator(),
             new CrlHealthEvaluator());
         var requests = BuildRequests(options.Crls);
-        var run = await runner.RunAsync(requests, cancellationToken).ConfigureAwait(false);
+        var run = await runner.RunAsync(
+            requests,
+            options.FetchTimeout,
+            options.MaxParallelFetches,
+            cancellationToken).ConfigureAwait(false);
 
         var reporters = BuildReporters(options);
         await reporters.ReportAsync(run, cancellationToken).ConfigureAwait(false);

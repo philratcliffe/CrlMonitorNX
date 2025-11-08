@@ -34,52 +34,94 @@ internal sealed class CrlCheckRunner
 
     public async Task<CrlCheckRun> RunAsync(
         IReadOnlyList<CrlConfigEntry> entries,
+        TimeSpan fetchTimeout,
+        int maxParallelFetches,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
         var diagnostics = new RunDiagnostics();
-        var results = new List<CrlCheckResult>(entries.Count);
+#pragma warning disable CA1031
+        var maxParallel = Math.Max(1, maxParallelFetches);
+        using var semaphore = new SemaphoreSlim(maxParallel);
+        var tasks = new List<Task>();
+        var results = new CrlCheckResult[entries.Count];
 
-        foreach (var entry in entries)
+        for (var index = 0; index < entries.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var stopwatch = Stopwatch.StartNew();
-#pragma warning disable CA1031 // Runner must degrade per-URI failures into diagnostics so the process continues.
-#pragma warning disable CA1031
-            try
+            var localIndex = index;
+            var entry = entries[localIndex];
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            tasks.Add(Task.Run(async () =>
             {
-                var fetcher = _fetcherResolver.Resolve(entry.Uri);
-                var fetched = await fetcher.FetchAsync(entry, cancellationToken).ConfigureAwait(false);
-                var parsed = _parser.Parse(fetched.Content);
-                var signature = _signatureValidator.Validate(parsed, entry);
-                var health = _healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
-                stopwatch.Stop();
-
-                var status = DetermineStatus(entry, diagnostics, signature, health);
-                var errorInfo = BuildErrorInfo(signature, health, status);
-
-                results.Add(new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo));
-            }
-            catch (LdapException ldapEx)
-            {
-                stopwatch.Stop();
-                var friendly = ConvertLdapException(entry.Uri, ldapEx);
-                diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
-                results.Add(new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly));
-            }
-            catch (Exception ex)
-            {
-                stopwatch.Stop();
-                var message = $"Failed to process '{entry.Uri}': {ex.Message}";
-                diagnostics.AddRuntimeWarning(message);
-                results.Add(new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message));
-            }
-#pragma warning restore CA1031
+                try
+                {
+                    results[localIndex] = await ProcessEntryAsync(entry, fetchTimeout, diagnostics, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }, cancellationToken));
         }
 
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+#pragma warning restore CA1031
         return new CrlCheckRun(results, diagnostics);
     }
+
+    #pragma warning disable CA1031
+    private async Task<CrlCheckResult> ProcessEntryAsync(
+        CrlConfigEntry entry,
+        TimeSpan fetchTimeout,
+        RunDiagnostics diagnostics,
+        CancellationToken cancellationToken)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            var fetcher = _fetcherResolver.Resolve(entry.Uri);
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (fetchTimeout > TimeSpan.Zero)
+            {
+                timeoutCts.CancelAfter(fetchTimeout);
+            }
+
+            var fetched = await fetcher.FetchAsync(entry, timeoutCts.Token).ConfigureAwait(false);
+            var parsed = _parser.Parse(fetched.Content);
+            var signature = _signatureValidator.Validate(parsed, entry);
+            var health = _healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
+            stopwatch.Stop();
+
+            var status = DetermineStatus(entry, diagnostics, signature, health);
+            var errorInfo = BuildErrorInfo(signature, health, status);
+
+            return new CrlCheckResult(entry.Uri, status, stopwatch.Elapsed, parsed, errorInfo);
+        }
+        catch (OperationCanceledException) when (fetchTimeout > TimeSpan.Zero)
+        {
+            stopwatch.Stop();
+            var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
+            diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, msg);
+        }
+        catch (LdapException ldapEx)
+        {
+            stopwatch.Stop();
+            var friendly = ConvertLdapException(entry.Uri, ldapEx);
+            diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, friendly);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            var message = $"Failed to process '{entry.Uri}': {ex.Message}";
+            diagnostics.AddRuntimeWarning(message);
+            return new CrlCheckResult(entry.Uri, "ERROR", stopwatch.Elapsed, null, ex.Message);
+        }
+    }
+    #pragma warning restore CA1031
 
     private static string ConvertLdapException(Uri uri, LdapException ex)
     {
