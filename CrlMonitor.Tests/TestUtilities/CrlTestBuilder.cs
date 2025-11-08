@@ -13,7 +13,7 @@ namespace CrlMonitor.Tests.TestUtilities;
 
 internal static class CrlTestBuilder
 {
-    public static (ParsedCrl Parsed, X509Certificate CaCert, X509Certificate SignerCert) BuildParsedCrl(bool signWithDifferentKey)
+    public static (ParsedCrl Parsed, X509Certificate CaCert, X509Certificate SignerCert, byte[] RawCrlBytes) BuildParsedCrl(bool signWithDifferentKey)
     {
         var caKey = GenerateKeyPair();
         var caCert = GenerateCertificate("CN=CA", caKey, caKey.Public);
@@ -34,7 +34,7 @@ internal static class CrlTestBuilder
         var crlBytes = GenerateCrl(caCert, signerKey);
         var parser = new CrlParser(SignatureValidationMode.CaCertificate);
         var parsed = parser.Parse(crlBytes);
-        return (parsed, caCert, signerCert);
+        return (parsed, caCert, signerCert, crlBytes);
     }
 
     private static AsymmetricCipherKeyPair GenerateKeyPair()

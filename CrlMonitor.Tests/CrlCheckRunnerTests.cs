@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CrlMonitor.Crl;
@@ -24,7 +25,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncReturnsSuccessResult()
     {
-        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedCrl, _, _, _) = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedCrl;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
@@ -33,7 +35,8 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+        var singleEntry = new[] { entry };
+        var run = await runner.RunAsync(singleEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Single(run.Results);
         Assert.Equal("OK", run.Results[0].Status);
@@ -47,7 +50,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncAddsWarningWhenFetcherFails()
     {
-        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedFail, _, _, _) = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedFail;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>(), new InvalidOperationException("boom"));
         var resolver = new StubResolver(fetcher);
@@ -56,7 +60,8 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+        var singleEntry = new[] { entry };
+        var run = await runner.RunAsync(singleEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Equal("ERROR", run.Results[0].Status);
         Assert.False(string.IsNullOrEmpty(run.Results[0].ErrorInfo));
@@ -69,7 +74,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncReturnsWarningWhenSignatureSkipped()
     {
-        var baseParsed = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedWarn, _, _, _) = CrlMonitor.Tests.TestUtilities.CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedWarn;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
@@ -78,7 +84,8 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+        var warningEntry = new[] { entry };
+        var run = await runner.RunAsync(warningEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Equal("WARNING", run.Results[0].Status);
         Assert.Equal("Signature validation disabled.", run.Results[0].ErrorInfo);
@@ -90,7 +97,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncPrefersExpiringOverWarning()
     {
-        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedExpiring, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedExpiring;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
@@ -99,7 +107,8 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+        var expiringEntry = new[] { entry };
+        var run = await runner.RunAsync(expiringEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Equal("EXPIRING", run.Results[0].Status);
         Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
@@ -111,7 +120,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncPrefersExpiredOverWarning()
     {
-        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedExpired, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedExpired;
         var parser = new StubParser(baseParsed);
         var fetcher = new StubFetcher(Array.Empty<byte>());
         var resolver = new StubResolver(fetcher);
@@ -120,10 +130,46 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://example.com/crl");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+        var expiredEntry = new[] { entry };
+        var run = await runner.RunAsync(expiredEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Equal("EXPIRED", run.Results[0].Status);
         Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
+    }
+
+    /// <summary>
+    /// Ensures file-based fetches work end-to-end.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncReadsFromFileFetcher()
+    {
+        var (parsed, caCert, _, crlBytes) = CrlTestBuilder.BuildParsedCrl(false);
+        var crlPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        var caPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        await File.WriteAllBytesAsync(crlPath, crlBytes);
+        await File.WriteAllBytesAsync(caPath, caCert.GetEncoded());
+
+        try
+        {
+            var fetcher = new FileCrlFetcher();
+            var resolver = new FetcherResolver(new[] { new FetcherMapping(FileSchemes, fetcher) });
+            var runner = new CrlCheckRunner(
+                resolver,
+                new CrlParser(SignatureValidationMode.CaCertificate),
+                new CrlSignatureValidator(),
+                new CrlHealthEvaluator());
+
+            var entry = new CrlConfigEntry(new Uri(crlPath), SignatureValidationMode.CaCertificate, caPath, 0.8, null);
+            var fileEntries = new[] { entry };
+            var run = await runner.RunAsync(fileEntries, TimeSpan.FromSeconds(5), 1, CancellationToken.None);
+
+            Assert.Equal("OK", run.Results[0].Status);
+        }
+        finally
+        {
+            File.Delete(crlPath);
+            File.Delete(caPath);
+        }
     }
 
     /// <summary>
@@ -132,7 +178,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncRespectsMaxParallelFetches()
     {
-        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedConcurrent, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedConcurrent;
         var parser = new StubParser(baseParsed);
         var fetcher = new ConcurrentFetcher(TimeSpan.FromMilliseconds(50));
         var resolver = new StubResolver(fetcher);
@@ -157,7 +204,8 @@ public static class CrlCheckRunnerTests
     [Fact]
     public static async Task RunAsyncTimesOutFetch()
     {
-        var baseParsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var (parsedTimeout, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var baseParsed = parsedTimeout;
         var parser = new StubParser(baseParsed);
         var fetcher = new TimeoutFetcher();
         var resolver = new StubResolver(fetcher);
@@ -166,7 +214,8 @@ public static class CrlCheckRunnerTests
         var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator);
         var entry = CreateEntry("http://slow");
 
-        var run = await runner.RunAsync(new[] { entry }, TimeSpan.FromMilliseconds(50), 1, CancellationToken.None);
+        var timeoutEntries = new[] { entry };
+        var run = await runner.RunAsync(timeoutEntries, TimeSpan.FromMilliseconds(50), 1, CancellationToken.None);
 
         Assert.Equal("ERROR", run.Results[0].Status);
         Assert.Contains("timed out", run.Results[0].ErrorInfo, StringComparison.OrdinalIgnoreCase);
@@ -189,7 +238,8 @@ public static class CrlCheckRunnerTests
         using var cts = new CancellationTokenSource();
         cts.CancelAfter(50);
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() => runner.RunAsync(new[] { entry }, TimeSpan.FromSeconds(1), 1, cts.Token));
+        var cancelEntries = new[] { entry };
+        await Assert.ThrowsAsync<TaskCanceledException>(() => runner.RunAsync(cancelEntries, TimeSpan.FromSeconds(1), 1, cts.Token));
     }
 
     private static CrlConfigEntry CreateEntry(string uri)
@@ -321,4 +371,6 @@ public static class CrlCheckRunnerTests
             return new FetchedCrl(Array.Empty<byte>(), TimeSpan.Zero, 0);
         }
     }
+
+    private static readonly string[] FileSchemes = { "file" };
 }

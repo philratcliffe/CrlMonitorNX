@@ -19,7 +19,7 @@ public static class CrlSignatureValidatorTests
     [Fact]
     public static void ValidateReturnsSkippedWhenModeNone()
     {
-        var (parsed, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
         var validator = new CrlSignatureValidator();
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.None, null, 0.8, null);
 
@@ -34,7 +34,7 @@ public static class CrlSignatureValidatorTests
     [Fact]
     public static void ValidateAcceptsValidSignature()
     {
-        var (parsed, caCert, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var (parsed, caCert, _, _) = CrlTestBuilder.BuildParsedCrl(false);
         using var temp = new TempFile(caCert.GetEncoded());
         var validator = new CrlSignatureValidator();
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.CaCertificate, temp.Path, 0.8, null);
@@ -50,7 +50,7 @@ public static class CrlSignatureValidatorTests
     [Fact]
     public static void ValidateRejectsInvalidSignature()
     {
-        var (parsed, caCert, _) = CrlTestBuilder.BuildParsedCrl(true);
+        var (parsed, caCert, _, _) = CrlTestBuilder.BuildParsedCrl(true);
         using var temp = new TempFile(caCert.GetEncoded());
         var validator = new CrlSignatureValidator();
         var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.CaCertificate, temp.Path, 0.8, null);

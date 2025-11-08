@@ -54,10 +54,12 @@ internal static class Program
         using var httpClient = new HttpClient();
         var httpFetcher = new HttpCrlFetcher(httpClient);
         var ldapFetcher = new LdapCrlFetcher(new SystemLdapConnectionFactory());
+        var fileFetcher = new FileCrlFetcher();
         var resolver = new FetcherResolver(new[]
         {
             new FetcherMapping(FetcherSchemes.Http, httpFetcher),
-            new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher)
+            new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher),
+            new FetcherMapping(FetcherSchemes.File, fileFetcher)
         });
         var runner = new CrlCheckRunner(
             resolver,
@@ -136,4 +138,5 @@ internal static class FetcherSchemes
 {
     public static readonly string[] Http = { "http", "https" };
     public static readonly string[] Ldap = { "ldap", "ldaps" };
+    public static readonly string[] File = { "file" };
 }
