@@ -22,6 +22,16 @@ KEEP_TEST_OUTPUT = False
 
 
 class CsvReportIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_output_dir = Path(__file__).parent / "test_output"
+        if self.test_output_dir.exists():
+            shutil.rmtree(self.test_output_dir)
+        self.test_output_dir.mkdir(exist_ok=True)
+
+    def tearDown(self) -> None:
+        if not KEEP_TEST_OUTPUT and self.test_output_dir.exists():
+            shutil.rmtree(self.test_output_dir)
+
     def test_single_file_crl_outputs_expected_csv_row(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
@@ -29,13 +39,9 @@ class CsvReportIntegrationTest(unittest.TestCase):
         expected_uri = crl_path.as_uri()
         expected_issuer = "C=US,O=DigiCert Inc,OU=www.digicert.com,CN=DigiCert Global Root CA"
 
-        test_output_dir = Path(__file__).parent / "test_output"
-        if not KEEP_TEST_OUTPUT and test_output_dir.exists():
-            shutil.rmtree(test_output_dir)
-        test_output_dir.mkdir(exist_ok=True)
-        output_csv = test_output_dir / "report.csv"
-        state_file = test_output_dir / "state.json"
-        config_path = test_output_dir / "config.json"
+        output_csv = self.test_output_dir / "report.csv"
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
         config = {
             "console_reports": False,
             "csv_reports": True,
@@ -115,8 +121,31 @@ def _parse_utc(value: str) -> datetime:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-keep_test_output", action="store_true", help="Keep test output files after test completion")
+    parser = argparse.ArgumentParser(
+        description="CRL Monitor CSV report integration test",
+        epilog="Examples:\n  python test_csv_report.py\n  python test_csv_report.py -keep_test_output",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("-keep_test_output", action="store_true", help="keep test output files after completion")
+
+    # Check for any non-flag args or unrecognised flags
+    all_args = sys.argv[1:]
+    non_flag_args = [arg for arg in all_args if not arg.startswith('-')]
+    flag_args = [arg for arg in all_args if arg.startswith('-') and not arg.startswith('-v')]
+    unknown_flags = [arg for arg in flag_args if arg not in ['-keep_test_output', '-h', '--help']]
+
+    if non_flag_args:
+        print(f"error: unrecognised argument: {non_flag_args[0]}", file=sys.stderr)
+        print(file=sys.stderr)
+        parser.print_help(sys.stderr)
+        sys.exit(2)
+
+    if unknown_flags:
+        print(f"error: unrecognised argument: {unknown_flags[0]}", file=sys.stderr)
+        print(file=sys.stderr)
+        parser.print_help(sys.stderr)
+        sys.exit(2)
+
     args, remaining = parser.parse_known_args()
 
     if args.keep_test_output:
