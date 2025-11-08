@@ -139,6 +139,38 @@ public static class ConfigLoaderTests
     }
 
     /// <summary>
+    /// Ensures relative file URIs resolve against config directory.
+    /// </summary>
+    [Fact]
+    public static void LoadSupportsRelativeFileUris()
+    {
+        using var temp = new TempFolder();
+        var crlPath = temp.WriteBinary("examples/rel.crl", new byte[] { 0 });
+        var fileName = Path.GetFileName(crlPath);
+        var configPath = temp.WriteJson("config.json", $$"""
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "uris": [
+            {
+              "uri": "file://./{{fileName}}"
+            }
+          ]
+        }
+        """);
+
+        var options = ConfigLoader.Load(configPath);
+
+        var crl = Assert.Single(options.Crls);
+        Assert.Equal("file", crl.Uri.Scheme);
+    }
+
+    /// <summary>
     /// Ensures CA certificate paths are required for ca-cert validation.
     /// </summary>
     [Fact]
@@ -304,6 +336,14 @@ public static class ConfigLoaderTests
             var targetPath = System.IO.Path.Combine(Path, fileName);
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
             File.WriteAllText(targetPath, content);
+            return targetPath;
+        }
+
+        public string WriteBinary(string fileName, byte[] content)
+        {
+            var targetPath = System.IO.Path.Combine(Path, fileName);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
+            File.WriteAllBytes(targetPath, content);
             return targetPath;
         }
 

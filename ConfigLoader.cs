@@ -77,7 +77,7 @@ internal static class ConfigLoader
 
             if (!Uri.TryCreate(document.Uri, UriKind.Absolute, out var uri))
             {
-                throw new InvalidOperationException($"Invalid uri '{document.Uri}'.");
+                uri = TryCreateFileUri(document.Uri, baseDirectory) ?? throw new InvalidOperationException($"Invalid uri '{document.Uri}'.");
             }
 
             if (!seen.Add(uri.ToString()))
@@ -104,6 +104,24 @@ internal static class ConfigLoader
         }
 
         return entries;
+    }
+
+    private static Uri? TryCreateFileUri(string value, string baseDirectory)
+    {
+        if (!value.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var relativePart = value.Substring("file://".Length);
+        if (relativePart.StartsWith("./", StringComparison.Ordinal) || relativePart.StartsWith(".\\", StringComparison.Ordinal))
+        {
+            relativePart = relativePart.Substring(2);
+        }
+
+        var combined = Path.Combine(baseDirectory, relativePart.TrimStart('/', '\\'));
+        var fullPath = Path.GetFullPath(combined);
+        return new Uri(fullPath);
     }
 
     private static SignatureValidationMode ParseSignatureMode(string? value)
