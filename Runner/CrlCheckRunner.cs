@@ -295,7 +295,7 @@ internal sealed class CrlCheckRunner
         return string.Format(CultureInfo.InvariantCulture, "{0} bytes", bytes);
     }
 
-    #pragma warning disable CA1031
+#pragma warning disable CA1031
     private async Task<DateTime?> TryGetLastFetchAsync(
         CrlConfigEntry entry,
         RunDiagnostics diagnostics,
