@@ -62,8 +62,8 @@ public static class CsvReporterTests
 
         Assert.True(File.Exists(path));
         var content = await File.ReadAllTextAsync(path);
-        var formattedPrev = previousFetch.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-        var formattedRun = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var formattedPrev = previousFetch.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var formattedRun = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         Assert.Contains("URI,Issuer_Name,Status,This_Update_UTC,Next_Update_UTC,CRL_Size_bytes,Download_Duration_ms,Signature_Valid,Revoked_Count,Checked_Time_UTC,Previous_Checked_Time_UTC,CRL_Type,Status_Details", content, StringComparison.Ordinal);
         Assert.Contains("Issuer_Name", content, StringComparison.Ordinal);
         Assert.Contains("CN=CA", content, StringComparison.Ordinal);

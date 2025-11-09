@@ -110,7 +110,7 @@ internal static class CsvReportFormatter
 
     private static string FormatTimestamp(DateTime value)
     {
-        return value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        return value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
     }
 
     private static string FormatNullableTimestamp(DateTime? value)

@@ -11,7 +11,7 @@ namespace CrlMonitor.Reporting;
 
 internal sealed class ConsoleReporter : IReporter
 {
-    private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+    private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss'Z'";
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
     private readonly ReportingStatus _status;

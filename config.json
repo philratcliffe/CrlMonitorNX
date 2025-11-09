@@ -25,13 +25,13 @@
     "include_full_csv": true
   },
   "alerts": {
-    "enabled": false,
+    "enabled": true,
     "recipients": [
-      "oncall@example.com",
-      "compliance@example.com"
+      "alert@redkestrel.co.uk",
+      "admin@redkestrel.co.uk"
     ],
     "statuses": ["ERROR", "EXPIRED", "EXPIRING"],
-    "cooldown_hours": 6,
+    "cooldown_hours": 0.1,
     "subject_prefix": "[CRL Alert]",
     "include_details": true
   },
@@ -43,7 +43,7 @@
       "expiry_threshold": 0.8
     },
     {
-      "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
+      "uri": "http://crlX.globalsign.com/gsrsaovsslca2018.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.1
@@ -57,7 +57,7 @@
       "uri": "file://./examples/crls/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
-      "expiry_threshold": 0.8
+      "expiry_threshold": 0.1
     },
     {
       "uri": "ldap://dc1.example.com/CN=Example,O=Example Corp",
