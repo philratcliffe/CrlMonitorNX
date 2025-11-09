@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using CrlMonitor;
 using CrlMonitor.Crl;
+using CrlMonitor.Notifications;
 using Xunit;
 
 namespace CrlMonitor.Tests;
@@ -200,6 +201,87 @@ public static class ConfigLoaderTests
     }
 
     /// <summary>
+    /// Ensures report and alert sections are parsed.
+    /// </summary>
+    [Fact]
+    public static void LoadParsesReportsAndAlerts()
+    {
+        using var temp = new TempFolder();
+        var caPath = temp.WriteFile("ca.pem", "dummy");
+        var configPath = temp.WriteJson("config.json", $$"""
+        {
+          "console_reports": false,
+          "csv_reports": false,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 2525,
+            "username": "svc",
+            "password": "pw",
+            "from": "CRL Monitor <svc@example.com>"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "weekly",
+            "recipients": ["ops@example.com"],
+            "subject": "Weekly CRL",
+            "include_summary": true,
+            "include_full_csv": false
+          },
+          "alerts": {
+            "enabled": true,
+            "recipients": ["oncall@example.com"],
+            "statuses": ["ERROR", "EXPIRED", "EXPIRING"],
+            "cooldown_hours": 12,
+            "subject_prefix": "[ALERT]",
+            "include_details": true
+          },
+          "uris": [
+            {
+              "uri": "http://example.com/root.crl",
+              "signature_validation_mode": "ca-cert",
+              "ca_certificate_path": "ca.pem"
+            }
+          ]
+        }
+        """);
+
+        var options = ConfigLoader.Load(configPath);
+
+        Assert.NotNull(options.Reports);
+        var reports = options.Reports!;
+        Assert.True(reports.Enabled);
+        Assert.Equal(ReportFrequency.Weekly, reports.Frequency);
+        Assert.Single(reports.Recipients);
+        Assert.Equal("Weekly CRL", reports.Subject);
+        Assert.True(reports.IncludeSummary);
+        Assert.False(reports.IncludeFullCsv);
+        Assert.Equal("smtp.example.com", reports.Smtp.Host);
+        Assert.Equal(2525, reports.Smtp.Port);
+        Assert.Equal("svc", reports.Smtp.Username);
+        Assert.Equal("pw", reports.Smtp.Password);
+        Assert.Equal("CRL Monitor <svc@example.com>", reports.Smtp.From);
+        Assert.True(reports.Smtp.EnableStartTls);
+
+        Assert.NotNull(options.Alerts);
+        var alerts = options.Alerts!;
+        Assert.True(alerts.Enabled);
+        Assert.Single(alerts.Recipients);
+        Assert.Equal(TimeSpan.FromHours(12), alerts.Cooldown);
+        Assert.Equal("[ALERT]", alerts.SubjectPrefix);
+        Assert.True(alerts.IncludeDetails);
+        Assert.Equal(3, alerts.Statuses.Count);
+        Assert.Contains("ERROR", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("EXPIRED", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("EXPIRING", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
+        Assert.Equal(reports.Smtp, alerts.Smtp);
+    }
+
+    /// <summary>
     /// Ensures expiry thresholds stay within the accepted range.
     /// </summary>
     [Fact]
@@ -226,6 +308,152 @@ public static class ConfigLoaderTests
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
         Assert.Contains("expiry_threshold", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Ensures alerts require at least one recipient when enabled.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenAlertsMissingRecipients()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "alerts": {
+            "enabled": true,
+            "recipients": [],
+            "statuses": ["ERROR"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("alerts.recipients", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Ensures alerts require at least one status when enabled.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenAlertsMissingStatuses()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "alerts": {
+            "enabled": true,
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("alerts.statuses", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Ensures SMTP password can be sourced from environment variable.
+    /// </summary>
+    [Fact]
+    public static void LoadReadsSmtpPasswordFromEnvironment()
+    {
+        var previous = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+        Environment.SetEnvironmentVariable("SMTP_PASSWORD", "env-secret");
+        try
+        {
+            using var temp = new TempFolder();
+            var configPath = temp.WriteJson("config.json", """
+            {
+              "console_reports": true,
+              "csv_reports": true,
+              "csv_output_path": "report.csv",
+              "csv_append_timestamp": false,
+              "fetch_timeout_seconds": 30,
+              "max_parallel_fetches": 1,
+              "state_file_path": "state.json",
+              "smtp": {
+                "host": "smtp.example.com",
+                "port": 587,
+                "username": "svc",
+                "from": "svc@example.com"
+              },
+              "reports": {
+                "enabled": true,
+                "frequency": "daily",
+                "recipients": ["ops@example.com"]
+              },
+              "uris": [
+                { "uri": "http://example.com/root.crl" }
+              ]
+            }
+            """);
+
+            var options = ConfigLoader.Load(configPath);
+
+            Assert.Equal("env-secret", options.Reports!.Smtp.Password);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("SMTP_PASSWORD", previous);
+        }
+    }
+
+    /// <summary>
+    /// Ensures invalid report frequency is rejected.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenReportFrequencyInvalid()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 25,
+            "username": "svc",
+            "password": "pw",
+            "from": "svc@example.com"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "hourly",
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("reports.frequency", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

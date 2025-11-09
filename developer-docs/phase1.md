@@ -43,13 +43,17 @@
   - If mode `ca-cert`: load provided CA cert, run `crl.Verify(publicKey)`; mark status `Valid` or `Invalid`.
 
 ### Health Evaluation
-- `CrlHealthEvaluator` (CrlMonitor namespace): method `CrlHealthStatus Evaluate(ParsedCrl parsed, DateTime now)` returning OK/STALE/EXPIRED/ERROR based on next update + thresholds from config.
+- `CrlHealthEvaluator` (CrlMonitor namespace): method `CrlHealthStatus Evaluate(ParsedCrl parsed, DateTime now)` returning OK/EXPIRING/EXPIRED/ERROR based on next update + thresholds from config.
 
 ### State Store
 - `IStateStore`
   - `Task<DateTime?> GetLastFetchAsync(Uri uri, CancellationToken ct)`
   - `Task SaveLastFetchAsync(Uri uri, DateTime fetchedAt, CancellationToken ct)`
-- `FileStateStore` writing JSON map under `state_file_path`. Uses async lock to stay thread-safe.
+  - `Task<DateTime?> GetLastReportSentAsync(CancellationToken ct)`
+  - `Task SaveLastReportSentAsync(DateTime sentAtUtc, CancellationToken ct)`
+  - `Task<DateTime?> GetAlertCooldownAsync(string key, CancellationToken ct)`
+  - `Task SaveAlertCooldownAsync(string key, DateTime triggeredAtUtc, CancellationToken ct)`
+- `FileStateStore` now persists a JSON object with `last_fetch`, `last_report_sent_utc`, and `alert_cooldowns` sections (and migrates legacy flat dictionaries). Uses async lock to stay thread-safe.
 
 ### Runner (Core Orchestrator)
 - `CrlCheckRunner`
@@ -63,8 +67,10 @@
 - `IReporter`
   - `Task ReportAsync(CrlCheckRun run, CancellationToken ct)`
 - `ConsoleReporter`: consumes `IConsole` abstraction so it can be disabled or redirected.
-- `CsvReporter`: writes CSV to `CsvOutputPath`, appending timestamp if enabled.
-- `Reporter` coordinator: takes config flags (`ConsoleReports`, `CsvReports`), holds reporters, and calls `ReportAsync` sequentially.
+- `CsvReporter`: writes CSV to `CsvOutputPath`, appending timestamp if enabled; CSV formatting lives in `CsvReportFormatter` so other reporters can reuse it.
+- `EmailReportReporter`: honours `reports` config, enforces frequency (daily/weekly), builds optional summary + CSV attachment, and tracks send timestamps via `IStateStore`. Uses the global `smtp` block shared across all email surfaces.
+- `AlertReporter`: inspects each result for selected statuses (e.g., ERROR, EXPIRED, EXPIRING, WARNING), enforces cooldowns per URI/status combination, and dispatches alert emails via the same global SMTP settings.
+- `CompositeReporter`: takes config flags, holds reporters, and calls `ReportAsync` sequentially.
 
 ### Program Flow (Phase 1)
 1. `Program` loads config via `ConfigLoader`.

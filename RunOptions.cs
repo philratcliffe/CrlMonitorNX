@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CrlMonitor.Notifications;
 
 namespace CrlMonitor;
 
@@ -11,4 +12,6 @@ internal sealed record RunOptions(
     TimeSpan FetchTimeout,
     int MaxParallelFetches,
     string StateFilePath,
-    IReadOnlyList<CrlConfigEntry> Crls);
+    IReadOnlyList<CrlConfigEntry> Crls,
+    ReportOptions? Reports,
+    AlertOptions? Alerts);

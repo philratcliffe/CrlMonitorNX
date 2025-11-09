@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CrlMonitor.Crl;
+using CrlMonitor.Notifications;
 
 namespace CrlMonitor;
 
@@ -12,6 +13,8 @@ internal static class ConfigLoader
     private const double DefaultExpiryThreshold = 0.8;
     private const double MinExpiryThreshold = 0.1;
     private const double MaxExpiryThreshold = 1.0;
+    private const string DefaultReportSubject = "CRL Health Report";
+    private const string DefaultAlertPrefix = "[CRL Alert]";
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -48,6 +51,9 @@ internal static class ConfigLoader
         }
 
         var entries = BuildEntries(document.Uris, configDirectory);
+        var smtpOptions = document.Smtp != null ? ParseSmtp(document.Smtp, "smtp") : null;
+        var reportOptions = ParseReportOptions(document.Reports, smtpOptions);
+        var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
         return new RunOptions(
             document.ConsoleReports ?? true,
             document.CsvReports ?? true,
@@ -56,8 +62,11 @@ internal static class ConfigLoader
             TimeSpan.FromSeconds(timeoutSeconds),
             maxParallel,
             ResolvePath(configDirectory, stateFilePath),
-            entries);
+            entries,
+            reportOptions,
+            alertOptions);
     }
+
 
     private static List<CrlConfigEntry> BuildEntries(IReadOnlyList<CrlDocument>? documents, string baseDirectory)
     {
@@ -216,6 +225,218 @@ internal static class ConfigLoader
         return value;
     }
 
+    private static ReportOptions? ParseReportOptions(ReportsDocument? document, SmtpOptions? smtp)
+    {
+        if (document == null || document.Enabled != true)
+        {
+            return null;
+        }
+
+        if (smtp == null)
+        {
+            throw new InvalidOperationException("smtp block is required when reports are enabled.");
+        }
+
+        var frequency = ParseReportFrequency(document.Frequency);
+        var recipients = ParseRecipients(document.Recipients, "reports.recipients");
+        var subject = string.IsNullOrWhiteSpace(document.Subject)
+            ? DefaultReportSubject
+            : document.Subject!;
+        var includeSummary = document.IncludeSummary ?? true;
+        var includeFullCsv = document.IncludeFullCsv ?? true;
+        return new ReportOptions(
+            true,
+            frequency,
+            recipients,
+            subject,
+            includeSummary,
+            includeFullCsv,
+            smtp);
+    }
+
+    private static AlertOptions? ParseAlertOptions(AlertsDocument? document, SmtpOptions? smtp)
+    {
+        if (document == null || document.Enabled != true)
+        {
+            return null;
+        }
+
+        var recipients = ParseRecipients(document.Recipients, "alerts.recipients");
+        var statuses = ParseAlertStatuses(document.Statuses);
+
+        var cooldownHours = document.CooldownHours ?? 6;
+        if (cooldownHours <= 0 || cooldownHours > 168)
+        {
+            throw new InvalidOperationException("alerts.cooldown_hours must be between 0 and 168.");
+        }
+
+        var subjectPrefix = string.IsNullOrWhiteSpace(document.SubjectPrefix)
+            ? DefaultAlertPrefix
+            : document.SubjectPrefix!;
+        var includeDetails = document.IncludeDetails ?? true;
+        if (smtp == null)
+        {
+            throw new InvalidOperationException("smtp block is required when alerts are enabled.");
+        }
+
+        return new AlertOptions(
+            true,
+            recipients,
+            statuses,
+            TimeSpan.FromHours(cooldownHours),
+            subjectPrefix,
+            includeDetails,
+            smtp);
+    }
+
+    private static ReportFrequency ParseReportFrequency(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException("reports.frequency is required when reports are enabled.");
+        }
+
+        return value.Trim().ToUpperInvariant() switch
+        {
+            "DAILY" => ReportFrequency.Daily,
+            "WEEKLY" => ReportFrequency.Weekly,
+            _ => throw new InvalidOperationException("reports.frequency must be 'daily' or 'weekly'.")
+        };
+    }
+
+    private static List<string> ParseAlertStatuses(List<string>? statuses)
+    {
+        var collected = new List<string>();
+        if (statuses != null)
+        {
+            foreach (var status in statuses)
+            {
+                if (string.IsNullOrWhiteSpace(status))
+                {
+                    continue;
+                }
+
+                AddStatus(collected, NormalizeAlertStatus(status));
+            }
+        }
+
+        if (collected.Count == 0)
+        {
+            throw new InvalidOperationException("alerts.statuses must contain at least one status when alerts are enabled.");
+        }
+
+        return collected;
+    }
+
+    private static string NormalizeAlertStatus(string value)
+    {
+        var normalized = value.Trim().ToUpperInvariant();
+        return normalized switch
+        {
+            "OK" => "OK",
+            "WARNING" => "WARNING",
+            "EXPIRING" => "EXPIRING",
+            "EXPIRED" => "EXPIRED",
+            "ERROR" => "ERROR",
+            _ => throw new InvalidOperationException($"alerts.statuses entry '{value}' is not supported. Allowed values: OK, WARNING, EXPIRING, EXPIRED, ERROR.")
+        };
+    }
+
+    private static void AddStatus(List<string> statuses, string status)
+    {
+        foreach (var existing in statuses)
+        {
+            if (string.Equals(existing, status, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        statuses.Add(status);
+    }
+
+    private static string ResolveSmtpPassword(string? passwordFromConfig)
+    {
+        if (!string.IsNullOrWhiteSpace(passwordFromConfig))
+        {
+            return passwordFromConfig;
+        }
+
+        var envPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+        if (string.IsNullOrWhiteSpace(envPassword))
+        {
+            throw new InvalidOperationException("SMTP password must be provided via config or SMTP_PASSWORD environment variable.");
+        }
+
+        return envPassword;
+    }
+
+    private static List<string> ParseRecipients(List<string>? recipients, string propertyName)
+    {
+        if (recipients == null || recipients.Count == 0)
+        {
+            throw new InvalidOperationException($"{propertyName} must contain at least one recipient.");
+        }
+
+        var list = new List<string>(recipients.Count);
+        foreach (var recipient in recipients)
+        {
+            if (string.IsNullOrWhiteSpace(recipient))
+            {
+                continue;
+            }
+
+            list.Add(recipient.Trim());
+        }
+
+        if (list.Count == 0)
+        {
+            throw new InvalidOperationException($"{propertyName} must contain at least one recipient.");
+        }
+
+        return list;
+    }
+
+    private static SmtpOptions ParseSmtp(SmtpDocument? document, string propertyName)
+    {
+        if (document == null)
+        {
+            throw new InvalidOperationException($"{propertyName} is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(document.Host))
+        {
+            throw new InvalidOperationException($"{propertyName}.host is required.");
+        }
+
+        if (document.Port is null or <= 0 or > 65535)
+        {
+            throw new InvalidOperationException($"{propertyName}.port must be between 1 and 65535.");
+        }
+
+        if (string.IsNullOrWhiteSpace(document.Username))
+        {
+            throw new InvalidOperationException($"{propertyName}.username is required.");
+        }
+
+        var password = ResolveSmtpPassword(document.Password);
+
+        if (string.IsNullOrWhiteSpace(document.From))
+        {
+            throw new InvalidOperationException($"{propertyName}.from is required.");
+        }
+
+        var enableStartTls = document.EnableStartTls ?? true;
+
+        return new SmtpOptions(
+            document.Host.Trim(),
+            document.Port.Value,
+            document.Username,
+            password,
+            document.From,
+            enableStartTls);
+    }
+
     private sealed record ConfigDocument
     {
         [JsonPropertyName("console_reports")]
@@ -238,6 +459,15 @@ internal static class ConfigLoader
 
         [JsonPropertyName("state_file_path")]
         public string? StateFilePath { get; init; }
+
+        [JsonPropertyName("smtp")]
+        public SmtpDocument? Smtp { get; init; }
+
+        [JsonPropertyName("reports")]
+        public ReportsDocument? Reports { get; init; }
+
+        [JsonPropertyName("alerts")]
+        public AlertsDocument? Alerts { get; init; }
 
         [JsonPropertyName("uris")]
         public List<CrlDocument>? Uris { get; init; }
@@ -268,5 +498,69 @@ internal static class ConfigLoader
 
         [JsonPropertyName("password")]
         public string? Password { get; init; }
+    }
+
+    private sealed record ReportsDocument
+    {
+        [JsonPropertyName("enabled")]
+        public bool? Enabled { get; init; }
+
+        [JsonPropertyName("frequency")]
+        public string? Frequency { get; init; }
+
+        [JsonPropertyName("recipients")]
+        public List<string>? Recipients { get; init; }
+
+        [JsonPropertyName("subject")]
+        public string? Subject { get; init; }
+
+        [JsonPropertyName("include_summary")]
+        public bool? IncludeSummary { get; init; }
+
+        [JsonPropertyName("include_full_csv")]
+        public bool? IncludeFullCsv { get; init; }
+    }
+
+    private sealed record AlertsDocument
+    {
+        [JsonPropertyName("enabled")]
+        public bool? Enabled { get; init; }
+
+        [JsonPropertyName("recipients")]
+        public List<string>? Recipients { get; init; }
+
+        [JsonPropertyName("statuses")]
+        public List<string>? Statuses { get; init; }
+
+        [JsonPropertyName("cooldown_hours")]
+        public double? CooldownHours { get; init; }
+
+        [JsonPropertyName("subject_prefix")]
+        public string? SubjectPrefix { get; init; }
+
+        [JsonPropertyName("include_details")]
+        public bool? IncludeDetails { get; init; }
+    }
+
+
+    private sealed record SmtpDocument
+    {
+        [JsonPropertyName("host")]
+        public string? Host { get; init; }
+
+        [JsonPropertyName("port")]
+        public int? Port { get; init; }
+
+        [JsonPropertyName("username")]
+        public string? Username { get; init; }
+
+        [JsonPropertyName("password")]
+        public string? Password { get; init; }
+
+        [JsonPropertyName("from")]
+        public string? From { get; init; }
+
+        [JsonPropertyName("enable_starttls")]
+        public bool? EnableStartTls { get; init; }
     }
 }

@@ -8,9 +8,9 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 
 - Fetching CRLs over HTTP(S) and LDAP(S).
 - Parsing CRLs and extracting issuer, validity, and revocation data.
-- Evaluating CRL health (OK/STALE/EXPIRED/ERROR).
+- Evaluating CRL health (OK/EXPIRING/EXPIRED/ERROR).
 - Persisting per-URI state (last successful fetch timestamp).
-- Generating console, CSV, and OPTIONAL email reports.
+- Generating console, CSV, and optional email reports plus targeted alert e-mails.
 - Capturing diagnostics (state persistence failures, signature validation warnings, configuration warnings).
 - Configurable signature validation modes (initial release):
   - `none` — skip signature checks and mark status as "Skipped".
@@ -48,11 +48,12 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
   - Determine health status and produce result row.
   - Record fetch duration (ms).
   - Update state file on success, tolerant of IO failures.
-- Aggregate warnings (state, signature, config) and surface via logging and reports.
+- Aggregate warnings (state, signature, config) and surface via logging, email reports, and alerts.
 - Provide reporters:
   - Console: table output, safe when output redirected/non-interactive.
   - CSV: deterministic schema matching existing format.
-  - (Future) Email: placeholder warnings when enabled but unimplemented.
+- Email reports: scheduled summaries (daily/weekly) with optional CSV attachment via SMTP.
+- Email alerts: status-based notifications (ERROR/EXPIRED/EXPIRING/WARNING/OK, typically ERROR/EXPIRED) with cooldowns.
 
 ### Non-Functional
 
@@ -65,13 +66,19 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 ### Configuration Inputs
 
 - Standard config fields (SMTP, reporting flags, timeouts, caches).
+- Global `smtp` block (host/port/username/from/starttls) used by all email reporters.
+- `reports` block (enabled/frequency/recipients) controlling scheduled summaries.
+- `alerts` block (enabled/statuses/cooldown/recipients) controlling which statuses trigger notifications.
 - `signature_validation_level` with default `full-chain`.
 - `alert_on_signature_failure` boolean to trigger diagnostics.
+- `smtp.password` field optional when `SMTP_PASSWORD` environment variable is present; loader falls back to the env var to avoid storing secrets in config.
 
 ### Outputs
 
 - Console stdout summary.
 - CSV file when enabled.
+- Scheduled email reports (when configured) with optional CSV attachment.
+- Alert emails when selected statuses trigger and cooldown permits.
 - Exit code 0/1.
 - Structured logs (Serilog) containing warnings and timing.
 

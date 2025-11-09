@@ -14,6 +14,12 @@ internal sealed class ConsoleReporter : IReporter
     private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
+    private readonly ReportingStatus _status;
+
+    public ConsoleReporter(ReportingStatus status)
+    {
+        _status = status ?? throw new ArgumentNullException(nameof(status));
+    }
 
     public Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
@@ -96,7 +102,7 @@ internal sealed class ConsoleReporter : IReporter
         return days.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static void WriteSummary(IReadOnlyList<CrlCheckResult> results)
+    private void WriteSummary(IReadOnlyList<CrlCheckResult> results)
     {
         var total = results.Count;
         var ok = results.Count(r => string.Equals(r.Status, "OK", StringComparison.OrdinalIgnoreCase));
@@ -113,6 +119,20 @@ internal sealed class ConsoleReporter : IReporter
         Console.WriteLine($"  Expiring: {expiring}");
         Console.WriteLine($"  Expired:  {expired}");
         Console.WriteLine($"  Errors:   {errors}");
+
+        Console.WriteLine();
+        Console.WriteLine("Report written to:");
+        if (_status.CsvWritten && !string.IsNullOrWhiteSpace(_status.CsvPath))
+        {
+            Console.WriteLine($"  {_status.CsvPath}");
+        }
+        else
+        {
+            Console.WriteLine("  (no CSV generated)");
+        }
+#pragma warning restore CA1303
+#pragma warning disable CA1303
+        Console.WriteLine(_status.EmailReportSent ? "Report email sent successfully." : "Report email not sent.");
 #pragma warning restore CA1303
     }
 

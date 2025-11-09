@@ -12,6 +12,7 @@ using CrlMonitor.Runner;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
 using CrlMonitor.State;
+using CrlMonitor.Notifications;
 
 namespace CrlMonitor;
 
@@ -76,7 +77,8 @@ internal static class Program
             options.MaxParallelFetches,
             cancellationToken).ConfigureAwait(false);
 
-        var reporters = BuildReporters(options);
+        var reportingStatus = new ReportingStatus();
+        var reporters = BuildReporters(options, stateStore, reportingStatus);
         await reporters.ReportAsync(run, cancellationToken).ConfigureAwait(false);
     }
 
@@ -85,17 +87,28 @@ internal static class Program
         return entries ?? Array.Empty<CrlConfigEntry>();
     }
 
-    private static CompositeReporter BuildReporters(RunOptions options)
+    private static CompositeReporter BuildReporters(RunOptions options, IStateStore stateStore, ReportingStatus reportingStatus)
     {
         var reporters = new List<IReporter>();
-        if (options.ConsoleReports)
-        {
-            reporters.Add(new ConsoleReporter());
-        }
-
         if (options.CsvReports)
         {
-            reporters.Add(new CsvReporter(options.CsvOutputPath, options.CsvAppendTimestamp));
+            var csvPath = CsvReporter.ResolveOutputPath(options.CsvOutputPath, options.CsvAppendTimestamp);
+            reporters.Add(new CsvReporter(csvPath, reportingStatus));
+        }
+
+        if (options.Reports != null && options.Reports.Enabled)
+        {
+            reporters.Add(new EmailReportReporter(options.Reports, new SmtpEmailClient(), stateStore, reportingStatus));
+        }
+
+        if (options.Alerts != null && options.Alerts.Enabled)
+        {
+            reporters.Add(new AlertReporter(options.Alerts, new SmtpEmailClient(), stateStore));
+        }
+
+        if (options.ConsoleReports)
+        {
+            reporters.Add(new ConsoleReporter(reportingStatus));
         }
 
         return new CompositeReporter(reporters);

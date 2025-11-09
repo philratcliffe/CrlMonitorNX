@@ -19,7 +19,7 @@ This design describes a modular CRL monitoring engine implemented as a set of co
  │               │                         │                    │
  │       ┌───────▼──────┐      ┌───────────▼────────┐  ┌────────▼────────┐
  │       │ IFetcher     │      │ ICrlParser         │  │ ICrlHealthEval │
- │       │ (HTTP/LDAP)  │      │ (Signature levels) │  │ (OK/STALE/…)   │
+ │       │ (HTTP/LDAP)  │      │ (Signature levels) │  │ (OK/EXPIRING/…)│
  │       └───────┬──────┘      └───────────┬────────┘  └────────┬────────┘
  │               │                         │                    │
  │        ┌──────▼───────┐        ┌────────▼────────┐   ┌────────▼────────┐

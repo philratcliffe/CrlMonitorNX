@@ -24,7 +24,7 @@ public static class CsvReporterTests
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "run.csv");
-        var reporter = new CsvReporter(path, appendTimestamp: false);
+        var reporter = new CsvReporter(path, new ReportingStatus());
         var previousFetch = DateTime.UtcNow.AddHours(-2);
         var generatedAt = DateTime.UtcNow;
         var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
@@ -83,7 +83,7 @@ public static class CsvReporterTests
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "signatures.csv");
-        var reporter = new CsvReporter(path, appendTimestamp: false);
+        var reporter = new CsvReporter(path, new ReportingStatus());
         var timestamp = DateTime.UtcNow;
         var run = new CrlCheckRun(
             new[]

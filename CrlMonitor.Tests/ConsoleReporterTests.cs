@@ -21,7 +21,10 @@ public static class ConsoleReporterTests
     [Fact]
     public static async Task ReportAsyncWritesWarnings()
     {
-        var reporter = new ConsoleReporter();
+        var status = new ReportingStatus();
+        status.RecordCsv("report.csv");
+        status.RecordEmailSent();
+        var reporter = new ConsoleReporter(status);
         var diagnostics = new RunDiagnostics();
         diagnostics.AddRuntimeWarning("Disk full");
         var fetchedAt = DateTime.UtcNow.AddHours(-1);
@@ -63,5 +66,8 @@ public static class ConsoleReporterTests
         Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
         Assert.Contains("Summary:", output, StringComparison.Ordinal);
         Assert.Contains("Disk full", output, StringComparison.Ordinal);
+        Assert.Contains("Report written to:", output, StringComparison.Ordinal);
+        Assert.Contains("report.csv", output, StringComparison.Ordinal);
+        Assert.Contains("Report email sent successfully.", output, StringComparison.Ordinal);
     }
 }
