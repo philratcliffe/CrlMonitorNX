@@ -54,7 +54,7 @@ internal static class HtmlReportWriter
         builder.AppendLine("</style></head><body>");
         builder.AppendLine("<div class=\"container\">");
         builder.AppendLine("<div class=\"card\">");
-        builder.AppendLine(FormattableString.Invariant($"<h1>CRL Health Report</h1><p>Generated at {run.GeneratedAtUtc.ToUniversalTime():yyyy-MM-dd HH:mm:ss'Z'}</p>"));
+        builder.AppendLine(FormattableString.Invariant($"<h1>CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}</p>"));
         builder.AppendLine("<div class=\"summary-grid\">");
         AppendSummaryCard(builder, "CRLs Checked", summary.Total, null);
         AppendSummaryCard(builder, "CRLs OK", summary.Ok, null);
@@ -107,10 +107,7 @@ internal static class HtmlReportWriter
         builder.AppendLine("</tr>");
     }
 
-    private static string FormatDate(DateTime? value)
-    {
-        return value.HasValue ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture) : string.Empty;
-    }
+    private static string FormatDate(DateTime? value) => TimeFormatter.FormatUtc(value);
 
     private static Summary BuildSummary(IReadOnlyList<CrlCheckResult> results)
     {

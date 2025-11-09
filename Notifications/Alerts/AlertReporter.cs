@@ -89,7 +89,7 @@ internal sealed class AlertReporter : IReporter
             builder.AppendLine("--------------------------------------------------");
             builder.AppendLine(FormattableString.Invariant($"URL: {alert.Result.Uri}"));
             builder.AppendLine(FormattableString.Invariant($"Status: {alert.Result.Status}"));
-            builder.AppendLine(FormattableString.Invariant($"Checked: {FormatTimestamp(alert.Result.CheckedAtUtc)}"));
+            builder.AppendLine(FormattableString.Invariant($"Checked: {TimeFormatter.FormatUtc(alert.Result.CheckedAtUtc)}"));
             if (includeDetails && !string.IsNullOrWhiteSpace(alert.Result.ErrorInfo))
             {
                 builder.AppendLine(FormattableString.Invariant($"Details: {alert.Result.ErrorInfo}"));
@@ -163,11 +163,6 @@ internal sealed class AlertReporter : IReporter
     private static string BuildStateKey(string condition, Uri uri)
     {
         return FormattableString.Invariant($"{condition}|{uri}");
-    }
-
-    private static string FormatTimestamp(DateTime value)
-    {
-        return value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
     }
 
     private readonly record struct AlertInstance(string Condition, string StateKey, CrlCheckResult Result);

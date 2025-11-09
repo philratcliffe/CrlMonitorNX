@@ -54,8 +54,8 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None);
 
         var output = writer.ToString();
-        var expectedGenerated = generatedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
-        var expectedPrevious = fetchedAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var expectedGenerated = TimeFormatter.FormatUtc(generatedAt);
+        var expectedPrevious = TimeFormatter.FormatUtc(fetchedAt);
         Assert.Contains("CRL Monitor Report", output, StringComparison.Ordinal);
         Assert.Contains(expectedGenerated, output, StringComparison.Ordinal);
         Assert.Contains("URI", output, StringComparison.Ordinal);

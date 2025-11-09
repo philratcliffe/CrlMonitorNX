@@ -11,7 +11,6 @@ namespace CrlMonitor.Reporting;
 
 internal sealed class ConsoleReporter : IReporter
 {
-    private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss'Z'";
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
     private readonly ReportingStatus _status;
@@ -44,7 +43,7 @@ internal sealed class ConsoleReporter : IReporter
     private static void WriteBanner(DateTime generatedAtUtc, int count)
     {
         var line = new string('=', ConsoleWidth);
-        var timestamp = generatedAtUtc.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture);
+        var timestamp = TimeFormatter.FormatUtc(generatedAtUtc);
 #pragma warning disable CA1303
         Console.WriteLine(line);
         Console.WriteLine("CRL Monitor Report");
@@ -165,7 +164,7 @@ internal sealed class ConsoleReporter : IReporter
             var parts = new List<string>();
             if (entry.PreviousFetchUtc.HasValue)
             {
-                parts.Add($"Previous: {entry.PreviousFetchUtc.Value.ToUniversalTime().ToString(TimestampFormat, CultureInfo.InvariantCulture)}");
+                parts.Add($"Previous: {TimeFormatter.FormatUtc(entry.PreviousFetchUtc.Value)}");
             }
 
             if (!string.IsNullOrWhiteSpace(entry.ErrorInfo))
