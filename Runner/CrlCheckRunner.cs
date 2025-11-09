@@ -129,7 +129,7 @@ internal sealed class CrlCheckRunner
             }
 
             var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
-            diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
+            diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, msg));
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Error,
@@ -146,7 +146,7 @@ internal sealed class CrlCheckRunner
         {
             stopwatch.Stop();
             var friendly = ConvertLdapException(entry.Uri, ldapEx);
-            diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
+            diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, friendly));
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Error,
@@ -162,7 +162,7 @@ internal sealed class CrlCheckRunner
         catch (Exception ex)
         {
             stopwatch.Stop();
-            var message = $"Failed to process '{entry.Uri}': {ex.Message}";
+            var message = BuildProcessingErrorMessage(entry.Uri, ex.Message);
             diagnostics.AddRuntimeWarning(message);
             return new CrlCheckResult(
                 entry.Uri,
@@ -185,6 +185,11 @@ internal sealed class CrlCheckRunner
             53 or 91 or 92 => "Could not connect to LDAP host.",
             _ => $"LDAP error {ex.ErrorCode}: {ex.Message}"
         };
+    }
+
+    private static string BuildProcessingErrorMessage(Uri uri, string reason)
+    {
+        return $"Failed to process '{uri}': {reason}";
     }
 
     private static CrlStatus DetermineStatus(
