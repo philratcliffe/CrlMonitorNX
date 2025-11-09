@@ -40,7 +40,7 @@
   },
   "uris": [
     {
-      "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
+      "uri": "https://crl3.digicert.com/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.8
