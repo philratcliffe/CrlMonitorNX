@@ -184,6 +184,32 @@ public static class ConfigLoaderTests
     }
 
     /// <summary>
+    /// Ensures unsupported URI schemes are rejected.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenSchemeUnsupported()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "uris": [
+            { "uri": "ftp://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("unsupported scheme", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Ensures unsupported signature modes are rejected.
     /// </summary>
     [Fact]

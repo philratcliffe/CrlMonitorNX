@@ -19,6 +19,14 @@ internal static class ConfigLoader
     private const long MaxMaxCrlSizeBytes = 100 * 1024 * 1024;
     private const string DefaultReportSubject = "CRL Health Report";
     private const string DefaultAlertPrefix = "[CRL Alert]";
+    private static readonly HashSet<string> SupportedSchemes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "http",
+        "https",
+        "ldap",
+        "ldaps",
+        "file"
+    };
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -107,6 +115,7 @@ internal static class ConfigLoader
                 uri = TryCreateFileUri(document.Uri, baseDirectory) ?? throw new InvalidOperationException($"Invalid uri '{document.Uri}'.");
             }
 
+            EnsureSupportedScheme(uri);
             if (!seen.Add(uri.ToString()))
             {
                 throw new InvalidOperationException($"Found duplicate uri '{uri}'.");
@@ -219,6 +228,14 @@ internal static class ConfigLoader
         }
 
         return new LdapCredentials(document.Username, document.Password);
+    }
+
+    private static void EnsureSupportedScheme(Uri uri)
+    {
+        if (!SupportedSchemes.Contains(uri.Scheme))
+        {
+            throw new InvalidOperationException($"URI '{uri}' uses unsupported scheme '{uri.Scheme}'. Allowed schemes: http, https, ldap, ldaps, file.");
+        }
     }
 
     private static bool IsLdapScheme(Uri uri)
