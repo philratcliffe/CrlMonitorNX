@@ -103,21 +103,16 @@ internal sealed class ConsoleReporter : IReporter
 
     private void WriteSummary(IReadOnlyList<CrlCheckResult> results)
     {
-        var total = results.Count;
-        var ok = results.Count(r => r.Status == CrlStatus.Ok);
-        var warning = results.Count(r => r.Status == CrlStatus.Warning);
-        var expiring = results.Count(r => r.Status == CrlStatus.Expiring);
-        var expired = results.Count(r => r.Status == CrlStatus.Expired);
-        var errors = results.Count(r => r.Status == CrlStatus.Error);
+        var summary = CrlStatusSummary.FromResults(results);
 
 #pragma warning disable CA1303
         Console.WriteLine("Summary:");
-        Console.WriteLine($"  Total:    {total}");
-        Console.WriteLine($"  OK:       {ok}");
-        Console.WriteLine($"  Warning:  {warning}");
-        Console.WriteLine($"  Expiring: {expiring}");
-        Console.WriteLine($"  Expired:  {expired}");
-        Console.WriteLine($"  Errors:   {errors}");
+        Console.WriteLine($"  Total:    {summary.Total}");
+        Console.WriteLine($"  OK:       {summary.Ok}");
+        Console.WriteLine($"  Warning:  {summary.Warning}");
+        Console.WriteLine($"  Expiring: {summary.Expiring}");
+        Console.WriteLine($"  Expired:  {summary.Expired}");
+        Console.WriteLine($"  Errors:   {summary.Errors}");
 
         Console.WriteLine();
         Console.WriteLine("Report written to:");
