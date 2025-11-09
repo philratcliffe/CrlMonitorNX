@@ -45,6 +45,24 @@ public static class CrlSignatureValidatorTests
     }
 
     /// <summary>
+    /// Ensures oversized CA certificates skip validation.
+    /// </summary>
+    [Fact]
+    public static void ValidateSkipsWhenCaCertTooLarge()
+    {
+        var (parsed, _, _, _) = CrlTestBuilder.BuildParsedCrl(false);
+        var oversized = new byte[205_000];
+        using var temp = new TempFile(oversized);
+        var validator = new CrlSignatureValidator();
+        var entry = new CrlConfigEntry(new Uri("http://example.com"), SignatureValidationMode.CaCertificate, temp.Path, 0.8, null, 10 * 1024 * 1024);
+
+        var result = validator.Validate(parsed, entry);
+
+        Assert.Equal("Skipped", result.Status);
+        Assert.Contains("200 KB", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Ensures invalid signatures are flagged.
     /// </summary>
     [Fact]

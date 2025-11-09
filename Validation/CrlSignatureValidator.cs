@@ -10,6 +10,8 @@ namespace CrlMonitor.Validation;
 
 internal sealed class CrlSignatureValidator : ICrlSignatureValidator
 {
+    private const long MaxCaCertificateBytes = 200 * 1024;
+
     public SignatureValidationResult Validate(ParsedCrl parsedCrl, CrlConfigEntry entry)
     {
         ArgumentNullException.ThrowIfNull(parsedCrl);
@@ -28,6 +30,12 @@ internal sealed class CrlSignatureValidator : ICrlSignatureValidator
         if (!File.Exists(entry.CaCertificatePath))
         {
             return SignatureValidationResult.Failure("CA certificate file not found.");
+        }
+
+        var fileInfo = new FileInfo(entry.CaCertificatePath);
+        if (fileInfo.Length > MaxCaCertificateBytes)
+        {
+            return SignatureValidationResult.Skipped("CA certificate exceeds 200 KB limit.");
         }
 
         try

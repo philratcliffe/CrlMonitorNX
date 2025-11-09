@@ -74,6 +74,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 - `signature_validation_level` with default `full-chain`.
 - `alert_on_signature_failure` boolean to trigger diagnostics.
 - `smtp.password` field optional when `SMTP_PASSWORD` environment variable is present; loader falls back to the env var to avoid storing secrets in config.
+- CA certificates larger than 200 KB are considered invalid inputs; signature validation is skipped with a warning to avoid processing corrupted or malicious anchors.
 
 ### Outputs
 
