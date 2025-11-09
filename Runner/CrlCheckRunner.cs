@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.DirectoryServices.Protocols;
@@ -120,6 +121,23 @@ internal sealed class CrlCheckRunner
                 completedAt,
                 signature.Status);
         }
+        catch (CrlTooLargeException ex)
+        {
+            stopwatch.Stop();
+            var message = BuildOversizeStatusMessage(ex);
+            diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, message));
+            return new CrlCheckResult(
+                entry.Uri,
+                CrlStatus.Warning,
+                stopwatch.Elapsed,
+                null,
+                message,
+                previousFetch,
+                downloadDuration,
+                contentLength,
+                DateTime.UtcNow,
+                null);
+        }
         catch (OperationCanceledException) when (fetchTimeout > TimeSpan.Zero)
         {
             stopwatch.Stop();
@@ -192,6 +210,17 @@ internal sealed class CrlCheckRunner
         return $"Failed to process '{uri}': {reason}";
     }
 
+    private static string BuildOversizeStatusMessage(CrlTooLargeException ex)
+    {
+        var message = $"Skipped: CRL exceeded {FormatSize(ex.LimitBytes)} limit.";
+        if (ex.ObservedBytes.HasValue)
+        {
+            message += $" Observed {FormatSize(ex.ObservedBytes.Value)}.";
+        }
+
+        return message;
+    }
+
     private static CrlStatus DetermineStatus(
         CrlConfigEntry entry,
         RunDiagnostics diagnostics,
@@ -247,6 +276,23 @@ internal sealed class CrlCheckRunner
         }
 
         return parts.Count == 0 ? null : string.Join(" | ", parts);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        const double OneKilobyte = 1024d;
+        const double OneMegabyte = OneKilobyte * 1024d;
+        if (bytes >= OneMegabyte)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} MB", bytes / OneMegabyte);
+        }
+
+        if (bytes >= OneKilobyte)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} KB", bytes / OneKilobyte);
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0} bytes", bytes);
     }
 
     #pragma warning disable CA1031

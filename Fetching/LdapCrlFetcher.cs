@@ -33,6 +33,10 @@ internal sealed class LdapCrlFetcher : ICrlFetcher
         }
 
         var crlBytes = values[0];
+        if (crlBytes.LongLength > entry.MaxCrlSizeBytes)
+        {
+            throw new CrlTooLargeException(entry.Uri, entry.MaxCrlSizeBytes, crlBytes.LongLength);
+        }
         var elapsed = DateTime.UtcNow - start;
         return Task.FromResult(new FetchedCrl(crlBytes, elapsed, crlBytes.Length));
     }

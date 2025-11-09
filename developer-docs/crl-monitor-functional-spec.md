@@ -70,6 +70,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 - `html_report_enabled` plus `html_report_path`/`html_report_url` to emit a shareable HTML report and include links in emails.
 - `reports` block (enabled/frequency/recipients) controlling scheduled summaries.
 - `alerts` block (enabled/statuses/cooldown/recipients) controlling which statuses trigger notifications.
+- `max_crl_size_bytes` cap applied globally (default 10 MB) with optional per-URI `max_crl_size_bytes` overrides to prevent oversized payloads.
 - `signature_validation_level` with default `full-chain`.
 - `alert_on_signature_failure` boolean to trigger diagnostics.
 - `smtp.password` field optional when `SMTP_PASSWORD` environment variable is present; loader falls back to the env var to avoid storing secrets in config.
@@ -88,7 +89,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 
 - Running with default config fetches all URIs, produces console table, and optionally CSV.
 - Invalid URI yields “Failed” result without aborting run.
-- CRL exceeding max size yields failure result and warning.
+- CRL exceeding max size yields a WARNING result with “Skipped: CRL exceeded <limit>” status detail and runtime diagnostics.
 - Signature validation mode `none` marks results as "Skipped" without warnings.
 - Signature validation mode `ca-cert` verifies CRLs against the supplied certificate path.
 - State file write errors logged and reported without crashing.

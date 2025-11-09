@@ -21,7 +21,15 @@ internal sealed class HttpCrlFetcher : ICrlFetcher
         var start = DateTime.UtcNow;
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        var limit = entry.MaxCrlSizeBytes;
+        var declaredLength = response.Content.Headers.ContentLength;
+        if (declaredLength.HasValue && declaredLength.Value > limit)
+        {
+            throw new CrlTooLargeException(entry.Uri, limit, declaredLength.Value);
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var bytes = await CrlContentLimiter.ReadAllBytesAsync(stream, entry.Uri, limit, cancellationToken).ConfigureAwait(false);
         var elapsed = DateTime.UtcNow - start;
         return new FetchedCrl(bytes, elapsed, bytes.LongLength);
     }

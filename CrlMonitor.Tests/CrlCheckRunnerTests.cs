@@ -70,6 +70,29 @@ public static class CrlCheckRunnerTests
     }
 
     /// <summary>
+    /// Ensures oversized payloads produce warnings rather than errors.
+    /// </summary>
+    [Fact]
+    public static async Task RunAsyncReturnsWarningWhenCrlTooLarge()
+    {
+        var parsed = CrlTestBuilder.BuildParsedCrl(false).Parsed;
+        var parser = new StubParser(parsed);
+        var entry = CreateEntry("http://example.com/oversize");
+        var fetcher = new StubFetcher(Array.Empty<byte>(), new CrlTooLargeException(entry.Uri, entry.MaxCrlSizeBytes, entry.MaxCrlSizeBytes + 1));
+        var resolver = new StubResolver(fetcher);
+        var signatureValidator = new StubSignatureValidator("Valid");
+        var healthEvaluator = new StubHealthEvaluator("Healthy");
+        var runner = new CrlCheckRunner(resolver, parser, signatureValidator, healthEvaluator, new NullStateStore());
+
+        var run = await runner.RunAsync(new[] { entry }, TimeSpan.Zero, 1, CancellationToken.None);
+
+        var result = Assert.Single(run.Results);
+        Assert.Equal(CrlStatus.Warning, result.Status);
+        Assert.Contains("Skipped: CRL exceeded", result.ErrorInfo, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEmpty(run.Diagnostics.RuntimeWarnings);
+    }
+
+    /// <summary>
     /// Ensures disabled signature validation yields a warning.
     /// </summary>
     [Fact]
@@ -163,7 +186,7 @@ public static class CrlCheckRunnerTests
                 new CrlHealthEvaluator(),
                 new NullStateStore());
 
-            var entry = new CrlConfigEntry(new Uri(crlPath), SignatureValidationMode.CaCertificate, caPath, 0.8, null);
+            var entry = new CrlConfigEntry(new Uri(crlPath), SignatureValidationMode.CaCertificate, caPath, 0.8, null, 10 * 1024 * 1024);
             var fileEntries = new[] { entry };
             var run = await runner.RunAsync(fileEntries, TimeSpan.FromSeconds(5), 1, CancellationToken.None);
 
@@ -298,7 +321,7 @@ public static class CrlCheckRunnerTests
 
     private static CrlConfigEntry CreateEntry(string uri)
     {
-        return new CrlConfigEntry(new Uri(uri), SignatureValidationMode.None, null, 0.8, null);
+        return new CrlConfigEntry(new Uri(uri), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
     }
 
     private sealed class StubResolver : IFetcherResolver
@@ -393,7 +416,8 @@ public static class CrlCheckRunnerTests
     {
         private readonly TimeSpan _delay;
         private int _current;
-        public int MaxConcurrency { get; private set; }
+        private int _maxConcurrency;
+        public int MaxConcurrency => Volatile.Read(ref _maxConcurrency);
 
         public ConcurrentFetcher(TimeSpan delay)
         {
@@ -403,7 +427,7 @@ public static class CrlCheckRunnerTests
         public async Task<FetchedCrl> FetchAsync(CrlConfigEntry entry, CancellationToken cancellationToken)
         {
             var inFlight = Interlocked.Increment(ref _current);
-            MaxConcurrency = Math.Max(MaxConcurrency, inFlight);
+            UpdateMax(inFlight);
             try
             {
                 await Task.Delay(_delay, cancellationToken).ConfigureAwait(false);
@@ -414,6 +438,21 @@ public static class CrlCheckRunnerTests
             }
 
             return new FetchedCrl(Array.Empty<byte>(), TimeSpan.Zero, 0);
+        }
+
+        private void UpdateMax(int candidate)
+        {
+            var snapshot = Volatile.Read(ref _maxConcurrency);
+            while (candidate > snapshot)
+            {
+                var previous = Interlocked.CompareExchange(ref _maxConcurrency, candidate, snapshot);
+                if (previous == snapshot)
+                {
+                    return;
+                }
+
+                snapshot = previous;
+            }
         }
     }
 

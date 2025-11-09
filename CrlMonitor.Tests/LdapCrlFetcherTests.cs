@@ -21,7 +21,7 @@ public static class LdapCrlFetcherTests
         var expected = new byte[] { 0, 1, 2 };
         var factory = new StubFactory(expected);
         var fetcher = new LdapCrlFetcher(factory);
-        var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Example,O=Corp"), SignatureValidationMode.None, null, 0.8, new LdapCredentials("user", "pw"));
+        var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Example,O=Corp"), SignatureValidationMode.None, null, 0.8, new LdapCredentials("user", "pw"), 10 * 1024 * 1024);
 
         var result = await fetcher.FetchAsync(entry, CancellationToken.None);
 
@@ -38,7 +38,7 @@ public static class LdapCrlFetcherTests
     {
         var factory = new StubFactory(Array.Empty<byte[]>());
         var fetcher = new LdapCrlFetcher(factory);
-        var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Missing,O=Corp"), SignatureValidationMode.None, null, 0.8, null);
+        var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Missing,O=Corp"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
     }
@@ -51,9 +51,22 @@ public static class LdapCrlFetcherTests
     {
         var factory = new StubFactory(Array.Empty<byte[]>());
         var fetcher = new LdapCrlFetcher(factory);
-        var entry = new CrlConfigEntry(new Uri("http://example.com/crl"), SignatureValidationMode.None, null, 0.8, null);
+        var entry = new CrlConfigEntry(new Uri("http://example.com/crl"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Ensures oversized LDAP payloads are rejected.
+    /// </summary>
+    [Fact]
+    public static async Task FetchAsyncThrowsWhenLdapPayloadTooLarge()
+    {
+        var factory = new StubFactory(new byte[] { 0, 1, 2 });
+        var fetcher = new LdapCrlFetcher(factory);
+        var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Example,O=Corp"), SignatureValidationMode.None, null, 0.8, new LdapCredentials("user", "pw"), 2);
+
+        await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
     }
 
     private sealed class StubFactory : ILdapConnectionFactory

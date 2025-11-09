@@ -50,6 +50,7 @@ public static class ConfigLoaderTests
               "signature_validation_mode": "ca-cert",
               "ca_certificate_path": "example-ca.pem",
               "expiry_threshold": 0.95,
+              "max_crl_size_bytes": 5242880,
               "ldap": {
                 "username": "CN=svc,DC=example,DC=com",
                 "password": "secret"
@@ -72,6 +73,7 @@ public static class ConfigLoaderTests
         Assert.Equal(3, options.MaxParallelFetches);
         Assert.Equal(Path.Combine(temp.Path, "state", "state.json"), options.StateFilePath);
         Assert.Equal(2, options.Crls.Count);
+        Assert.Equal(10 * 1024 * 1024, options.DefaultMaxCrlSizeBytes);
 
         var httpEntry = options.Crls[0];
         Assert.Equal(new Uri("http://crl.example.com/root.crl"), httpEntry.Uri);
@@ -79,6 +81,7 @@ public static class ConfigLoaderTests
         Assert.Null(httpEntry.CaCertificatePath);
         Assert.Equal(0.8, httpEntry.ExpiryThreshold);
         Assert.Null(httpEntry.Ldap);
+        Assert.Equal(10 * 1024 * 1024, httpEntry.MaxCrlSizeBytes);
 
         var ldapEntry = options.Crls[1];
         Assert.Equal(new Uri("ldap://dc1.example.com/root"), ldapEntry.Uri);
@@ -88,6 +91,96 @@ public static class ConfigLoaderTests
         Assert.NotNull(ldapEntry.Ldap);
         Assert.Equal("CN=svc,DC=example,DC=com", ldapEntry.Ldap!.Username);
         Assert.Equal("secret", ldapEntry.Ldap.Password);
+        Assert.Equal(5_242_880, ldapEntry.MaxCrlSizeBytes);
+    }
+
+    /// <summary>
+    /// Ensures that the global max CRL size value is honoured.
+    /// </summary>
+    [Fact]
+    public static void LoadHonoursGlobalMaxCrlSize()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "max_crl_size_bytes": 2097152,
+          "state_file_path": "state.json",
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var options = ConfigLoader.Load(configPath);
+
+        Assert.Equal(2_097_152, options.DefaultMaxCrlSizeBytes);
+        var entry = Assert.Single(options.Crls);
+        Assert.Equal(2_097_152, entry.MaxCrlSizeBytes);
+    }
+
+    /// <summary>
+    /// Ensures invalid max size values are rejected.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(200_000_000)]
+    public static void LoadThrowsWhenMaxCrlSizeInvalid(long candidate)
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", $$"""
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "max_crl_size_bytes": {{candidate}},
+          "state_file_path": "state.json",
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("max_crl_size_bytes", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Ensures per-entry overrides must also satisfy the allowed range.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenEntryMaxCrlSizeInvalid()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "uris": [
+            {
+              "uri": "http://example.com/root.crl",
+              "max_crl_size_bytes": 0
+            }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("max_crl_size_bytes", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

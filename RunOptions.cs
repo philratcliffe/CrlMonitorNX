@@ -12,6 +12,7 @@ internal sealed record RunOptions(
     bool HtmlReportEnabled,
     string? HtmlReportPath,
     string? HtmlReportUrl,
+    long DefaultMaxCrlSizeBytes,
     TimeSpan FetchTimeout,
     int MaxParallelFetches,
     string StateFilePath,

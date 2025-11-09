@@ -5,6 +5,7 @@
   "csv_reports": true,
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 2,
+  "max_crl_size_bytes": 10485760,
   "state_file_path": "crlmonitor-state.json",
   "html_report_enabled": true,
   "html_report_path": "reports/crl-report.html",
@@ -49,7 +50,8 @@
       "uri": "http://crlX.globalsign.com/gsrsaovsslca2018.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
-      "expiry_threshold": 0.1
+      "expiry_threshold": 0.1,
+      "max_crl_size_bytes": 2097152
     },
     {
       "uri": "http://c.pki.goog/we1/ty82fqB0hAw.crl",

@@ -8,4 +8,5 @@ internal sealed record CrlConfigEntry(
     SignatureValidationMode SignatureValidationMode,
     string? CaCertificatePath,
     double ExpiryThreshold,
-    LdapCredentials? Ldap);
+    LdapCredentials? Ldap,
+    long MaxCrlSizeBytes);

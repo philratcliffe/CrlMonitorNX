@@ -8,7 +8,7 @@ namespace CrlMonitor.Fetching;
 
 internal sealed class FileCrlFetcher : ICrlFetcher
 {
-    public Task<FetchedCrl> FetchAsync(CrlConfigEntry entry, CancellationToken cancellationToken)
+    public async Task<FetchedCrl> FetchAsync(CrlConfigEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
         cancellationToken.ThrowIfCancellationRequested();
@@ -19,17 +19,25 @@ internal sealed class FileCrlFetcher : ICrlFetcher
             throw new InvalidOperationException($"File URI '{entry.Uri}' is invalid.");
         }
 
-        if (!File.Exists(path))
+        var fileInfo = new FileInfo(path);
+        if (!fileInfo.Exists)
         {
             throw new FileNotFoundException($"CRL file not found: {path}", path);
         }
 
-        return FetchInternalAsync(path, cancellationToken);
-    }
+        if (fileInfo.Length > entry.MaxCrlSizeBytes)
+        {
+            throw new CrlTooLargeException(entry.Uri, entry.MaxCrlSizeBytes, fileInfo.Length);
+        }
 
-    private static async Task<FetchedCrl> FetchInternalAsync(string path, CancellationToken cancellationToken)
-    {
-        var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
+        using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: 81920,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var bytes = await CrlContentLimiter.ReadAllBytesAsync(stream, entry.Uri, entry.MaxCrlSizeBytes, cancellationToken).ConfigureAwait(false);
         return new FetchedCrl(bytes, TimeSpan.Zero, bytes.LongLength);
     }
 }

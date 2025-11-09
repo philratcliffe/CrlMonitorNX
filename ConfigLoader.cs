@@ -14,6 +14,9 @@ internal static class ConfigLoader
     private const double DefaultExpiryThreshold = 0.8;
     private const double MinExpiryThreshold = 0.1;
     private const double MaxExpiryThreshold = 1.0;
+    private const long DefaultMaxCrlSizeBytes = 10 * 1024 * 1024;
+    private const long MinMaxCrlSizeBytes = 1;
+    private const long MaxMaxCrlSizeBytes = 100 * 1024 * 1024;
     private const string DefaultReportSubject = "CRL Health Report";
     private const string DefaultAlertPrefix = "[CRL Alert]";
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -51,7 +54,8 @@ internal static class ConfigLoader
             throw new InvalidOperationException("max_parallel_fetches must be between 1 and 64.");
         }
 
-        var entries = BuildEntries(document.Uris, configDirectory);
+        var maxCrlSizeBytes = ResolveMaxCrlSize(document.MaxCrlSizeBytes, DefaultMaxCrlSizeBytes, "max_crl_size_bytes");
+        var entries = BuildEntries(document.Uris, configDirectory, maxCrlSizeBytes);
         var smtpOptions = document.Smtp != null ? ParseSmtp(document.Smtp, "smtp") : null;
         var reportOptions = ParseReportOptions(document.Reports, smtpOptions);
         var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
@@ -69,6 +73,7 @@ internal static class ConfigLoader
             htmlEnabled,
             htmlPath,
             document.HtmlReportUrl,
+            maxCrlSizeBytes,
             TimeSpan.FromSeconds(timeoutSeconds),
             maxParallel,
             ResolvePath(configDirectory, stateFilePath),
@@ -78,7 +83,10 @@ internal static class ConfigLoader
     }
 
 
-    private static List<CrlConfigEntry> BuildEntries(IReadOnlyList<CrlDocument>? documents, string baseDirectory)
+    private static List<CrlConfigEntry> BuildEntries(
+        IReadOnlyList<CrlDocument>? documents,
+        string baseDirectory,
+        long defaultMaxCrlSizeBytes)
     {
         if (documents == null || documents.Count == 0)
         {
@@ -108,6 +116,10 @@ internal static class ConfigLoader
             var caPath = ResolveCaPath(signatureMode, document.CaCertificatePath, baseDirectory, uri);
             var threshold = ParseExpiryThreshold(document.ExpiryThreshold, uri);
             var ldap = ParseLdap(document.Ldap, uri);
+            var maxCrlSizeBytes = ResolveMaxCrlSize(
+                document.MaxCrlSizeBytes,
+                defaultMaxCrlSizeBytes,
+                $"max_crl_size_bytes for {uri}");
 
             if (ldap != null && !IsLdapScheme(uri))
             {
@@ -119,7 +131,7 @@ internal static class ConfigLoader
                 throw new InvalidOperationException($"LDAP block for {uri} must specify both username and password.");
             }
 
-            entries.Add(new CrlConfigEntry(uri, signatureMode, caPath, threshold, ldap));
+            entries.Add(new CrlConfigEntry(uri, signatureMode, caPath, threshold, ldap, maxCrlSizeBytes));
         }
 
         return entries;
@@ -478,6 +490,9 @@ internal static class ConfigLoader
         [JsonPropertyName("html_report_url")]
         public string? HtmlReportUrl { get; init; }
 
+        [JsonPropertyName("max_crl_size_bytes")]
+        public long? MaxCrlSizeBytes { get; init; }
+
         [JsonPropertyName("reports")]
         public ReportsDocument? Reports { get; init; }
 
@@ -504,6 +519,9 @@ internal static class ConfigLoader
 
         [JsonPropertyName("ldap")]
         public LdapDocument? Ldap { get; init; }
+
+        [JsonPropertyName("max_crl_size_bytes")]
+        public long? MaxCrlSizeBytes { get; init; }
     }
 
     private sealed record LdapDocument
@@ -577,5 +595,16 @@ internal static class ConfigLoader
 
         [JsonPropertyName("enable_starttls")]
         public bool? EnableStartTls { get; init; }
+    }
+
+    private static long ResolveMaxCrlSize(long? configuredValue, long fallback, string context)
+    {
+        var resolved = configuredValue ?? fallback;
+        if (resolved < MinMaxCrlSizeBytes || resolved > MaxMaxCrlSizeBytes)
+        {
+            throw new InvalidOperationException($"{context} must be between {MinMaxCrlSizeBytes} and {MaxMaxCrlSizeBytes} bytes.");
+        }
+
+        return resolved;
     }
 }

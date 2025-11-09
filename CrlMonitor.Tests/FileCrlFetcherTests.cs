@@ -27,10 +27,32 @@ public static class FileCrlFetcherTests
 
         try
         {
-            var entry = new CrlConfigEntry(new Uri(tempPath), SignatureValidationMode.None, null, 0.8, null);
+            var entry = new CrlConfigEntry(new Uri(tempPath), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
             var result = await fetcher.FetchAsync(entry, CancellationToken.None);
 
             Assert.Equal(bytes, result.Content);
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Ensures oversized files are rejected.
+    /// </summary>
+    [Fact]
+    public static async Task FetchAsyncThrowsWhenFileTooLarge()
+    {
+        var fetcher = new FileCrlFetcher();
+        var bytes = new byte[] { 1, 2, 3 };
+        var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        await File.WriteAllBytesAsync(tempPath, bytes);
+
+        try
+        {
+            var entry = new CrlConfigEntry(new Uri(tempPath), SignatureValidationMode.None, null, 0.8, null, 2);
+            await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
         }
         finally
         {
