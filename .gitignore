@@ -136,6 +136,7 @@ config.local.json
 crl-report.csv
 .venv/
 crlmonitor-state.json
+reports/
 
 # Integration test output
 integration_tests/test_output/
