@@ -5,7 +5,7 @@ namespace CrlMonitor.Models;
 
 internal sealed record CrlCheckResult(
     Uri Uri,
-    string Status,
+    CrlStatus Status,
     TimeSpan Duration,
     ParsedCrl? ParsedCrl,
     string? ErrorInfo,
