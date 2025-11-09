@@ -60,6 +60,30 @@
       "expiry_threshold": 0.1
     },
     {
+      "uri": "file://./examples/crls/DigiCertGlobalRootCA-copy2.crl",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
+      "expiry_threshold": 0.1
+    },
+    {
+      "uri": "file://./examples/crls/DigiCertGlobalRootCA-copy3.crl",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
+      "expiry_threshold": 0.1
+    },
+    {
+      "uri": "file://./examples/crls/DigiCertGlobalRootCA-copy4.crl",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
+      "expiry_threshold": 0.1
+    },
+    {
+      "uri": "file://./examples/crls/DigiCertGlobalRootCA-copy5.crl",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
+      "expiry_threshold": 0.1
+    },
+    {
       "uri": "ldap://dc1.example.com/CN=Example,O=Example Corp",
       "signature_validation_mode": "none",
       "ca_certificate_path": "CA-certs/example-ca.pem",

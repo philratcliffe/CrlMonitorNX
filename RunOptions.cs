@@ -9,6 +9,7 @@ internal sealed record RunOptions(
     bool CsvReports,
     string CsvOutputPath,
     bool CsvAppendTimestamp,
+    string? HtmlReportPath,
     TimeSpan FetchTimeout,
     int MaxParallelFetches,
     string StateFilePath,
