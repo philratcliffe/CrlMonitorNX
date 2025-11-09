@@ -23,7 +23,7 @@ public static class AlertReporterTests
         var options = BuildOptions("ERROR", "EXPIRED", "EXPIRING");
         var state = new RecordingAlertStateStore();
         var client = new RecordingEmailClient();
-        var reporter = new AlertReporter(options, client, state);
+        var reporter = new AlertReporter(options, client, state, "https://example.com/crl/report.html");
         var run = BuildRun();
 
         await reporter.ReportAsync(run, CancellationToken.None);
@@ -33,6 +33,7 @@ public static class AlertReporterTests
         Assert.Contains("http://expired", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.Contains("http://expiring", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.Contains("http://failed", client.LastMessage.Body, StringComparison.Ordinal);
+        Assert.Contains("View full report: https://example.com/crl/report.html", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.NotEmpty(state.SavedKeys);
     }
 
@@ -51,7 +52,7 @@ public static class AlertReporterTests
             }
         };
         var client = new RecordingEmailClient();
-        var reporter = new AlertReporter(options, client, state);
+        var reporter = new AlertReporter(options, client, state, null);
 
         await reporter.ReportAsync(BuildRun(), CancellationToken.None);
 

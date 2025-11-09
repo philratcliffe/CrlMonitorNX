@@ -153,10 +153,11 @@ public interface IReporter
 
 public sealed class ConsoleReporter : IReporter { ... }
 public sealed class CsvReporter : IReporter { ... }
+public sealed class HtmlReporter : IReporter { ... }
 public sealed class CompositeReporter : IReporter { ... }
 ```
 
-- Reporters receive structured data; they do not perform business logic.
+- Reporters receive structured data; they do not perform business logic, and HTML/email/alert reporters link to the generated HTML file when configured.
 - Console reporter depends on `IConsole` abstraction to avoid direct `System.Console` usage.
 - CSV reporter reuses existing schema; uses `ICsvWriter` abstraction for testability.
 

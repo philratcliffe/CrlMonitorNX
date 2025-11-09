@@ -34,6 +34,8 @@ public static class ConfigLoaderTests
           "csv_append_timestamp": true,
           "csv_output_path": "out/report.csv",
           "csv_reports": true,
+          "html_report_enabled": true,
+          "html_report_path": "reports/latest.html",
           "fetch_timeout_seconds": 45,
           "max_parallel_fetches": 3,
           "state_file_path": "state/state.json",
@@ -62,6 +64,9 @@ public static class ConfigLoaderTests
         Assert.True(options.CsvReports);
         Assert.True(options.CsvAppendTimestamp);
         Assert.Equal(Path.Combine(temp.Path, "out", "report.csv"), options.CsvOutputPath);
+        Assert.True(options.HtmlReportEnabled);
+        Assert.Equal(Path.Combine(temp.Path, "reports", "latest.html"), options.HtmlReportPath);
+        Assert.Null(options.HtmlReportUrl);
         Assert.Equal(TimeSpan.FromSeconds(45), options.FetchTimeout);
         Assert.Equal(3, options.MaxParallelFetches);
         Assert.Equal(Path.Combine(temp.Path, "state", "state.json"), options.StateFilePath);
@@ -369,6 +374,50 @@ public static class ConfigLoaderTests
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
         Assert.Contains("alerts.statuses", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Ensures html report URL is parsed.
+    /// </summary>
+    [Fact]
+    public static void LoadParsesHtmlReportUrl()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "html_report_enabled": true,
+          "html_report_path": "reports/report.html",
+          "html_report_url": "https://example.com/report.html",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 25,
+            "username": "svc",
+            "password": "pw",
+            "from": "svc@example.com"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "daily",
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var options = ConfigLoader.Load(configPath);
+
+        Assert.True(options.HtmlReportEnabled);
+        Assert.Equal(Path.Combine(temp.Path, "reports", "report.html"), options.HtmlReportPath);
+        Assert.Equal("https://example.com/report.html", options.HtmlReportUrl);
     }
 
     /// <summary>

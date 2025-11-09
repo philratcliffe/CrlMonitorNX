@@ -6,6 +6,9 @@
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 2,
   "state_file_path": "crlmonitor-state.json",
+  "html_report_enabled": true,
+  "html_report_path": "reports/crl-report.html",
+  "html_report_url": "https://example.com/crl/crl-report.html",
   "smtp": {
     "host": "smtp.gmail.com",
     "port": 587,

@@ -124,11 +124,20 @@ internal sealed class ConsoleReporter : IReporter
         Console.WriteLine("Report written to:");
         if (_status.CsvWritten && !string.IsNullOrWhiteSpace(_status.CsvPath))
         {
-            Console.WriteLine($"  {_status.CsvPath}");
+            Console.WriteLine($"  CSV: {_status.CsvPath}");
         }
         else
         {
-            Console.WriteLine("  (no CSV generated)");
+            Console.WriteLine("  CSV: (not generated)");
+        }
+
+        if (_status.HtmlWritten && !string.IsNullOrWhiteSpace(_status.HtmlReportPath))
+        {
+            Console.WriteLine($"  HTML: {_status.HtmlReportPath}");
+        }
+        else
+        {
+            Console.WriteLine("  HTML: (not generated)");
         }
 #pragma warning restore CA1303
 #pragma warning disable CA1303

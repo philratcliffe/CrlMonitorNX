@@ -67,6 +67,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 
 - Standard config fields (SMTP, reporting flags, timeouts, caches).
 - Global `smtp` block (host/port/username/from/starttls) used by all email reporters.
+- `html_report_enabled` plus `html_report_path`/`html_report_url` to emit a shareable HTML report and include links in emails.
 - `reports` block (enabled/frequency/recipients) controlling scheduled summaries.
 - `alerts` block (enabled/statuses/cooldown/recipients) controlling which statuses trigger notifications.
 - `signature_validation_level` with default `full-chain`.
@@ -77,6 +78,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 
 - Console stdout summary.
 - CSV file when enabled.
+- HTML report written to configurable path and linked from emails.
 - Scheduled email reports (when configured) with optional CSV attachment.
 - Alert emails when selected statuses trigger and cooldown permits.
 - Exit code 0/1.

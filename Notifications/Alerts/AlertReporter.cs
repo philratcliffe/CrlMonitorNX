@@ -17,13 +17,15 @@ internal sealed class AlertReporter : IReporter
     private readonly IEmailClient _emailClient;
     private readonly IStateStore _stateStore;
     private readonly HashSet<string> _statusFilters;
+    private readonly string? _htmlReportUrl;
 
-    public AlertReporter(AlertOptions options, IEmailClient emailClient, IStateStore stateStore)
+    public AlertReporter(AlertOptions options, IEmailClient emailClient, IStateStore stateStore, string? htmlReportUrl)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _emailClient = emailClient ?? throw new ArgumentNullException(nameof(emailClient));
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
         _statusFilters = new HashSet<string>(options.Statuses, StringComparer.OrdinalIgnoreCase);
+        _htmlReportUrl = htmlReportUrl;
     }
 
     public async Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
@@ -58,7 +60,7 @@ internal sealed class AlertReporter : IReporter
         }
 
         var subject = BuildSubject(_options.SubjectPrefix, triggered.Count);
-        var body = BuildBody(triggered, _options.IncludeDetails);
+        var body = BuildBody(triggered, _options.IncludeDetails, _htmlReportUrl);
         var message = new EmailMessage(_options.Recipients, subject, body, Array.Empty<EmailAttachment>());
         await _emailClient.SendAsync(message, _options.Smtp, cancellationToken).ConfigureAwait(false);
 
@@ -74,7 +76,7 @@ internal sealed class AlertReporter : IReporter
         return FormattableString.Invariant($"{prefix} {count} {issues} detected");
     }
 
-    private static string BuildBody(IReadOnlyList<AlertInstance> alerts, bool includeDetails)
+    private static string BuildBody(IReadOnlyList<AlertInstance> alerts, bool includeDetails, string? htmlReportUrl)
     {
         var builder = new StringBuilder();
         builder.AppendLine(FormattableString.Invariant($"{alerts.Count} issue(s) detected during the latest CRL check:"));
@@ -87,7 +89,7 @@ internal sealed class AlertReporter : IReporter
             builder.AppendLine("--------------------------------------------------");
             builder.AppendLine(FormattableString.Invariant($"URL: {alert.Result.Uri}"));
             builder.AppendLine(FormattableString.Invariant($"Status: {alert.Result.Status}"));
-            builder.AppendLine(FormattableString.Invariant($"Checked: {alert.Result.CheckedAtUtc.ToUniversalTime():yyyy-MM-dd HH:mm:ss'Z'}"));
+            builder.AppendLine(FormattableString.Invariant($"Checked: {FormatTimestamp(alert.Result.CheckedAtUtc)}"));
             if (includeDetails && !string.IsNullOrWhiteSpace(alert.Result.ErrorInfo))
             {
                 builder.AppendLine(FormattableString.Invariant($"Details: {alert.Result.ErrorInfo}"));
@@ -105,6 +107,10 @@ internal sealed class AlertReporter : IReporter
         builder.AppendLine("--------------------------------------------------");
         builder.AppendLine("End of report");
         builder.AppendLine("--------------------------------------------------");
+        if (!string.IsNullOrWhiteSpace(htmlReportUrl))
+        {
+            builder.AppendLine(FormattableString.Invariant($"View full report: {htmlReportUrl}"));
+        }
         return builder.ToString();
     }
 
@@ -157,6 +163,11 @@ internal sealed class AlertReporter : IReporter
     private static string BuildStateKey(string condition, Uri uri)
     {
         return FormattableString.Invariant($"{condition}|{uri}");
+    }
+
+    private static string FormatTimestamp(DateTime value)
+    {
+        return value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
     }
 
     private readonly record struct AlertInstance(string Condition, string StateKey, CrlCheckResult Result);

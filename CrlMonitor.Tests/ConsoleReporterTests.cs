@@ -23,6 +23,7 @@ public static class ConsoleReporterTests
     {
         var status = new ReportingStatus();
         status.RecordCsv("report.csv");
+        status.RecordHtml("reports/latest.html");
         status.RecordEmailSent();
         var reporter = new ConsoleReporter(status);
         var diagnostics = new RunDiagnostics();
@@ -66,6 +67,8 @@ public static class ConsoleReporterTests
         Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
         Assert.Contains("Summary:", output, StringComparison.Ordinal);
         Assert.Contains("Disk full", output, StringComparison.Ordinal);
+        Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
+        Assert.Contains("HTML: reports/latest.html", output, StringComparison.Ordinal);
         Assert.Contains("Report written to:", output, StringComparison.Ordinal);
         Assert.Contains("report.csv", output, StringComparison.Ordinal);
         Assert.Contains("Report email sent successfully.", output, StringComparison.Ordinal);

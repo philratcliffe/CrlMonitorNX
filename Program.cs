@@ -96,14 +96,21 @@ internal static class Program
             reporters.Add(new CsvReporter(csvPath, reportingStatus));
         }
 
+        if (options.HtmlReportEnabled && !string.IsNullOrWhiteSpace(options.HtmlReportPath))
+        {
+            reporters.Add(new HtmlReporter(options.HtmlReportPath, reportingStatus));
+        }
+
+        var emailClient = new SmtpEmailClient();
+
         if (options.Reports != null && options.Reports.Enabled)
         {
-            reporters.Add(new EmailReportReporter(options.Reports, new SmtpEmailClient(), stateStore, reportingStatus));
+            reporters.Add(new EmailReportReporter(options.Reports, emailClient, stateStore, reportingStatus, options.HtmlReportUrl));
         }
 
         if (options.Alerts != null && options.Alerts.Enabled)
         {
-            reporters.Add(new AlertReporter(options.Alerts, new SmtpEmailClient(), stateStore));
+            reporters.Add(new AlertReporter(options.Alerts, emailClient, stateStore, options.HtmlReportUrl));
         }
 
         if (options.ConsoleReports)

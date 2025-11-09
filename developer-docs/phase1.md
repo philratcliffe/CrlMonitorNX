@@ -68,7 +68,8 @@
   - `Task ReportAsync(CrlCheckRun run, CancellationToken ct)`
 - `ConsoleReporter`: consumes `IConsole` abstraction so it can be disabled or redirected.
 - `CsvReporter`: writes CSV to `CsvOutputPath`, appending timestamp if enabled; CSV formatting lives in `CsvReportFormatter` so other reporters can reuse it.
-- `EmailReportReporter`: honours `reports` config, enforces frequency (daily/weekly), builds optional summary + CSV attachment, and tracks send timestamps via `IStateStore`. Uses the global `smtp` block shared across all email surfaces.
+- `HtmlReporter`: renders the CRL summary + table into a modern HTML page stored at `html_report_path` when `html_report_enabled` is true.
+- `EmailReportReporter`: honours `reports` config, produces multipart (plain + HTML) emails, links to the generated HTML report when `html_report_url` is provided, and tracks send timestamps via `IStateStore`.
 - `AlertReporter`: inspects each result for selected statuses (e.g., ERROR, EXPIRED, EXPIRING, WARNING), enforces cooldowns per URI/status combination, and dispatches alert emails via the same global SMTP settings.
 - `CompositeReporter`: takes config flags, holds reporters, and calls `ReportAsync` sequentially.
 

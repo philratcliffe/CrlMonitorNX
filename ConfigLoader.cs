@@ -54,11 +54,20 @@ internal static class ConfigLoader
         var smtpOptions = document.Smtp != null ? ParseSmtp(document.Smtp, "smtp") : null;
         var reportOptions = ParseReportOptions(document.Reports, smtpOptions);
         var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
+        var htmlEnabled = document.HtmlReportEnabled ?? false;
+        var htmlPath = ResolveOptionalPath(configDirectory, document.HtmlReportPath);
+        if (htmlEnabled && string.IsNullOrWhiteSpace(htmlPath))
+        {
+            throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.");
+        }
         return new RunOptions(
             document.ConsoleReports ?? true,
             document.CsvReports ?? true,
             ResolvePath(configDirectory, csvPath),
             document.CsvAppendTimestamp ?? false,
+            htmlEnabled,
+            htmlPath,
+            document.HtmlReportUrl,
             TimeSpan.FromSeconds(timeoutSeconds),
             maxParallel,
             ResolvePath(configDirectory, stateFilePath),
@@ -213,6 +222,16 @@ internal static class ConfigLoader
         }
 
         return Path.GetFullPath(Path.Combine(baseDirectory, path));
+    }
+
+    private static string? ResolveOptionalPath(string baseDirectory, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        return ResolvePath(baseDirectory, path);
     }
 
     private static string RequirePath(string? value, string name)
@@ -451,6 +470,12 @@ internal static class ConfigLoader
         [JsonPropertyName("csv_append_timestamp")]
         public bool? CsvAppendTimestamp { get; init; }
 
+        [JsonPropertyName("html_report_enabled")]
+        public bool? HtmlReportEnabled { get; init; }
+
+        [JsonPropertyName("html_report_path")]
+        public string? HtmlReportPath { get; init; }
+
         [JsonPropertyName("fetch_timeout_seconds")]
         public int? FetchTimeoutSeconds { get; init; }
 
@@ -462,6 +487,9 @@ internal static class ConfigLoader
 
         [JsonPropertyName("smtp")]
         public SmtpDocument? Smtp { get; init; }
+
+        [JsonPropertyName("html_report_url")]
+        public string? HtmlReportUrl { get; init; }
 
         [JsonPropertyName("reports")]
         public ReportsDocument? Reports { get; init; }

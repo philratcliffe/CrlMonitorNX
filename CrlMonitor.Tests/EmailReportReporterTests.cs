@@ -33,7 +33,7 @@ public static class EmailReportReporterTests
         var state = new InMemoryStateStore();
         var client = new RecordingEmailClient();
         var reportingStatus = new ReportingStatus();
-        var reporter = new EmailReportReporter(options, client, state, reportingStatus);
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, "http://example.com/report.html");
         var run = BuildRun();
 
         await reporter.ReportAsync(run, CancellationToken.None);
@@ -43,6 +43,7 @@ public static class EmailReportReporterTests
         Assert.Single(client.LastMessage.Recipients);
         Assert.Contains("CRLs Checked:", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.Contains("CRLs Expiring:", client.LastMessage.Body, StringComparison.Ordinal);
+        Assert.Contains("View full HTML report: http://example.com/report.html", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.NotEmpty(client.LastMessage.Attachments);
         Assert.NotNull(await state.GetLastReportSentAsync(CancellationToken.None));
         Assert.True(reportingStatus.EmailReportSent);
@@ -65,7 +66,7 @@ public static class EmailReportReporterTests
         var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(-2) };
         var client = new RecordingEmailClient();
         var reportingStatus = new ReportingStatus();
-        var reporter = new EmailReportReporter(options, client, state, reportingStatus);
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, "http://example.com/report.html");
         var run = BuildRun();
 
         await reporter.ReportAsync(run, CancellationToken.None);
