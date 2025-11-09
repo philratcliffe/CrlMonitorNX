@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CrlMonitor.Crl;
+using CrlMonitor.Models;
 using CrlMonitor.Notifications;
 
 namespace CrlMonitor;
@@ -323,9 +324,9 @@ internal static class ConfigLoader
         };
     }
 
-    private static List<string> ParseAlertStatuses(List<string>? statuses)
+    private static List<CrlStatus> ParseAlertStatuses(List<string>? statuses)
     {
-        var collected = new List<string>();
+        var collected = new List<CrlStatus>();
         if (statuses != null)
         {
             foreach (var status in statuses)
@@ -335,7 +336,7 @@ internal static class ConfigLoader
                     continue;
                 }
 
-                AddStatus(collected, NormalizeAlertStatus(status));
+                collected.Add(ParseCrlStatus(status));
             }
         }
 
@@ -347,31 +348,17 @@ internal static class ConfigLoader
         return collected;
     }
 
-    private static string NormalizeAlertStatus(string value)
+    private static CrlStatus ParseCrlStatus(string value)
     {
-        var normalized = value.Trim().ToUpperInvariant();
-        return normalized switch
+        return value.Trim().ToUpperInvariant() switch
         {
-            "OK" => "OK",
-            "WARNING" => "WARNING",
-            "EXPIRING" => "EXPIRING",
-            "EXPIRED" => "EXPIRED",
-            "ERROR" => "ERROR",
+            "OK" => CrlStatus.Ok,
+            "WARNING" => CrlStatus.Warning,
+            "EXPIRING" => CrlStatus.Expiring,
+            "EXPIRED" => CrlStatus.Expired,
+            "ERROR" => CrlStatus.Error,
             _ => throw new InvalidOperationException($"alerts.statuses entry '{value}' is not supported. Allowed values: OK, WARNING, EXPIRING, EXPIRED, ERROR.")
         };
-    }
-
-    private static void AddStatus(List<string> statuses, string status)
-    {
-        foreach (var existing in statuses)
-        {
-            if (string.Equals(existing, status, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-        }
-
-        statuses.Add(status);
     }
 
     private static string ResolveSmtpPassword(string? passwordFromConfig)

@@ -34,7 +34,7 @@ public static class CsvReporterTests
             {
                 new CrlCheckResult(
                     new System.Uri("http://example.com"),
-                    "WARNING",
+                    CrlStatus.Warning,
                     System.TimeSpan.FromSeconds(1),
                     parsed,
                     "Signature validation disabled.",
@@ -45,7 +45,7 @@ public static class CsvReporterTests
                     "Valid"),
                 new CrlCheckResult(
                     new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"),
-                    "ERROR",
+                    CrlStatus.Error,
                     System.TimeSpan.FromMilliseconds(5),
                     null,
                     "Could not connect",
@@ -88,9 +88,9 @@ public static class CsvReporterTests
         var run = new CrlCheckRun(
             new[]
             {
-                new CrlCheckResult(new Uri("http://valid"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Valid"),
-                new CrlCheckResult(new Uri("http://invalid"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Invalid"),
-                new CrlCheckResult(new Uri("http://skipped"), "OK", TimeSpan.Zero, null, null, null, null, null, timestamp, "Skipped")
+                new CrlCheckResult(new Uri("http://valid"), CrlStatus.Ok, TimeSpan.Zero, null, null, null, null, null, timestamp, "Valid"),
+                new CrlCheckResult(new Uri("http://invalid"), CrlStatus.Ok, TimeSpan.Zero, null, null, null, null, null, timestamp, "Invalid"),
+                new CrlCheckResult(new Uri("http://skipped"), CrlStatus.Ok, TimeSpan.Zero, null, null, null, null, null, timestamp, "Skipped")
             },
             new RunDiagnostics(),
             timestamp);

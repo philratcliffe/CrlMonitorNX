@@ -80,8 +80,8 @@ public static class EmailReportReporterTests
         var now = DateTime.UtcNow;
         var results = new List<CrlCheckResult>
         {
-            new(new Uri("http://valid"), "OK", TimeSpan.FromMilliseconds(10), null, null, null, null, null, now, "Valid"),
-            new(new Uri("http://expired"), "EXPIRED", TimeSpan.FromMilliseconds(15), null, "Expired", null, null, null, now, "Invalid")
+            new(new Uri("http://valid"), CrlStatus.Ok, TimeSpan.FromMilliseconds(10), null, null, null, null, null, now, "Valid"),
+            new(new Uri("http://expired"), CrlStatus.Expired, TimeSpan.FromMilliseconds(15), null, "Expired", null, null, null, now, "Invalid")
         };
         return new CrlCheckRun(results, new RunDiagnostics(), now);
     }

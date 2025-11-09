@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CrlMonitor.Models;
 
 namespace CrlMonitor.Notifications;
 
@@ -29,7 +30,7 @@ internal sealed record ReportOptions(
 internal sealed record AlertOptions(
     bool Enabled,
     IReadOnlyList<string> Recipients,
-    IReadOnlyList<string> Statuses,
+    IReadOnlyList<CrlStatus> Statuses,
     TimeSpan Cooldown,
     string SubjectPrefix,
     bool IncludeDetails,

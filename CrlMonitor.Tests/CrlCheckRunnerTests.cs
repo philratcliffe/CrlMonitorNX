@@ -40,7 +40,7 @@ public static class CrlCheckRunnerTests
         var run = await runner.RunAsync(singleEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
         Assert.Single(run.Results);
-        Assert.Equal("OK", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Ok, run.Results[0].Status);
         Assert.Null(run.Results[0].ErrorInfo);
         Assert.Empty(run.Diagnostics.RuntimeWarnings);
     }
@@ -64,7 +64,7 @@ public static class CrlCheckRunnerTests
         var singleEntry = new[] { entry };
         var run = await runner.RunAsync(singleEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
-        Assert.Equal("ERROR", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Error, run.Results[0].Status);
         Assert.False(string.IsNullOrEmpty(run.Results[0].ErrorInfo));
         Assert.NotEmpty(run.Diagnostics.RuntimeWarnings);
     }
@@ -88,7 +88,7 @@ public static class CrlCheckRunnerTests
         var warningEntry = new[] { entry };
         var run = await runner.RunAsync(warningEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
-        Assert.Equal("WARNING", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Warning, run.Results[0].Status);
         Assert.Equal("Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
@@ -112,7 +112,7 @@ public static class CrlCheckRunnerTests
         var expiringEntry = new[] { entry };
         var run = await runner.RunAsync(expiringEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
-        Assert.Equal("EXPIRING", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Expiring, run.Results[0].Status);
         Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
@@ -136,7 +136,7 @@ public static class CrlCheckRunnerTests
         var expiredEntry = new[] { entry };
         var run = await runner.RunAsync(expiredEntry, TimeSpan.Zero, 1, CancellationToken.None);
 
-        Assert.Equal("EXPIRED", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Expired, run.Results[0].Status);
         Assert.Equal("Health issue | Signature validation disabled.", run.Results[0].ErrorInfo);
     }
 
@@ -167,7 +167,7 @@ public static class CrlCheckRunnerTests
             var fileEntries = new[] { entry };
             var run = await runner.RunAsync(fileEntries, TimeSpan.FromSeconds(5), 1, CancellationToken.None);
 
-            Assert.Equal("OK", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Ok, run.Results[0].Status);
         }
         finally
         {
@@ -221,7 +221,7 @@ public static class CrlCheckRunnerTests
         var timeoutEntries = new[] { entry };
         var run = await runner.RunAsync(timeoutEntries, TimeSpan.FromMilliseconds(50), 1, CancellationToken.None);
 
-        Assert.Equal("ERROR", run.Results[0].Status);
+        Assert.Equal(CrlStatus.Error, run.Results[0].Status);
         Assert.Contains("timed out", run.Results[0].ErrorInfo, StringComparison.OrdinalIgnoreCase);
     }
 

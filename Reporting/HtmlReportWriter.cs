@@ -89,11 +89,11 @@ internal static class HtmlReportWriter
     private static void AppendRow(StringBuilder builder, CrlCheckResult result)
     {
         var parsed = result.ParsedCrl;
-        var statusClass = $"status-{result.Status.ToUpperInvariant()}";
+        var statusClass = $"status-{result.Status.ToDisplayString()}";
         builder.AppendLine("<tr>");
         builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.Uri.ToString())}</td>"));
         builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status)}</td>"));
+        builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
         builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.ThisUpdate)}</td>"));
         builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.NextUpdate)}</td>"));
         builder.AppendLine(FormattableString.Invariant($"<td>{(result.ContentLength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)}</td>"));
@@ -113,11 +113,11 @@ internal static class HtmlReportWriter
     {
         return new Summary(
             results.Count,
-            results.Count(r => string.Equals(r.Status, "OK", StringComparison.OrdinalIgnoreCase)),
-            results.Count(r => string.Equals(r.Status, "WARNING", StringComparison.OrdinalIgnoreCase)),
-            results.Count(r => string.Equals(r.Status, "EXPIRING", StringComparison.OrdinalIgnoreCase)),
-            results.Count(r => string.Equals(r.Status, "EXPIRED", StringComparison.OrdinalIgnoreCase)),
-            results.Count(r => string.Equals(r.Status, "ERROR", StringComparison.OrdinalIgnoreCase)));
+            results.Count(r => r.Status == CrlStatus.Ok),
+            results.Count(r => r.Status == CrlStatus.Warning),
+            results.Count(r => r.Status == CrlStatus.Expiring),
+            results.Count(r => r.Status == CrlStatus.Expired),
+            results.Count(r => r.Status == CrlStatus.Error));
     }
 
     private static string Escape(string value)

@@ -35,7 +35,7 @@ public static class ConsoleReporterTests
             {
                 new CrlCheckResult(
                     new Uri("http://example.com"),
-                    "WARNING",
+                    CrlStatus.Warning,
                     TimeSpan.Zero,
                     null,
                     "Signature validation disabled.",

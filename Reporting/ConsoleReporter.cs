@@ -80,7 +80,7 @@ internal sealed class ConsoleReporter : IReporter
             uri,
             nextUpdate,
             days,
-            result.Status);
+            result.Status.ToDisplayString());
 
         var original = Console.ForegroundColor;
         Console.ForegroundColor = GetStatusColor(result.Status);
@@ -104,11 +104,11 @@ internal sealed class ConsoleReporter : IReporter
     private void WriteSummary(IReadOnlyList<CrlCheckResult> results)
     {
         var total = results.Count;
-        var ok = results.Count(r => string.Equals(r.Status, "OK", StringComparison.OrdinalIgnoreCase));
-        var warning = results.Count(r => string.Equals(r.Status, "WARNING", StringComparison.OrdinalIgnoreCase));
-        var expiring = results.Count(r => string.Equals(r.Status, "EXPIRING", StringComparison.OrdinalIgnoreCase));
-        var expired = results.Count(r => string.Equals(r.Status, "EXPIRED", StringComparison.OrdinalIgnoreCase));
-        var errors = results.Count(r => string.Equals(r.Status, "ERROR", StringComparison.OrdinalIgnoreCase));
+        var ok = results.Count(r => r.Status == CrlStatus.Ok);
+        var warning = results.Count(r => r.Status == CrlStatus.Warning);
+        var expiring = results.Count(r => r.Status == CrlStatus.Expiring);
+        var expired = results.Count(r => r.Status == CrlStatus.Expired);
+        var errors = results.Count(r => r.Status == CrlStatus.Error);
 
 #pragma warning disable CA1303
         Console.WriteLine("Summary:");
@@ -213,15 +213,15 @@ internal sealed class ConsoleReporter : IReporter
         }
     }
 
-    private static ConsoleColor GetStatusColor(string status)
+    private static ConsoleColor GetStatusColor(CrlStatus status)
     {
-        return status.ToUpperInvariant() switch
+        return status switch
         {
-            "OK" => ConsoleColor.Green,
-            "WARNING" => ConsoleColor.Yellow,
-            "EXPIRING" => ConsoleColor.Yellow,
-            "EXPIRED" => ConsoleColor.Red,
-            "ERROR" => ConsoleColor.Red,
+            CrlStatus.Ok => ConsoleColor.Green,
+            CrlStatus.Warning => ConsoleColor.Yellow,
+            CrlStatus.Expiring => ConsoleColor.Yellow,
+            CrlStatus.Expired => ConsoleColor.Red,
+            CrlStatus.Error => ConsoleColor.Red,
             _ => ConsoleColor.Gray
         };
     }

@@ -132,7 +132,7 @@ internal sealed class CrlCheckRunner
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {msg}");
             return new CrlCheckResult(
                 entry.Uri,
-                "ERROR",
+                CrlStatus.Error,
                 stopwatch.Elapsed,
                 null,
                 msg,
@@ -149,7 +149,7 @@ internal sealed class CrlCheckRunner
             diagnostics.AddRuntimeWarning($"Failed to process '{entry.Uri}': {friendly}");
             return new CrlCheckResult(
                 entry.Uri,
-                "ERROR",
+                CrlStatus.Error,
                 stopwatch.Elapsed,
                 null,
                 friendly,
@@ -166,7 +166,7 @@ internal sealed class CrlCheckRunner
             diagnostics.AddRuntimeWarning(message);
             return new CrlCheckResult(
                 entry.Uri,
-                "ERROR",
+                CrlStatus.Error,
                 stopwatch.Elapsed,
                 null,
                 ex.Message,
@@ -187,25 +187,25 @@ internal sealed class CrlCheckRunner
         };
     }
 
-    private static string DetermineStatus(
+    private static CrlStatus DetermineStatus(
         CrlConfigEntry entry,
         RunDiagnostics diagnostics,
         SignatureValidationResult signature,
         HealthEvaluationResult health)
     {
         var healthStatus = string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase)
-            ? "EXPIRED"
+            ? CrlStatus.Expired
             : string.Equals(health.Status, "Expiring", StringComparison.OrdinalIgnoreCase)
-                ? "EXPIRING"
+                ? CrlStatus.Expiring
                 : string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase)
-                    ? "WARNING"
-                    : "OK";
+                    ? CrlStatus.Warning
+                    : CrlStatus.Ok;
 
-        if (healthStatus == "EXPIRED")
+        if (healthStatus == CrlStatus.Expired)
         {
             diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' expired: {health.Message}");
         }
-        else if (healthStatus == "WARNING" && !string.IsNullOrWhiteSpace(health.Message))
+        else if (healthStatus == CrlStatus.Warning && !string.IsNullOrWhiteSpace(health.Message))
         {
             diagnostics.AddRuntimeWarning($"CRL '{entry.Uri}' health unknown: {health.Message}");
         }
@@ -215,11 +215,11 @@ internal sealed class CrlCheckRunner
             if (string.Equals(signature.Status, "Skipped", StringComparison.OrdinalIgnoreCase))
             {
                 diagnostics.AddSignatureWarning($"Signature validation skipped for '{entry.Uri}': {signature.ErrorMessage}");
-                return healthStatus == "OK" ? "WARNING" : healthStatus;
+                return healthStatus == CrlStatus.Ok ? CrlStatus.Warning : healthStatus;
             }
 
             diagnostics.AddSignatureWarning($"Signature validation failed for '{entry.Uri}': {signature.ErrorMessage}");
-            return "ERROR";
+            return CrlStatus.Error;
         }
 
         return healthStatus;
@@ -228,10 +228,10 @@ internal sealed class CrlCheckRunner
     private static string? BuildErrorInfo(
         SignatureValidationResult signature,
         HealthEvaluationResult health,
-        string status)
+        CrlStatus status)
     {
         var parts = new List<string>();
-        if (!string.Equals(status, "OK", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(health.Message))
+        if (status != CrlStatus.Ok && !string.IsNullOrWhiteSpace(health.Message))
         {
             parts.Add(health.Message!);
         }

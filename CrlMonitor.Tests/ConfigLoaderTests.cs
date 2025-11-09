@@ -6,6 +6,7 @@ using System.Text.Json;
 using CrlMonitor;
 using CrlMonitor.Crl;
 using CrlMonitor.Notifications;
+using CrlMonitor.Models;
 using Xunit;
 
 namespace CrlMonitor.Tests;
@@ -280,9 +281,9 @@ public static class ConfigLoaderTests
         Assert.Equal("[ALERT]", alerts.SubjectPrefix);
         Assert.True(alerts.IncludeDetails);
         Assert.Equal(3, alerts.Statuses.Count);
-        Assert.Contains("ERROR", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("EXPIRED", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("EXPIRING", alerts.Statuses, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains(CrlStatus.Error, alerts.Statuses);
+        Assert.Contains(CrlStatus.Expired, alerts.Statuses);
+        Assert.Contains(CrlStatus.Expiring, alerts.Statuses);
         Assert.Equal(reports.Smtp, alerts.Smtp);
     }
 

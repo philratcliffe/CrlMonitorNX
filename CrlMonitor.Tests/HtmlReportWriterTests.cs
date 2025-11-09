@@ -24,8 +24,8 @@ public static class HtmlReportWriterTests
         var now = DateTime.UtcNow;
         var results = new[]
         {
-            new CrlCheckResult(new Uri("http://example.com"), "OK", TimeSpan.Zero, null, null, null, null, null, now, "Valid"),
-            new CrlCheckResult(new Uri("http://bad"), "ERROR", TimeSpan.Zero, null, "Failed", null, null, null, now, "Invalid")
+            new CrlCheckResult(new Uri("http://example.com"), CrlStatus.Ok, TimeSpan.Zero, null, null, null, null, null, now, "Valid"),
+            new CrlCheckResult(new Uri("http://bad"), CrlStatus.Error, TimeSpan.Zero, null, "Failed", null, null, null, now, "Invalid")
         };
         var run = new CrlCheckRun(results, new Diagnostics.RunDiagnostics(), now);
 

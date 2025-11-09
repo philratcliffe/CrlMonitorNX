@@ -73,11 +73,11 @@ internal sealed class EmailReportReporter : IReporter
     {
         return new Summary(
             run.Results.Count,
-            run.Results.Count(r => string.Equals(r.Status, "OK", StringComparison.OrdinalIgnoreCase)),
-            run.Results.Count(r => string.Equals(r.Status, "WARNING", StringComparison.OrdinalIgnoreCase)),
-            run.Results.Count(r => string.Equals(r.Status, "EXPIRING", StringComparison.OrdinalIgnoreCase)),
-            run.Results.Count(r => string.Equals(r.Status, "EXPIRED", StringComparison.OrdinalIgnoreCase)),
-            run.Results.Count(r => string.Equals(r.Status, "ERROR", StringComparison.OrdinalIgnoreCase)));
+            run.Results.Count(r => r.Status == CrlStatus.Ok),
+            run.Results.Count(r => r.Status == CrlStatus.Warning),
+            run.Results.Count(r => r.Status == CrlStatus.Expiring),
+            run.Results.Count(r => r.Status == CrlStatus.Expired),
+            run.Results.Count(r => r.Status == CrlStatus.Error));
     }
 
     private static string BuildSubject(string baseSubject, int errorCount)

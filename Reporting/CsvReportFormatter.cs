@@ -95,7 +95,7 @@ internal static class CsvReportFormatter
 
         csv.WriteField(result.Uri.ToString());
         csv.WriteField(issuer);
-        csv.WriteField(result.Status);
+        csv.WriteField(result.Status.ToDisplayString());
         csv.WriteField(thisUpdate);
         csv.WriteField(nextUpdate);
         csv.WriteField(size);

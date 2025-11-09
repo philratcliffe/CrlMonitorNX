@@ -16,7 +16,7 @@ internal sealed class AlertReporter : IReporter
     private readonly AlertOptions _options;
     private readonly IEmailClient _emailClient;
     private readonly IStateStore _stateStore;
-    private readonly HashSet<string> _statusFilters;
+    private readonly HashSet<CrlStatus> _statusFilters;
     private readonly string? _htmlReportUrl;
 
     public AlertReporter(AlertOptions options, IEmailClient emailClient, IStateStore stateStore, string? htmlReportUrl)
@@ -24,7 +24,7 @@ internal sealed class AlertReporter : IReporter
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _emailClient = emailClient ?? throw new ArgumentNullException(nameof(emailClient));
         _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-        _statusFilters = new HashSet<string>(options.Statuses, StringComparer.OrdinalIgnoreCase);
+        _statusFilters = new HashSet<CrlStatus>(options.Statuses);
         _htmlReportUrl = htmlReportUrl;
     }
 
@@ -88,7 +88,7 @@ internal sealed class AlertReporter : IReporter
             builder.AppendLine(FormattableString.Invariant($"#{index + 1} {GetIssueTitle(alert)}"));
             builder.AppendLine("--------------------------------------------------");
             builder.AppendLine(FormattableString.Invariant($"URL: {alert.Result.Uri}"));
-            builder.AppendLine(FormattableString.Invariant($"Status: {alert.Result.Status}"));
+            builder.AppendLine(FormattableString.Invariant($"Status: {alert.Result.Status.ToDisplayString()}"));
             builder.AppendLine(FormattableString.Invariant($"Checked: {TimeFormatter.FormatUtc(alert.Result.CheckedAtUtc)}"));
             if (includeDetails && !string.IsNullOrWhiteSpace(alert.Result.ErrorInfo))
             {
@@ -160,10 +160,10 @@ internal sealed class AlertReporter : IReporter
         return null;
     }
 
-    private static string BuildStateKey(string condition, Uri uri)
+    private static string BuildStateKey(CrlStatus condition, Uri uri)
     {
-        return FormattableString.Invariant($"{condition}|{uri}");
+        return FormattableString.Invariant($"{condition.ToDisplayString()}|{uri}");
     }
 
-    private readonly record struct AlertInstance(string Condition, string StateKey, CrlCheckResult Result);
+    private readonly record struct AlertInstance(CrlStatus Condition, string StateKey, CrlCheckResult Result);
 }

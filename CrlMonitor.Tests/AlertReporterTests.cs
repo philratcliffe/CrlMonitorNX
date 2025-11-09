@@ -20,7 +20,7 @@ public static class AlertReporterTests
     [Fact]
     public static async Task SendsAlertForSelectedStatuses()
     {
-        var options = BuildOptions("ERROR", "EXPIRED", "EXPIRING");
+        var options = BuildOptions(CrlStatus.Error, CrlStatus.Expired, CrlStatus.Expiring);
         var state = new RecordingAlertStateStore();
         var client = new RecordingEmailClient();
         var reporter = new AlertReporter(options, client, state, "https://example.com/crl/report.html");
@@ -43,7 +43,7 @@ public static class AlertReporterTests
     [Fact]
     public static async Task SuppressesAlertWhenCooldownActive()
     {
-        var options = BuildOptions("EXPIRED");
+        var options = BuildOptions(CrlStatus.Expired);
         var state = new RecordingAlertStateStore
         {
             Cooldowns = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase)
@@ -59,7 +59,7 @@ public static class AlertReporterTests
         Assert.False(client.WasSent);
     }
 
-    private static AlertOptions BuildOptions(params string[] statuses)
+    private static AlertOptions BuildOptions(params CrlStatus[] statuses)
     {
         return new AlertOptions(
             Enabled: true,
@@ -76,9 +76,9 @@ public static class AlertReporterTests
         var now = DateTime.UtcNow;
         var results = new List<CrlCheckResult>
         {
-            new(new Uri("http://expired"), "EXPIRED", TimeSpan.FromMilliseconds(10), null, "Expired", null, null, null, now, "Valid"),
-            new(new Uri("http://expiring"), "EXPIRING", TimeSpan.FromMilliseconds(12), null, "Expiring soon", null, null, null, now, "Valid"),
-            new(new Uri("http://failed"), "ERROR", TimeSpan.FromMilliseconds(10), null, "Failed fetch", null, null, null, now, null)
+            new(new Uri("http://expired"), CrlStatus.Expired, TimeSpan.FromMilliseconds(10), null, "Expired", null, null, null, now, "Valid"),
+            new(new Uri("http://expiring"), CrlStatus.Expiring, TimeSpan.FromMilliseconds(12), null, "Expiring soon", null, null, null, now, "Valid"),
+            new(new Uri("http://failed"), CrlStatus.Error, TimeSpan.FromMilliseconds(10), null, "Failed fetch", null, null, null, now, null)
         };
         return new CrlCheckRun(results, new Diagnostics.RunDiagnostics(), now);
     }
