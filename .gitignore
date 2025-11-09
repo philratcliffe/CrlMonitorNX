@@ -140,3 +140,4 @@ reports/
 
 # Integration test output
 integration_tests/test_output/
+reports/
