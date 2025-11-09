@@ -30,3 +30,12 @@ Confirms that `Microsoft.NETCore.App 8.0.x` is available system-wide.
 ## .NET SDK Selection on Linux
 
 Use the Microsoft package feeds (e.g., `apt install dotnet-sdk-8.0`) and confirm `/usr/share/dotnet` is ahead of any custom installs in `PATH`. If multiple versions co-exist, export `DOTNET_ROOT=/usr/share/dotnet` inside your shell profile and re-run `dotnet --list-runtimes` to ensure 8.0 is active.
+
+## Integration Tests
+
+Optional end-to-end checks live under `integration_tests/` and are not wired into `dotnet test`:
+
+- `python integration_tests/test_csv_report.py` – runs the CLI against a sample CRL and validates the CSV output.
+- `python integration_tests/test_smtp_report.py` – spins up a local SMTP server, triggers an email report, and inspects the captured MIME payload.
+
+Both scripts accept `-keep_test_output` to retain generated configs/artifacts for debugging.
