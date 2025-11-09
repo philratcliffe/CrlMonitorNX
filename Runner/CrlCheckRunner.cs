@@ -227,13 +227,13 @@ internal sealed class CrlCheckRunner
         SignatureValidationResult signature,
         HealthEvaluationResult health)
     {
-        var healthStatus = string.Equals(health.Status, "Expired", StringComparison.OrdinalIgnoreCase)
-            ? CrlStatus.Expired
-            : string.Equals(health.Status, "Expiring", StringComparison.OrdinalIgnoreCase)
-                ? CrlStatus.Expiring
-                : string.Equals(health.Status, "Unknown", StringComparison.OrdinalIgnoreCase)
-                    ? CrlStatus.Warning
-                    : CrlStatus.Ok;
+        var healthStatus = (health.Status?.Trim().ToUpperInvariant()) switch
+        {
+            "EXPIRED" => CrlStatus.Expired,
+            "EXPIRING" => CrlStatus.Expiring,
+            "UNKNOWN" => CrlStatus.Warning,
+            _ => CrlStatus.Ok
+        };
 
         if (healthStatus == CrlStatus.Expired)
         {
