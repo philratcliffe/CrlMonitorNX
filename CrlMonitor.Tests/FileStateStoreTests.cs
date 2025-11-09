@@ -33,6 +33,9 @@ public static class FileStateStoreTests
     [Fact]
     public static async Task SaveLastFetchAsyncPersistsValue()
     {
+        // CA2007 is suppressed here because the test intentionally awaits many asynchronous calls
+        // and the default SynchronizationContext is irrelevant inside the test runner.
+        #pragma warning disable CA2007
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "state.json");
         using var store = new FileStateStore(path);
@@ -124,6 +127,50 @@ public static class FileStateStoreTests
 
         Assert.Equal(timestamp, result);
         Assert.Null(missing);
+    }
+
+    /// <summary>
+    /// Stress test concurrently reading and writing from multiple threads.
+    /// </summary>
+    [Fact]
+    public static async Task ConcurrentAccessIsSerialized()
+    {
+        using var temp = new TempFolder();
+        var path = Path.Combine(temp.Path, "state.json");
+        using var store = new FileStateStore(path);
+        var cancellationToken = CancellationToken.None;
+        var uris = new[]
+        {
+            new Uri("http://a.example.com"),
+            new Uri("http://b.example.com"),
+            new Uri("http://c.example.com"),
+            new Uri("http://d.example.com")
+        };
+
+        var tasks = new Task[32];
+        for (var i = 0; i < tasks.Length; i++)
+        {
+            tasks[i] = Task.Run(async () =>
+            {
+                var index = i % uris.Length;
+                var uri = uris[index];
+                var timestamp = DateTime.UtcNow.AddMinutes(i);
+                await store.SaveLastFetchAsync(uri, timestamp, cancellationToken);
+                var readBack = await store.GetLastFetchAsync(uri, cancellationToken);
+                Assert.NotNull(readBack);
+                Assert.Equal(DateTimeKind.Utc, readBack!.Value.Kind);
+                Assert.True(Math.Abs((readBack.Value - timestamp).TotalMilliseconds) < 5_000);
+                var alertKey = FormattableString.Invariant($"{uri}|{i}");
+                await store.SaveAlertCooldownAsync(alertKey, timestamp, cancellationToken);
+                var alertBack = await store.GetAlertCooldownAsync(alertKey, cancellationToken);
+                Assert.NotNull(alertBack);
+                Assert.True(Math.Abs((alertBack!.Value - timestamp).TotalMilliseconds) < 5_000);
+            }, cancellationToken);
+        }
+
+        await Task.WhenAll(tasks);
+
+        #pragma warning restore CA2007
     }
 
     private sealed class TempFolder : IDisposable

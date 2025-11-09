@@ -65,8 +65,8 @@ class CsvReportIntegrationTest(unittest.TestCase):
         self.assertEqual(first.row["URI"], expected_uri)
         self.assertEqual(first.row["Issuer_Name"], expected_issuer)
         self.assertEqual(first.row["Status"], "OK")
-        self.assertEqual(first.row["This_Update_UTC"], "2025-11-05T19:45:58Z")
-        self.assertEqual(first.row["Next_Update_UTC"], "2025-11-26T19:45:58Z")
+        self.assertEqual(first.row["This_Update_UTC"], "2025-11-05 19:45:58Z")
+        self.assertEqual(first.row["Next_Update_UTC"], "2025-11-26 19:45:58Z")
         self.assertEqual(first.row["CRL_Size_bytes"], str(crl_path.stat().st_size))
         self.assertEqual(first.row["Download_Duration_ms"], "0")
         self.assertEqual(first.row["Signature_Valid"], "VALID")
@@ -117,7 +117,8 @@ class CsvReportIntegrationTest(unittest.TestCase):
 def _parse_utc(value: str) -> datetime:
     if not value:
         raise AssertionError("Expected timestamp value")
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    normalised = value.replace("T", " ").strip()
+    return datetime.strptime(normalised, "%Y-%m-%d %H:%M:%SZ").replace(tzinfo=timezone.utc)
 
 
 if __name__ == "__main__":
