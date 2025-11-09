@@ -5,7 +5,7 @@
   "csv_reports": true,
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 2,
-  "max_crl_size_bytes": 10485760,
+  "max_crl_size_bytes": 10000000,
   "state_file_path": "crlmonitor-state.json",
   "html_report_enabled": true,
   "html_report_path": "reports/crl-report.html",
