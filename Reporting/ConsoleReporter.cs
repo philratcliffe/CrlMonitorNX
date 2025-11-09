@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CrlMonitor.Models;
@@ -13,6 +14,11 @@ internal sealed class ConsoleReporter : IReporter
 {
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
+    private const int NextUpdateColumnWidth = 15;
+    private const int DaysColumnWidth = 6;
+    private const int StatusColumnWidth = 10;
+    private static readonly CompositeFormat TableRowFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}{{1,-{NextUpdateColumnWidth}}}{{2,-{DaysColumnWidth}}}{{3,-{StatusColumnWidth}}}");
+    private static readonly CompositeFormat UriPadFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}");
     private readonly ReportingStatus _status;
 
     public ConsoleReporter(ReportingStatus status)
@@ -57,7 +63,7 @@ internal sealed class ConsoleReporter : IReporter
     {
         var header = string.Format(
             CultureInfo.InvariantCulture,
-            "{0,-45}{1,-15}{2,-6}{3,-10}",
+            TableRowFormat,
             "URI",
             "Next Update",
             "Days",
@@ -76,7 +82,7 @@ internal sealed class ConsoleReporter : IReporter
         var days = CalculateDaysRemaining(result.ParsedCrl?.NextUpdate);
         var line = string.Format(
             CultureInfo.InvariantCulture,
-            "{0,-45}{1,-15}{2,-6}{3,-10}",
+            TableRowFormat,
             uri,
             nextUpdate,
             days,
@@ -172,7 +178,8 @@ internal sealed class ConsoleReporter : IReporter
                 continue;
             }
 
-            WriteWrappedLine($"  {uri,-45} ", string.Join(" | ", parts));
+            var paddedUri = string.Format(CultureInfo.InvariantCulture, UriPadFormat, uri);
+            WriteWrappedLine($"  {paddedUri} ", string.Join(" | ", parts));
         }
     }
 

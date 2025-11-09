@@ -19,6 +19,12 @@ internal static class ConfigLoader
     private const long MaxMaxCrlSizeBytes = 100 * 1024 * 1024;
     private const string DefaultReportSubject = "CRL Health Report";
     private const string DefaultAlertPrefix = "[CRL Alert]";
+    private const int MinFetchTimeoutSeconds = 1;
+    private const int MaxFetchTimeoutSeconds = 600;
+    private const int MinParallelFetches = 1;
+    private const int MaxParallelFetches = 64;
+    private const double MinAlertCooldownHours = 0;
+    private const double MaxAlertCooldownHours = 168;
     private static readonly HashSet<string> SupportedSchemes = new(StringComparer.OrdinalIgnoreCase)
     {
         "http",
@@ -52,14 +58,14 @@ internal static class ConfigLoader
         var stateFilePath = RequirePath(document.StateFilePath, nameof(document.StateFilePath));
         var timeoutSeconds = document.FetchTimeoutSeconds ?? throw new InvalidOperationException("fetch_timeout_seconds is required.");
         var maxParallel = document.MaxParallelFetches ?? throw new InvalidOperationException("max_parallel_fetches is required.");
-        if (timeoutSeconds <= 0 || timeoutSeconds > 600)
+        if (timeoutSeconds < MinFetchTimeoutSeconds || timeoutSeconds > MaxFetchTimeoutSeconds)
         {
-            throw new InvalidOperationException("fetch_timeout_seconds must be between 1 and 600 seconds.");
+            throw new InvalidOperationException($"fetch_timeout_seconds must be between {MinFetchTimeoutSeconds} and {MaxFetchTimeoutSeconds} seconds.");
         }
 
-        if (maxParallel < 1 || maxParallel > 64)
+        if (maxParallel < MinParallelFetches || maxParallel > MaxParallelFetches)
         {
-            throw new InvalidOperationException("max_parallel_fetches must be between 1 and 64.");
+            throw new InvalidOperationException($"max_parallel_fetches must be between {MinParallelFetches} and {MaxParallelFetches}.");
         }
 
         var maxCrlSizeBytes = ResolveMaxCrlSize(document.MaxCrlSizeBytes, DefaultMaxCrlSizeBytes, "max_crl_size_bytes");
@@ -314,9 +320,9 @@ internal static class ConfigLoader
         var statuses = ParseAlertStatuses(document.Statuses);
 
         var cooldownHours = document.CooldownHours ?? 6;
-        if (cooldownHours <= 0 || cooldownHours > 168)
+        if (cooldownHours < MinAlertCooldownHours || cooldownHours > MaxAlertCooldownHours)
         {
-            throw new InvalidOperationException("alerts.cooldown_hours must be between 0 and 168.");
+            throw new InvalidOperationException($"alerts.cooldown_hours must be between {MinAlertCooldownHours} and {MaxAlertCooldownHours}.");
         }
 
         var subjectPrefix = string.IsNullOrWhiteSpace(document.SubjectPrefix)
