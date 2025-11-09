@@ -296,7 +296,7 @@ internal static class ConfigLoader
         var recipients = ParseRecipients(document.Recipients, "reports.recipients");
         var subject = string.IsNullOrWhiteSpace(document.Subject)
             ? DefaultReportSubject
-            : document.Subject!;
+            : document.Subject;
         var includeSummary = document.IncludeSummary ?? true;
         var includeFullCsv = document.IncludeFullCsv ?? true;
         return new ReportOptions(
@@ -327,7 +327,7 @@ internal static class ConfigLoader
 
         var subjectPrefix = string.IsNullOrWhiteSpace(document.SubjectPrefix)
             ? DefaultAlertPrefix
-            : document.SubjectPrefix!;
+            : document.SubjectPrefix;
         var includeDetails = document.IncludeDetails ?? true;
         if (smtp == null)
         {
