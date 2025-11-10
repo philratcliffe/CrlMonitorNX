@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace CrlMonitor.Fetching;
 
 internal sealed class FetcherResolver : IFetcherResolver
@@ -19,18 +16,15 @@ internal sealed class FetcherResolver : IFetcherResolver
             }
         }
 
-        _fetchers = map;
+        this._fetchers = map;
     }
 
     public ICrlFetcher Resolve(Uri uri)
     {
         ArgumentNullException.ThrowIfNull(uri);
-        if (_fetchers.TryGetValue(uri.Scheme, out var fetcher))
-        {
-            return fetcher;
-        }
-
-        throw new InvalidOperationException($"No fetcher registered for scheme '{uri.Scheme}'.");
+        return this._fetchers.TryGetValue(uri.Scheme, out var fetcher)
+            ? fetcher
+            : throw new InvalidOperationException($"No fetcher registered for scheme '{uri.Scheme}'.");
     }
 }
 

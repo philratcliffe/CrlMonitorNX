@@ -1,6 +1,4 @@
-using System;
 using CrlMonitor.Crl;
-using CrlMonitor.Models;
 
 namespace CrlMonitor.Health;
 
@@ -30,11 +28,8 @@ internal sealed class CrlHealthEvaluator : ICrlHealthEvaluator
 
         var elapsed = utcNow - parsedCrl.ThisUpdate;
         var ratio = elapsed.TotalSeconds / span.TotalSeconds;
-        if (ratio >= entry.ExpiryThreshold)
-        {
-            return HealthEvaluationResult.Expiring($"CRL is {ratio:P0} through validity window.");
-        }
-
-        return HealthEvaluationResult.Healthy();
+        return ratio >= entry.ExpiryThreshold
+            ? HealthEvaluationResult.Expiring($"CRL is {ratio:P0} through validity window.")
+            : HealthEvaluationResult.Healthy();
     }
 }

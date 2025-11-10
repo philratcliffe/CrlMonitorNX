@@ -1,4 +1,3 @@
-using System;
 using CrlMonitor.Crl;
 
 namespace CrlMonitor.Models;

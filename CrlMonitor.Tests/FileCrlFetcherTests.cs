@@ -1,11 +1,5 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
-using CrlMonitor.Models;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -23,12 +17,12 @@ public static class FileCrlFetcherTests
         var fetcher = new FileCrlFetcher();
         var bytes = new byte[] { 1, 2, 3 };
         var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        await File.WriteAllBytesAsync(tempPath, bytes);
+        await File.WriteAllBytesAsync(tempPath, bytes).ConfigureAwait(true);
 
         try
         {
             var entry = new CrlConfigEntry(new Uri(tempPath), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
-            var result = await fetcher.FetchAsync(entry, CancellationToken.None);
+            var result = await fetcher.FetchAsync(entry, CancellationToken.None).ConfigureAwait(true);
 
             Assert.Equal(bytes, result.Content);
         }
@@ -47,12 +41,12 @@ public static class FileCrlFetcherTests
         var fetcher = new FileCrlFetcher();
         var bytes = new byte[] { 1, 2, 3 };
         var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        await File.WriteAllBytesAsync(tempPath, bytes);
+        await File.WriteAllBytesAsync(tempPath, bytes).ConfigureAwait(true);
 
         try
         {
             var entry = new CrlConfigEntry(new Uri(tempPath), SignatureValidationMode.None, null, 0.8, null, 2);
-            await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+            _ = await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
         }
         finally
         {

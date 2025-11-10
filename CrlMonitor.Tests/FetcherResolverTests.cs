@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -13,8 +7,8 @@ namespace CrlMonitor.Tests;
 /// </summary>
 public static class FetcherResolverTests
 {
-    private static readonly string[] HttpSchemes = { "http", "https" };
-    private static readonly string[] LdapSchemes = { "ldap" };
+    private static readonly string[] HttpSchemes = ["http", "https"];
+    private static readonly string[] LdapSchemes = ["ldap"];
 
     /// <summary>
     /// Ensures matching schemes return the registered fetcher.
@@ -47,7 +41,7 @@ public static class FetcherResolverTests
         };
         var resolver = new FetcherResolver(mappings);
 
-        Assert.Throws<InvalidOperationException>(() => resolver.Resolve(new Uri("https://example.com/crl")));
+        _ = Assert.Throws<InvalidOperationException>(() => resolver.Resolve(new Uri("https://example.com/crl")));
     }
 
     private sealed class StubFetcher : ICrlFetcher

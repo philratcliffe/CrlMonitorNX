@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Notifications;

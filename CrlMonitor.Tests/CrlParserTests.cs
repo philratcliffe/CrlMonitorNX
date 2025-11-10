@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using CrlMonitor.Crl;
-using Xunit;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
@@ -10,7 +6,6 @@ using Org.BouncyCastle.Crypto.Operators;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using Org.BouncyCastle.X509.Extension;
 
 namespace CrlMonitor.Tests;
 
@@ -19,7 +14,7 @@ namespace CrlMonitor.Tests;
 /// </summary>
 public static class CrlParserTests
 {
-    private static readonly string[] SampleRevokedSerials = { "01", "0A" };
+    private static readonly string[] SampleRevokedSerials = ["01", "0A"];
 
     /// <summary>
     /// Ensures null inputs are rejected.
@@ -28,7 +23,7 @@ public static class CrlParserTests
     public static void ParseThrowsWhenBytesNull()
     {
         var parser = new CrlParser(SignatureValidationMode.None);
-        Assert.Throws<ArgumentNullException>(() => parser.Parse(null!));
+        _ = Assert.Throws<ArgumentNullException>(() => parser.Parse(null!));
     }
 
     /// <summary>
@@ -38,7 +33,7 @@ public static class CrlParserTests
     public static void ParseThrowsWhenBytesEmpty()
     {
         var parser = new CrlParser(SignatureValidationMode.None);
-        Assert.Throws<ArgumentException>(() => parser.Parse(Array.Empty<byte>()));
+        _ = Assert.Throws<ArgumentException>(() => parser.Parse([]));
     }
 
     /// <summary>

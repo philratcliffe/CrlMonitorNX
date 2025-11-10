@@ -1,9 +1,5 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -23,7 +19,7 @@ public static class LdapCrlFetcherTests
         var fetcher = new LdapCrlFetcher(factory);
         var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Example,O=Corp"), SignatureValidationMode.None, null, 0.8, new LdapCredentials("user", "pw"), 10 * 1024 * 1024);
 
-        var result = await fetcher.FetchAsync(entry, CancellationToken.None);
+        var result = await fetcher.FetchAsync(entry, CancellationToken.None).ConfigureAwait(true);
 
         Assert.Equal(expected, result.Content);
         Assert.Equal(expected.Length, result.ContentLength);
@@ -40,7 +36,7 @@ public static class LdapCrlFetcherTests
         var fetcher = new LdapCrlFetcher(factory);
         var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Missing,O=Corp"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -53,7 +49,7 @@ public static class LdapCrlFetcherTests
         var fetcher = new LdapCrlFetcher(factory);
         var entry = new CrlConfigEntry(new Uri("http://example.com/crl"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -66,7 +62,7 @@ public static class LdapCrlFetcherTests
         var fetcher = new LdapCrlFetcher(factory);
         var entry = new CrlConfigEntry(new Uri("ldap://dc1.example.com/CN=Example,O=Corp"), SignatureValidationMode.None, null, 0.8, new LdapCredentials("user", "pw"), 2);
 
-        await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+        _ = await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
     }
 
     private sealed class StubFactory : ILdapConnectionFactory
@@ -75,36 +71,30 @@ public static class LdapCrlFetcherTests
 
         public StubFactory(byte[] singleValue)
         {
-            _values = new[] { singleValue };
+            this._values = [singleValue];
         }
 
         public StubFactory(byte[][] values)
         {
-            _values = values;
+            this._values = values;
         }
 
         public string? LastDistinguishedName { get; private set; }
 
         public ILdapConnection Open(Uri uri, LdapCredentials? credentials)
         {
-            return new StubConnection(this, _values);
+            return new StubConnection(this, this._values);
         }
 
-        private sealed class StubConnection : ILdapConnection
+        private sealed class StubConnection(StubFactory owner, byte[][] values) : ILdapConnection
         {
-            private readonly StubFactory _owner;
-            private readonly byte[][] _values;
-
-            public StubConnection(StubFactory owner, byte[][] values)
-            {
-                _owner = owner;
-                _values = values;
-            }
+            private readonly StubFactory _owner = owner;
+            private readonly byte[][] _values = values;
 
             public byte[][] GetAttributeValues(string distinguishedName, string attributeName)
             {
-                _owner.LastDistinguishedName = distinguishedName;
-                return _values;
+                this._owner.LastDistinguishedName = distinguishedName;
+                return this._values;
             }
 
             public void Dispose()

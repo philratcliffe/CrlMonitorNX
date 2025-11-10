@@ -1,9 +1,6 @@
-using System;
 using CrlMonitor.Crl;
 using CrlMonitor.Health;
-using CrlMonitor.Models;
 using CrlMonitor.Tests.TestUtilities;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 

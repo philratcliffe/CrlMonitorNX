@@ -13,28 +13,28 @@ internal sealed class ReportingStatus
     public void RecordCsv(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        lock (_gate)
+        lock (this._gate)
         {
-            CsvPath = path;
-            CsvWritten = true;
+            this.CsvPath = path;
+            this.CsvWritten = true;
         }
     }
 
     public void RecordHtml(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        lock (_gate)
+        lock (this._gate)
         {
-            HtmlReportPath = path;
-            HtmlWritten = true;
+            this.HtmlReportPath = path;
+            this.HtmlWritten = true;
         }
     }
 
     public void RecordEmailSent()
     {
-        lock (_gate)
+        lock (this._gate)
         {
-            EmailReportSent = true;
+            this.EmailReportSent = true;
         }
     }
 }

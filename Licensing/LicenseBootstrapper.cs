@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using RedKestrel.Licensing;
 using RedKestrel.Licensing.Trial;
 
@@ -19,8 +16,7 @@ internal static class LicenseBootstrapper
     public static async Task EnsureLicensedAsync(CancellationToken cancellationToken)
     {
         var fileAccessor = new LicenseFileAccessor();
-        var validator = new LicenseValidator(fileAccessor, new LicenseValidationOptions
-        {
+        var validator = new LicenseValidator(fileAccessor, new LicenseValidationOptions {
             PublicKey = PublicKey
         });
 
@@ -35,8 +31,7 @@ internal static class LicenseBootstrapper
             Console.WriteLine("License validation failed: {0}", validation.ErrorMessage ?? validation.Error.ToString());
         }
 
-        var trialOptions = new TrialOptions
-        {
+        var trialOptions = new TrialOptions {
             CompanyName = CompanyName,
             ProductName = ProductName,
             StorageKey = TrialStorageKey,
@@ -62,8 +57,7 @@ internal static class LicenseBootstrapper
     private static string CreateRequestCode()
     {
         var generator = new RequestCodeGenerator();
-        var options = new RequestCodeGeneratorOptions
-        {
+        var options = new RequestCodeGeneratorOptions {
             BindingOrder = new[]
             {
                 RequestCodeBinding.MachineName,

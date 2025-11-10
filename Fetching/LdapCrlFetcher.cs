@@ -1,18 +1,9 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace CrlMonitor.Fetching;
 
-internal sealed class LdapCrlFetcher : ICrlFetcher
+internal sealed class LdapCrlFetcher(ILdapConnectionFactory connectionFactory) : ICrlFetcher
 {
     private const string AttributeName = "certificateRevocationList;binary";
-    private readonly ILdapConnectionFactory _connectionFactory;
-
-    public LdapCrlFetcher(ILdapConnectionFactory connectionFactory)
-    {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-    }
+    private readonly ILdapConnectionFactory _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
 
     public Task<FetchedCrl> FetchAsync(CrlConfigEntry entry, CancellationToken cancellationToken)
     {
@@ -23,7 +14,7 @@ internal sealed class LdapCrlFetcher : ICrlFetcher
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        using var connection = _connectionFactory.Open(entry.Uri, entry.Ldap);
+        using var connection = this._connectionFactory.Open(entry.Uri, entry.Ldap);
         var distinguishedName = BuildDistinguishedName(entry.Uri);
         var start = DateTime.UtcNow;
         var values = connection.GetAttributeValues(distinguishedName, AttributeName);
@@ -56,11 +47,8 @@ internal sealed class LdapCrlFetcher : ICrlFetcher
         }
 
         var dn = path.Trim('/');
-        if (string.IsNullOrWhiteSpace(dn))
-        {
-            throw new InvalidOperationException("LDAP URI must include a distinguished name.");
-        }
-
-        return Uri.UnescapeDataString(dn);
+        return string.IsNullOrWhiteSpace(dn)
+            ? throw new InvalidOperationException("LDAP URI must include a distinguished name.")
+            : Uri.UnescapeDataString(dn);
     }
 }

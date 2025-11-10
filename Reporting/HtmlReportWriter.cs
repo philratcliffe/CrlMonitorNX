@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
@@ -20,7 +14,7 @@ internal static class HtmlReportWriter
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory))
         {
-            Directory.CreateDirectory(directory);
+            _ = Directory.CreateDirectory(directory);
         }
 
         var html = BuildHtml(run);
@@ -31,83 +25,86 @@ internal static class HtmlReportWriter
     {
         var summary = BuildSummary(run.Results);
         var builder = new StringBuilder();
-        builder.AppendLine("<!DOCTYPE html>");
-        builder.AppendLine("<html lang=\"en\"><head>");
-        builder.AppendLine("<meta charset=\"utf-8\" />");
-        builder.AppendLine("<title>CRL Health Report</title>");
-        builder.AppendLine("<style>");
-        builder.AppendLine("body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fb;color:#1f2937;margin:0;padding:0;}");
-        builder.AppendLine(".container{max-width:1200px;margin:0 auto;padding:32px;}");
-        builder.AppendLine(".card{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(15,23,42,.1);padding:32px;margin-bottom:32px;}");
-        builder.AppendLine(".summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}");
-        builder.AppendLine(".summary-card{padding:16px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;}");
-        builder.AppendLine(".summary-label{font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}");
-        builder.AppendLine(".summary-value{font-size:28px;font-weight:600;color:#111827;margin-top:4px;}");
-        builder.AppendLine(".table-wrapper{overflow-x:auto;}");
-        builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
-        builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
-        builder.AppendLine("td{padding:12px;border-bottom:1px solid #e5e7eb;}");
-        builder.AppendLine("tr:nth-child(even){background:#f9fafb;}");
-        builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
-        builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
-        builder.AppendLine(".status-EXPIRED,.status-ERROR{color:#dc2626;font-weight:600;}");
-        builder.AppendLine("</style></head><body>");
-        builder.AppendLine("<div class=\"container\">");
-        builder.AppendLine("<div class=\"card\">");
-        builder.AppendLine(FormattableString.Invariant($"<h1>CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}</p>"));
-        builder.AppendLine("<div class=\"summary-grid\">");
+        _ = builder.AppendLine("<!DOCTYPE html>");
+        _ = builder.AppendLine("<html lang=\"en\"><head>");
+        _ = builder.AppendLine("<meta charset=\"utf-8\" />");
+        _ = builder.AppendLine("<title>CRL Health Report</title>");
+        _ = builder.AppendLine("<style>");
+        _ = builder.AppendLine("body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fb;color:#1f2937;margin:0;padding:0;}");
+        _ = builder.AppendLine(".container{max-width:1200px;margin:0 auto;padding:32px;}");
+        _ = builder.AppendLine(".card{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(15,23,42,.1);padding:32px;margin-bottom:32px;}");
+        _ = builder.AppendLine(".summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}");
+        _ = builder.AppendLine(".summary-card{padding:16px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;}");
+        _ = builder.AppendLine(".summary-label{font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}");
+        _ = builder.AppendLine(".summary-value{font-size:28px;font-weight:600;color:#111827;margin-top:4px;}");
+        _ = builder.AppendLine(".table-wrapper{overflow-x:auto;}");
+        _ = builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
+        _ = builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
+        _ = builder.AppendLine("td{padding:12px;border-bottom:1px solid #e5e7eb;}");
+        _ = builder.AppendLine("tr:nth-child(even){background:#f9fafb;}");
+        _ = builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
+        _ = builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
+        _ = builder.AppendLine(".status-EXPIRED,.status-ERROR{color:#dc2626;font-weight:600;}");
+        _ = builder.AppendLine("</style></head><body>");
+        _ = builder.AppendLine("<div class=\"container\">");
+        _ = builder.AppendLine("<div class=\"card\">");
+        _ = builder.AppendLine(FormattableString.Invariant($"<h1>CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}</p>"));
+        _ = builder.AppendLine("<div class=\"summary-grid\">");
         AppendSummaryCard(builder, "CRLs Checked", summary.Total, null);
         AppendSummaryCard(builder, "CRLs OK", summary.Ok, null);
         AppendSummaryCard(builder, "CRLs Warning", summary.Warning, null);
         AppendSummaryCard(builder, "CRLs Expiring", summary.Expiring, null);
         AppendSummaryCard(builder, "CRLs Expired", summary.Expired, summary.Expired > 0 ? "#dc2626" : null);
         AppendSummaryCard(builder, "CRLs Failed", summary.Errors, summary.Errors > 0 ? "#dc2626" : null);
-        builder.AppendLine("</div></div>");
-        builder.AppendLine("<div class=\"card table-wrapper\">");
-        builder.AppendLine("<table><thead><tr>");
-        builder.AppendLine("<th>URI</th><th>Issuer</th><th>Status</th><th>This Update (UTC)</th><th>Next Update (UTC)</th><th>CRL Size</th><th>Download (ms)</th><th>Signature</th><th>Revocations</th><th>Checked (UTC)</th><th>Previous (UTC)</th><th>Type</th><th>Details</th>");
-        builder.AppendLine("</tr></thead><tbody>");
+        _ = builder.AppendLine("</div></div>");
+        _ = builder.AppendLine("<div class=\"card table-wrapper\">");
+        _ = builder.AppendLine("<table><thead><tr>");
+        _ = builder.AppendLine("<th>URI</th><th>Issuer</th><th>Status</th><th>This Update (UTC)</th><th>Next Update (UTC)</th><th>CRL Size</th><th>Download (ms)</th><th>Signature</th><th>Revocations</th><th>Checked (UTC)</th><th>Previous (UTC)</th><th>Type</th><th>Details</th>");
+        _ = builder.AppendLine("</tr></thead><tbody>");
         foreach (var result in run.Results)
         {
             AppendRow(builder, result);
         }
-        builder.AppendLine("</tbody></table></div></div>");
-        builder.AppendLine(FormattableString.Invariant($"<footer style=\"text-align:center;color:#6b7280;font-size:12px;margin-top:32px;\">Generated by CRL Monitor {GetVersion()} — © {DateTime.UtcNow:yyyy} Red Kestrel Consulting Limited</footer>"));
-        builder.AppendLine("</div></body></html>");
+        _ = builder.AppendLine("</tbody></table></div></div>");
+        _ = builder.AppendLine(FormattableString.Invariant($"<footer style=\"text-align:center;color:#6b7280;font-size:12px;margin-top:32px;\">Generated by CRL Monitor {GetVersion()} — © {DateTime.UtcNow:yyyy} Red Kestrel Consulting Limited</footer>"));
+        _ = builder.AppendLine("</div></body></html>");
         return builder.ToString();
     }
 
     private static void AppendSummaryCard(StringBuilder builder, string label, int value, string? color)
     {
         var valueStyle = string.IsNullOrWhiteSpace(color) ? "summary-value" : $"summary-value\" style=\"color:{color}";
-        builder.AppendLine("<div class=\"summary-card\">");
-        builder.AppendLine(FormattableString.Invariant($"<div class=\"summary-label\">{label}</div>"));
-        builder.AppendLine(FormattableString.Invariant($"<div class=\"{valueStyle}\">{value}</div>"));
-        builder.AppendLine("</div>");
+        _ = builder.AppendLine("<div class=\"summary-card\">");
+        _ = builder.AppendLine(FormattableString.Invariant($"<div class=\"summary-label\">{label}</div>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<div class=\"{valueStyle}\">{value}</div>"));
+        _ = builder.AppendLine("</div>");
     }
 
     private static void AppendRow(StringBuilder builder, CrlCheckResult result)
     {
         var parsed = result.ParsedCrl;
         var statusClass = $"status-{result.Status.ToDisplayString()}";
-        builder.AppendLine("<tr>");
-        builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.Uri.ToString())}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.ThisUpdate)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.NextUpdate)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{(result.ContentLength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{(result.DownloadDuration?.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture) ?? string.Empty)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{Escape(CsvReportFormatter.NormalizeSignatureStatus(result.SignatureStatus))}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{(parsed?.RevokedSerialNumbers?.Count.ToString(CultureInfo.InvariantCulture) ?? string.Empty)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.CheckedAtUtc)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.PreviousFetchUtc)}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed == null ? string.Empty : parsed.IsDelta ? "Delta" : "Full")}</td>"));
-        builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.ErrorInfo ?? string.Empty)}</td>"));
-        builder.AppendLine("</tr>");
+        _ = builder.AppendLine("<tr>");
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.Uri.ToString())}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.ThisUpdate)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.NextUpdate)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.ContentLength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.DownloadDuration?.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(CsvReportFormatter.NormalizeSignatureStatus(result.SignatureStatus))}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{parsed?.RevokedSerialNumbers?.Count.ToString(CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.CheckedAtUtc)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.PreviousFetchUtc)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed == null ? string.Empty : parsed.IsDelta ? "Delta" : "Full")}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.ErrorInfo ?? string.Empty)}</td>"));
+        _ = builder.AppendLine("</tr>");
     }
 
-    private static string FormatDate(DateTime? value) => TimeFormatter.FormatUtc(value);
+    private static string FormatDate(DateTime? value)
+    {
+        return TimeFormatter.FormatUtc(value);
+    }
 
     private static Summary BuildSummary(IReadOnlyList<CrlCheckResult> results)
     {

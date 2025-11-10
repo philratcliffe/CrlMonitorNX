@@ -1,22 +1,14 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
 
-internal sealed class CompositeReporter : IReporter
+internal sealed class CompositeReporter(IReadOnlyList<IReporter> reporters) : IReporter
 {
-    private readonly IReadOnlyList<IReporter> _reporters;
-
-    public CompositeReporter(IReadOnlyList<IReporter> reporters)
-    {
-        _reporters = reporters ?? new List<IReporter>();
-    }
+    private readonly IReadOnlyList<IReporter> _reporters = reporters ?? throw new ArgumentNullException(nameof(reporters));
 
     public async Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
-        foreach (var reporter in _reporters)
+        foreach (var reporter in this._reporters)
         {
             cancellationToken.ThrowIfCancellationRequested();
             await reporter.ReportAsync(run, cancellationToken).ConfigureAwait(false);

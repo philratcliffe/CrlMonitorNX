@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CrlMonitor.Diagnostics;
 
 namespace CrlMonitor.Models;

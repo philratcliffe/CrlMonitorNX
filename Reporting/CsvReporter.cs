@@ -1,8 +1,4 @@
-using System;
 using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
@@ -15,8 +11,8 @@ internal sealed class CsvReporter : IReporter
     public CsvReporter(string outputPath, ReportingStatus status)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
-        _outputPath = outputPath;
-        _status = status ?? throw new ArgumentNullException(nameof(status));
+        this._outputPath = outputPath;
+        this._status = status ?? throw new ArgumentNullException(nameof(status));
     }
 
     public async Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
@@ -24,17 +20,17 @@ internal sealed class CsvReporter : IReporter
         ArgumentNullException.ThrowIfNull(run);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var directory = Path.GetDirectoryName(_outputPath);
+        var directory = Path.GetDirectoryName(this._outputPath);
         if (!string.IsNullOrEmpty(directory))
         {
-            Directory.CreateDirectory(directory);
+            _ = Directory.CreateDirectory(directory);
         }
 
-        using var stream = new FileStream(_outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        using var stream = new FileStream(this._outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
         using var writer = new StreamWriter(stream);
         await CsvReportFormatter.WriteAsync(writer, run, cancellationToken).ConfigureAwait(false);
         await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-        _status.RecordCsv(_outputPath);
+        this._status.RecordCsv(this._outputPath);
     }
 
     internal static string ResolveOutputPath(string path, bool appendTimestamp)

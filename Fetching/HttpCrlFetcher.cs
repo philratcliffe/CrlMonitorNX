@@ -1,26 +1,16 @@
-using System;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace CrlMonitor.Fetching;
 
-internal sealed class HttpCrlFetcher : ICrlFetcher
+internal sealed class HttpCrlFetcher(HttpClient httpClient) : ICrlFetcher
 {
-    private readonly HttpClient _httpClient;
-
-    public HttpCrlFetcher(HttpClient httpClient)
-    {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-    }
+    private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
     public async Task<FetchedCrl> FetchAsync(CrlConfigEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
         using var request = new HttpRequestMessage(HttpMethod.Get, entry.Uri);
         var start = DateTime.UtcNow;
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        using var response = await this._httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        _ = response.EnsureSuccessStatusCode();
         var limit = entry.MaxCrlSizeBytes;
         var declaredLength = response.Content.Headers.ContentLength;
         if (declaredLength.HasValue && declaredLength.Value > limit)

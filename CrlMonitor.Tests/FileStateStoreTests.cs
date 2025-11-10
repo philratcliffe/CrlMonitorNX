@@ -1,9 +1,4 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.State;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -22,7 +17,7 @@ public static class FileStateStoreTests
         var path = Path.Combine(temp.Path, "state", "last-fetch.json");
         using var store = new FileStateStore(path);
 
-        var result = await store.GetLastFetchAsync(new Uri("http://example.com"), CancellationToken.None);
+        var result = await store.GetLastFetchAsync(new Uri("http://example.com"), CancellationToken.None).ConfigureAwait(true);
 
         Assert.Null(result);
     }
@@ -35,7 +30,7 @@ public static class FileStateStoreTests
     {
         // CA2007 is suppressed here because the test intentionally awaits many asynchronous calls
         // and the default SynchronizationContext is irrelevant inside the test runner.
-        #pragma warning disable CA2007
+#pragma warning disable CA2007
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "state.json");
         using var store = new FileStateStore(path);
@@ -77,7 +72,7 @@ public static class FileStateStoreTests
     {
         using var temp = new TempFolder();
         var path = Path.Combine(temp.Path, "state.json");
-        var legacy = """
+        var legacy = /*lang=json,strict*/ """
         {
           "http://example.com/": "2024-01-01T00:00:00Z"
         }
@@ -87,7 +82,7 @@ public static class FileStateStoreTests
 
         var result = await store.GetLastFetchAsync(new Uri("http://example.com"), CancellationToken.None);
 
-        Assert.NotNull(result);
+        _ = Assert.NotNull(result);
         Assert.Equal(DateTimeKind.Utc, result!.Value.Kind);
         Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.Value);
     }
@@ -150,34 +145,33 @@ public static class FileStateStoreTests
         var tasks = new Task[32];
         for (var i = 0; i < tasks.Length; i++)
         {
-            tasks[i] = Task.Run(async () =>
-            {
+            tasks[i] = Task.Run(async () => {
                 var index = i % uris.Length;
                 var uri = uris[index];
                 var timestamp = DateTime.UtcNow.AddMinutes(i);
                 await store.SaveLastFetchAsync(uri, timestamp, cancellationToken);
                 var readBack = await store.GetLastFetchAsync(uri, cancellationToken);
-                Assert.NotNull(readBack);
+                _ = Assert.NotNull(readBack);
                 Assert.Equal(DateTimeKind.Utc, readBack!.Value.Kind);
                 Assert.True(Math.Abs((readBack.Value - timestamp).TotalMilliseconds) < 5_000);
                 var alertKey = FormattableString.Invariant($"{uri}|{i}");
                 await store.SaveAlertCooldownAsync(alertKey, timestamp, cancellationToken);
                 var alertBack = await store.GetAlertCooldownAsync(alertKey, cancellationToken);
-                Assert.NotNull(alertBack);
+                _ = Assert.NotNull(alertBack);
                 Assert.True(Math.Abs((alertBack!.Value - timestamp).TotalMilliseconds) < 5_000);
             }, cancellationToken);
         }
 
         await Task.WhenAll(tasks);
 
-        #pragma warning restore CA2007
+#pragma warning restore CA2007
     }
 
     private sealed class TempFolder : IDisposable
     {
         public TempFolder()
         {
-            Path = Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString())).FullName;
+            this.Path = Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString())).FullName;
         }
 
         public string Path { get; }
@@ -186,7 +180,7 @@ public static class FileStateStoreTests
         {
             try
             {
-                Directory.Delete(Path, true);
+                Directory.Delete(this.Path, true);
             }
             catch (IOException)
             {

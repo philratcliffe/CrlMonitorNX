@@ -4,8 +4,7 @@ internal static class CrlStatusExtensions
 {
     public static string ToDisplayString(this CrlStatus status)
     {
-        return status switch
-        {
+        return status switch {
             CrlStatus.Ok => "OK",
             CrlStatus.Warning => "WARNING",
             CrlStatus.Expiring => "EXPIRING",

@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Diagnostics;
 using CrlMonitor.Models;
 using CrlMonitor.Notifications;
 using CrlMonitor.Reporting;
+using CrlMonitor.Notifications.Email;
+using CrlMonitor.Notifications.Reports;
 using CrlMonitor.State;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -36,16 +33,16 @@ public static class EmailReportReporterTests
         var reporter = new EmailReportReporter(options, client, state, reportingStatus, "http://example.com/report.html");
         var run = BuildRun();
 
-        await reporter.ReportAsync(run, CancellationToken.None);
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         Assert.True(client.WasSent);
         Assert.Equal("Test Report", client.LastMessage!.Subject);
-        Assert.Single(client.LastMessage.Recipients);
+        _ = Assert.Single(client.LastMessage.Recipients);
         Assert.Contains("CRLs Checked:", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.Contains("CRLs Expiring:", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.Contains("View full HTML report: http://example.com/report.html", client.LastMessage.Body, StringComparison.Ordinal);
         Assert.NotEmpty(client.LastMessage.Attachments);
-        Assert.NotNull(await state.GetLastReportSentAsync(CancellationToken.None));
+        _ = Assert.NotNull(await state.GetLastReportSentAsync(CancellationToken.None).ConfigureAwait(true));
         Assert.True(reportingStatus.EmailReportSent);
     }
 
@@ -69,7 +66,7 @@ public static class EmailReportReporterTests
         var reporter = new EmailReportReporter(options, client, state, reportingStatus, "http://example.com/report.html");
         var run = BuildRun();
 
-        await reporter.ReportAsync(run, CancellationToken.None);
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         Assert.True(client.WasSent);
         Assert.True(reportingStatus.EmailReportSent);
@@ -90,36 +87,46 @@ public static class EmailReportReporterTests
     {
         public DateTime? LastReportSentUtc { get; set; }
 
-        public Task<DateTime?> GetLastFetchAsync(Uri uri, CancellationToken cancellationToken) =>
-            Task.FromResult<DateTime?>(null);
-
-        public Task SaveLastFetchAsync(Uri uri, DateTime fetchedAtUtc, CancellationToken cancellationToken) =>
-            Task.CompletedTask;
-
-        public Task<DateTime?> GetLastReportSentAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(LastReportSentUtc);
-
-        public Task SaveLastReportSentAsync(DateTime sentAtUtc, CancellationToken cancellationToken)
+        public Task<DateTime?> GetLastFetchAsync(Uri uri, CancellationToken cancellationToken)
         {
-            LastReportSentUtc = sentAtUtc;
+            return Task.FromResult<DateTime?>(null);
+        }
+
+        public Task SaveLastFetchAsync(Uri uri, DateTime fetchedAtUtc, CancellationToken cancellationToken)
+        {
             return Task.CompletedTask;
         }
 
-        public Task<DateTime?> GetAlertCooldownAsync(string key, CancellationToken cancellationToken) =>
-            Task.FromResult<DateTime?>(null);
+        public Task<DateTime?> GetLastReportSentAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(this.LastReportSentUtc);
+        }
 
-        public Task SaveAlertCooldownAsync(string key, DateTime triggeredAtUtc, CancellationToken cancellationToken) =>
-            Task.CompletedTask;
+        public Task SaveLastReportSentAsync(DateTime sentAtUtc, CancellationToken cancellationToken)
+        {
+            this.LastReportSentUtc = sentAtUtc;
+            return Task.CompletedTask;
+        }
+
+        public Task<DateTime?> GetAlertCooldownAsync(string key, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<DateTime?>(null);
+        }
+
+        public Task SaveAlertCooldownAsync(string key, DateTime triggeredAtUtc, CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class RecordingEmailClient : IEmailClient
     {
-        public bool WasSent => LastMessage != null;
+        public bool WasSent => this.LastMessage != null;
         public EmailMessage? LastMessage { get; private set; }
 
         public Task SendAsync(EmailMessage message, SmtpOptions options, CancellationToken cancellationToken)
         {
-            LastMessage = message;
+            this.LastMessage = message;
             return Task.CompletedTask;
         }
     }

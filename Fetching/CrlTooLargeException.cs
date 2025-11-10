@@ -1,5 +1,3 @@
-using System;
-
 namespace CrlMonitor.Fetching;
 
 /// <summary>
@@ -42,9 +40,9 @@ public sealed class CrlTooLargeException : Exception
     public CrlTooLargeException(Uri uri, long limitBytes, long? observedBytes = null)
         : base(BuildMessage(uri, limitBytes, observedBytes))
     {
-        Uri = uri ?? throw new ArgumentNullException(nameof(uri));
-        LimitBytes = limitBytes;
-        ObservedBytes = observedBytes;
+        this.Uri = uri ?? throw new ArgumentNullException(nameof(uri));
+        this.LimitBytes = limitBytes;
+        this.ObservedBytes = observedBytes;
     }
 
     /// <summary>

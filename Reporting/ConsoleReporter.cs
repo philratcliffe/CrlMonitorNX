@@ -1,16 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
 
-internal sealed class ConsoleReporter : IReporter
+internal sealed class ConsoleReporter(ReportingStatus status) : IReporter
 {
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
@@ -19,12 +13,7 @@ internal sealed class ConsoleReporter : IReporter
     private const int StatusColumnWidth = 10;
     private static readonly CompositeFormat TableRowFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}{{1,-{NextUpdateColumnWidth}}}{{2,-{DaysColumnWidth}}}{{3,-{StatusColumnWidth}}}");
     private static readonly CompositeFormat UriPadFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}");
-    private readonly ReportingStatus _status;
-
-    public ConsoleReporter(ReportingStatus status)
-    {
-        _status = status ?? throw new ArgumentNullException(nameof(status));
-    }
+    private readonly ReportingStatus _status = status ?? throw new ArgumentNullException(nameof(status));
 
     public Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
@@ -40,7 +29,7 @@ internal sealed class ConsoleReporter : IReporter
         }
 
         Console.WriteLine();
-        WriteSummary(run.Results);
+        this.WriteSummary(run.Results);
         WriteResultNotes(run.Results);
         WriteDiagnostics(run);
         return Task.CompletedTask;
@@ -55,6 +44,7 @@ internal sealed class ConsoleReporter : IReporter
         Console.WriteLine("CRL Monitor Report");
         Console.WriteLine(line);
         Console.WriteLine($"Generated (UTC): {timestamp}");
+        Console.WriteLine($"CRLs Checked: {count}");
         Console.WriteLine();
 #pragma warning restore CA1303
     }
@@ -122,18 +112,18 @@ internal sealed class ConsoleReporter : IReporter
 
         Console.WriteLine();
         Console.WriteLine("Report written to:");
-        if (_status.CsvWritten && !string.IsNullOrWhiteSpace(_status.CsvPath))
+        if (this._status.CsvWritten && !string.IsNullOrWhiteSpace(this._status.CsvPath))
         {
-            Console.WriteLine($"  CSV: {_status.CsvPath}");
+            Console.WriteLine($"  CSV: {this._status.CsvPath}");
         }
         else
         {
             Console.WriteLine("  CSV: (not generated)");
         }
 
-        if (_status.HtmlWritten && !string.IsNullOrWhiteSpace(_status.HtmlReportPath))
+        if (this._status.HtmlWritten && !string.IsNullOrWhiteSpace(this._status.HtmlReportPath))
         {
-            Console.WriteLine($"  HTML: {_status.HtmlReportPath}");
+            Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
         }
         else
         {
@@ -141,7 +131,7 @@ internal sealed class ConsoleReporter : IReporter
         }
 #pragma warning restore CA1303
 #pragma warning disable CA1303
-        Console.WriteLine(_status.EmailReportSent ? "Report email sent successfully." : "Report email not sent.");
+        Console.WriteLine(this._status.EmailReportSent ? "Report email sent successfully." : "Report email not sent.");
 #pragma warning restore CA1303
     }
 
@@ -217,8 +207,7 @@ internal sealed class ConsoleReporter : IReporter
 
     private static ConsoleColor GetStatusColor(CrlStatus status)
     {
-        return status switch
-        {
+        return status switch {
             CrlStatus.Ok => ConsoleColor.Green,
             CrlStatus.Warning => ConsoleColor.Yellow,
             CrlStatus.Expiring => ConsoleColor.Yellow,
@@ -230,17 +219,7 @@ internal sealed class ConsoleReporter : IReporter
 
     private static string Truncate(string value, int width)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Length <= width)
-        {
-            return value;
-        }
-
-        if (width <= 3)
-        {
-            return value[..width];
-        }
-
-        return value[..(width - 3)] + "...";
+        return string.IsNullOrWhiteSpace(value) || value.Length <= width ? value : width <= 3 ? value[..width] : value[..(width - 3)] + "...";
     }
 
     private static void TryClearConsole()

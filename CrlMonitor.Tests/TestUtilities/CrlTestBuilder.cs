@@ -1,6 +1,4 @@
-using System;
 using CrlMonitor.Crl;
-using CrlMonitor.Models;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;

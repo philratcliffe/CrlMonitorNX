@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
@@ -12,13 +10,13 @@ internal sealed class HtmlReporter : IReporter
     public HtmlReporter(string outputPath, ReportingStatus status)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
-        _outputPath = outputPath;
-        _status = status ?? throw new ArgumentNullException(nameof(status));
+        this._outputPath = outputPath;
+        this._status = status ?? throw new ArgumentNullException(nameof(status));
     }
 
     public async Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
-        await HtmlReportWriter.WriteAsync(_outputPath, run, cancellationToken).ConfigureAwait(false);
-        _status.RecordHtml(_outputPath);
+        await HtmlReportWriter.WriteAsync(this._outputPath, run, cancellationToken).ConfigureAwait(false);
+        this._status.RecordHtml(this._outputPath);
     }
 }

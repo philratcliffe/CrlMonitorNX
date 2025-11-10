@@ -1,10 +1,5 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -29,10 +24,10 @@ public static class HtmlReportWriterTests
         };
         var run = new CrlCheckRun(results, new Diagnostics.RunDiagnostics(), now);
 
-        await HtmlReportWriter.WriteAsync(path, run, CancellationToken.None);
+        await HtmlReportWriter.WriteAsync(path, run, CancellationToken.None).ConfigureAwait(true);
 
         Assert.True(File.Exists(path));
-        var content = await File.ReadAllTextAsync(path);
+        var content = await File.ReadAllTextAsync(path).ConfigureAwait(true);
         Assert.Contains("CRLs Checked", content, StringComparison.Ordinal);
         Assert.Contains("CRLs Failed", content, StringComparison.Ordinal);
         Assert.Contains("http://example.com", content, StringComparison.Ordinal);
@@ -48,7 +43,7 @@ public static class HtmlReportWriterTests
         {
             try
             {
-                Directory.Delete(Path, true);
+                Directory.Delete(this.Path, true);
             }
             catch (IOException)
             {

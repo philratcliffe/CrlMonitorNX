@@ -1,10 +1,6 @@
-using System;
-using System.IO;
 using CrlMonitor.Crl;
-using CrlMonitor.Models;
 using CrlMonitor.Validation;
 using CrlMonitor.Tests.TestUtilities;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -85,15 +81,15 @@ public static class CrlSignatureValidatorTests
 
         public TempFile(byte[] content)
         {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
-            File.WriteAllBytes(Path, content);
+            this.Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
+            File.WriteAllBytes(this.Path, content);
         }
 
         public void Dispose()
         {
             try
             {
-                File.Delete(Path);
+                File.Delete(this.Path);
             }
             catch (IOException)
             {

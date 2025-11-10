@@ -1,19 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
-using CrlMonitor.Models;
 using CrlMonitor.Reporting;
 using CrlMonitor.Runner;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
-using CrlMonitor.State;
-using CrlMonitor.Notifications;
 using CrlMonitor.Licensing;
+using CrlMonitor.Notifications.Alerts;
+using CrlMonitor.Notifications.Email;
+using CrlMonitor.Notifications.Reports;
+using CrlMonitor.State;
 
 namespace CrlMonitor;
 
@@ -132,12 +127,9 @@ internal static class Program
         }
 
         var candidate = args[0];
-        if (string.IsNullOrWhiteSpace(candidate))
-        {
-            throw new InvalidOperationException("Configuration path argument must not be empty.");
-        }
-
-        return Path.GetFullPath(candidate);
+        return string.IsNullOrWhiteSpace(candidate)
+            ? throw new InvalidOperationException("Configuration path argument must not be empty.")
+            : Path.GetFullPath(candidate);
     }
 
     private static void ReportError(string message)
@@ -161,7 +153,7 @@ internal static class Program
 
 internal static class FetcherSchemes
 {
-    public static readonly string[] Http = { "http", "https" };
-    public static readonly string[] Ldap = { "ldap", "ldaps" };
-    public static readonly string[] File = { "file" };
+    public static readonly string[] Http = ["http", "https"];
+    public static readonly string[] Ldap = ["ldap", "ldaps"];
+    public static readonly string[] File = ["file"];
 }

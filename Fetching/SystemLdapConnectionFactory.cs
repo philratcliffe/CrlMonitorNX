@@ -1,6 +1,5 @@
-using System;
-using System.Net;
 using System.DirectoryServices.Protocols;
+using System.Net;
 
 namespace CrlMonitor.Fetching;
 
@@ -9,23 +8,7 @@ internal sealed class SystemLdapConnectionFactory : ILdapConnectionFactory
     public ILdapConnection Open(Uri uri, LdapCredentials? credentials)
     {
         ArgumentNullException.ThrowIfNull(uri);
-        var identifier = CreateIdentifier(uri);
-        var connection = new LdapConnection(identifier)
-        {
-            AuthType = credentials != null ? AuthType.Negotiate : AuthType.Anonymous
-        };
-
-        if (credentials != null)
-        {
-            connection.Credential = new NetworkCredential(credentials.Username, credentials.Password);
-        }
-
-        if (uri.Scheme.Equals("ldaps", StringComparison.OrdinalIgnoreCase))
-        {
-            connection.SessionOptions.SecureSocketLayer = true;
-        }
-
-        return new SystemLdapConnection(connection);
+        return new SystemLdapConnection(uri, credentials);
     }
 
     private static LdapDirectoryIdentifier CreateIdentifier(Uri uri)
@@ -38,9 +21,22 @@ internal sealed class SystemLdapConnectionFactory : ILdapConnectionFactory
     {
         private readonly LdapConnection _connection;
 
-        public SystemLdapConnection(LdapConnection connection)
+        public SystemLdapConnection(Uri uri, LdapCredentials? credentials)
         {
-            _connection = connection;
+            var identifier = CreateIdentifier(uri);
+            this._connection = new LdapConnection(identifier) {
+                AuthType = credentials != null ? AuthType.Negotiate : AuthType.Anonymous
+            };
+
+            if (credentials != null)
+            {
+                this._connection.Credential = new NetworkCredential(credentials.Username, credentials.Password);
+            }
+
+            if (uri.Scheme.Equals("ldaps", StringComparison.OrdinalIgnoreCase))
+            {
+                this._connection.SessionOptions.SecureSocketLayer = true;
+            }
         }
 
         public byte[][] GetAttributeValues(string distinguishedName, string attributeName)
@@ -49,17 +45,17 @@ internal sealed class SystemLdapConnectionFactory : ILdapConnectionFactory
             ArgumentException.ThrowIfNullOrWhiteSpace(attributeName);
 
             var request = new SearchRequest(distinguishedName, "(objectClass=*)", SearchScope.Base, attributeName);
-            var response = (SearchResponse)_connection.SendRequest(request);
+            var response = (SearchResponse)this._connection.SendRequest(request);
             if (response.Entries.Count == 0)
             {
-                return Array.Empty<byte[]>();
+                return [];
             }
 
             var entry = response.Entries[0];
             var attribute = entry.Attributes[attributeName];
             if (attribute == null || attribute.Count == 0)
             {
-                return Array.Empty<byte[]>();
+                return [];
             }
 
             var result = new byte[attribute.Count][];
@@ -73,7 +69,7 @@ internal sealed class SystemLdapConnectionFactory : ILdapConnectionFactory
 
         public void Dispose()
         {
-            _connection.Dispose();
+            this._connection.Dispose();
         }
     }
 }

@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using CrlMonitor;
 using CrlMonitor.Crl;
 using CrlMonitor.Notifications;
 using CrlMonitor.Models;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -16,8 +10,7 @@ namespace CrlMonitor.Tests;
 /// </summary>
 public static class ConfigLoaderTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
+    private static readonly JsonSerializerOptions JsonOptions = new() {
         WriteIndented = true
     };
 
@@ -101,7 +94,7 @@ public static class ConfigLoaderTests
     public static void LoadHonoursGlobalMaxCrlSize()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -161,7 +154,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenEntryMaxCrlSizeInvalid()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -190,7 +183,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenSchemeUnsupported()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -216,7 +209,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsForUnknownSignatureMode()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -245,7 +238,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenTimeoutOutOfRange()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -271,7 +264,7 @@ public static class ConfigLoaderTests
     public static void LoadSupportsRelativeFileUris()
     {
         using var temp = new TempFolder();
-        var crlPath = temp.WriteBinary("examples/rel.crl", new byte[] { 0 });
+        var crlPath = temp.WriteBinary("examples/rel.crl", [0]);
         var fileName = Path.GetFileName(crlPath);
         var configPath = temp.WriteJson("config.json", $$"""
         {
@@ -303,7 +296,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenCaCertMissing()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -381,7 +374,7 @@ public static class ConfigLoaderTests
         var reports = options.Reports!;
         Assert.True(reports.Enabled);
         Assert.Equal(ReportFrequency.Weekly, reports.Frequency);
-        Assert.Single(reports.Recipients);
+        _ = Assert.Single(reports.Recipients);
         Assert.Equal("Weekly CRL", reports.Subject);
         Assert.True(reports.IncludeSummary);
         Assert.False(reports.IncludeFullCsv);
@@ -395,7 +388,7 @@ public static class ConfigLoaderTests
         Assert.NotNull(options.Alerts);
         var alerts = options.Alerts!;
         Assert.True(alerts.Enabled);
-        Assert.Single(alerts.Recipients);
+        _ = Assert.Single(alerts.Recipients);
         Assert.Equal(TimeSpan.FromHours(12), alerts.Cooldown);
         Assert.Equal("[ALERT]", alerts.SubjectPrefix);
         Assert.True(alerts.IncludeDetails);
@@ -413,7 +406,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenExpiryThresholdOutOfRange()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -442,7 +435,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenAlertsMissingRecipients()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -473,7 +466,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenAlertsMissingStatuses()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -503,7 +496,7 @@ public static class ConfigLoaderTests
     public static void LoadParsesHtmlReportUrl()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -551,7 +544,7 @@ public static class ConfigLoaderTests
         try
         {
             using var temp = new TempFolder();
-            var configPath = temp.WriteJson("config.json", """
+            var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
             {
               "console_reports": true,
               "csv_reports": true,
@@ -594,7 +587,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenReportFrequencyInvalid()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -632,7 +625,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenDuplicateUris()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -659,7 +652,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenLdapSpecifiedForHttp()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -691,7 +684,7 @@ public static class ConfigLoaderTests
     public static void LoadThrowsWhenLdapIncomplete()
     {
         using var temp = new TempFolder();
-        var configPath = temp.WriteJson("config.json", """
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
         {
           "console_reports": true,
           "csv_reports": true,
@@ -721,8 +714,8 @@ public static class ConfigLoaderTests
 
         public string WriteJson(string fileName, string json)
         {
-            var targetPath = System.IO.Path.Combine(Path, fileName);
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
+            var targetPath = System.IO.Path.Combine(this.Path, fileName);
+            _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
             var element = JsonDocument.Parse(json).RootElement;
             File.WriteAllText(targetPath, JsonSerializer.Serialize(element, JsonOptions));
             return targetPath;
@@ -730,16 +723,16 @@ public static class ConfigLoaderTests
 
         public string WriteFile(string fileName, string content)
         {
-            var targetPath = System.IO.Path.Combine(Path, fileName);
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
+            var targetPath = System.IO.Path.Combine(this.Path, fileName);
+            _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
             File.WriteAllText(targetPath, content);
             return targetPath;
         }
 
         public string WriteBinary(string fileName, byte[] content)
         {
-            var targetPath = System.IO.Path.Combine(Path, fileName);
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
+            var targetPath = System.IO.Path.Combine(this.Path, fileName);
+            _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
             File.WriteAllBytes(targetPath, content);
             return targetPath;
         }
@@ -748,7 +741,7 @@ public static class ConfigLoaderTests
         {
             try
             {
-                Directory.Delete(Path, true);
+                Directory.Delete(this.Path, true);
             }
             catch (IOException)
             {

@@ -1,59 +1,45 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Models;
+using CrlMonitor.Notifications.Email;
 using CrlMonitor.Reporting;
 using CrlMonitor.State;
 
-namespace CrlMonitor.Notifications;
+namespace CrlMonitor.Notifications.Reports;
 
-internal sealed class EmailReportReporter : IReporter
+internal sealed class EmailReportReporter(ReportOptions options, IEmailClient emailClient, IStateStore stateStore, ReportingStatus reportingStatus, string? htmlReportUrl) : IReporter
 {
-    private readonly ReportOptions _options;
-    private readonly IEmailClient _emailClient;
-    private readonly IStateStore _stateStore;
-    private readonly ReportingStatus _reportingStatus;
-    private readonly string? _htmlReportUrl;
-
-    public EmailReportReporter(ReportOptions options, IEmailClient emailClient, IStateStore stateStore, ReportingStatus reportingStatus, string? htmlReportUrl)
-    {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _emailClient = emailClient ?? throw new ArgumentNullException(nameof(emailClient));
-        _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-        _reportingStatus = reportingStatus ?? throw new ArgumentNullException(nameof(reportingStatus));
-        _htmlReportUrl = htmlReportUrl;
-    }
+    private readonly ReportOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly IEmailClient _emailClient = emailClient ?? throw new ArgumentNullException(nameof(emailClient));
+    private readonly IStateStore _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
+    private readonly ReportingStatus _reportingStatus = reportingStatus ?? throw new ArgumentNullException(nameof(reportingStatus));
+    private readonly string? _htmlReportUrl = htmlReportUrl;
 
     public async Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        if (!_options.Enabled)
+        if (!this._options.Enabled)
         {
             return;
         }
 
         var summary = CrlStatusSummary.FromResults(run.Results);
-        var subject = BuildSubject(_options.Subject, summary.Errors);
-        var plainBody = BuildPlainTextBody(run, _options, summary);
-        var htmlBody = BuildHtmlBody(run, _options, summary);
+        var subject = BuildSubject(this._options.Subject, summary.Errors);
+        var plainBody = BuildPlainTextBody(run, this._options, summary);
+        var htmlBody = BuildHtmlBody(run, this._options, summary);
         var attachments = new List<EmailAttachment>();
-        if (_options.IncludeFullCsv)
+        if (this._options.IncludeFullCsv)
         {
             var csvBytes = await BuildCsvAttachmentAsync(run, cancellationToken).ConfigureAwait(false);
             attachments.Add(new EmailAttachment(BuildAttachmentName(run.GeneratedAtUtc), csvBytes, "text/csv"));
         }
 
-        var plain = AppendHtmlLinkPlain(plainBody, _htmlReportUrl);
-        var html = AppendHtmlLinkHtml(htmlBody, _htmlReportUrl);
-        var message = new EmailMessage(_options.Recipients, subject, plain, attachments, html);
-        await _emailClient.SendAsync(message, _options.Smtp, cancellationToken).ConfigureAwait(false);
-        _reportingStatus.RecordEmailSent();
-        await _stateStore.SaveLastReportSentAsync(run.GeneratedAtUtc, cancellationToken).ConfigureAwait(false);
+        var plain = AppendHtmlLinkPlain(plainBody, this._htmlReportUrl);
+        var html = AppendHtmlLinkHtml(htmlBody, this._htmlReportUrl);
+        var message = new EmailMessage(this._options.Recipients, subject, plain, attachments, html);
+        await this._emailClient.SendAsync(message, this._options.Smtp, cancellationToken).ConfigureAwait(false);
+        this._reportingStatus.RecordEmailSent();
+        await this._stateStore.SaveLastReportSentAsync(run.GeneratedAtUtc, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<byte[]> BuildCsvAttachmentAsync(CrlCheckRun run, CancellationToken cancellationToken)
@@ -71,43 +57,38 @@ internal sealed class EmailReportReporter : IReporter
 
     private static string BuildSubject(string baseSubject, int errorCount)
     {
-        if (errorCount <= 0)
-        {
-            return baseSubject;
-        }
-
-        return FormattableString.Invariant($"{baseSubject}: {errorCount} ERRORS");
+        return errorCount <= 0 ? baseSubject : FormattableString.Invariant($"{baseSubject}: {errorCount} ERRORS");
     }
 
     private static string BuildPlainTextBody(CrlCheckRun run, ReportOptions options, CrlStatusSummary summary)
     {
         var builder = new StringBuilder();
-        builder.AppendLine(FormattableString.Invariant($"Please find attached the CRL Health Report generated by Red Kestrel CrlMonitor at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}."));
-        builder.AppendLine();
-        builder.AppendLine("Summary:");
+        _ = builder.AppendLine(FormattableString.Invariant($"Please find attached the CRL Health Report generated by Red Kestrel CrlMonitor at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}."));
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("Summary:");
         const int valueWidth = 6;
         AppendSummaryLines(builder, summary, valueWidth);
-        builder.AppendLine();
-        builder.AppendLine(options.IncludeFullCsv ? "Full CSV attached." : "Full CSV attachment disabled.");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine(options.IncludeFullCsv ? "Full CSV attached." : "Full CSV attachment disabled.");
         return builder.ToString();
     }
 
     private static string BuildHtmlBody(CrlCheckRun run, ReportOptions options, CrlStatusSummary summary)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("<html><body>");
-        builder.AppendLine(FormattableString.Invariant($"<p>Please find attached the CRL Health Report generated by Red Kestrel CrlMonitor at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}.</p>"));
-        builder.AppendLine("<h3>Summary</h3>");
-        builder.AppendLine("<table style=\"font-family:monospace; border-collapse:collapse;\">");
+        _ = builder.AppendLine("<html><body>");
+        _ = builder.AppendLine(FormattableString.Invariant($"<p>Please find attached the CRL Health Report generated by Red Kestrel CrlMonitor at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}.</p>"));
+        _ = builder.AppendLine("<h3>Summary</h3>");
+        _ = builder.AppendLine("<table style=\"font-family:monospace; border-collapse:collapse;\">");
         AppendSummaryRow(builder, "CRLs Checked", summary.Total, null);
         AppendSummaryRow(builder, "CRLs OK", summary.Ok, null);
         AppendSummaryRow(builder, "CRLs Warning", summary.Warning, null);
         AppendSummaryRow(builder, "CRLs Expiring", summary.Expiring, null);
         AppendSummaryRow(builder, "CRLs Expired", summary.Expired, summary.Expired > 0 ? "color:#d9534f" : null);
         AppendSummaryRow(builder, "CRLs Failed", summary.Errors, summary.Errors > 0 ? "color:#d9534f" : null);
-        builder.AppendLine("</table>");
-        builder.AppendLine(FormattableString.Invariant($"<p>{(options.IncludeFullCsv ? "Full CSV attached." : "Full CSV attachment disabled.")}</p>"));
-        builder.AppendLine("</body></html>");
+        _ = builder.AppendLine("</table>");
+        _ = builder.AppendLine(FormattableString.Invariant($"<p>{(options.IncludeFullCsv ? "Full CSV attached." : "Full CSV attachment disabled.")}</p>"));
+        _ = builder.AppendLine("</body></html>");
         return builder.ToString();
     }
 
@@ -118,12 +99,12 @@ internal sealed class EmailReportReporter : IReporter
 
     private static void AppendSummaryLines(StringBuilder builder, CrlStatusSummary summary, int width)
     {
-        builder.AppendLine(FormatSummaryLine("CRLs Checked:", summary.Total, width));
-        builder.AppendLine(FormatSummaryLine("CRLs OK:", summary.Ok, width));
-        builder.AppendLine(FormatSummaryLine("CRLs Warning:", summary.Warning, width));
-        builder.AppendLine(FormatSummaryLine("CRLs Expiring:", summary.Expiring, width));
-        builder.AppendLine(FormatSummaryLine("CRLs Expired:", summary.Expired, width));
-        builder.AppendLine(FormatSummaryLine("CRLs Failed:", summary.Errors, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs Checked:", summary.Total, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs OK:", summary.Ok, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs Warning:", summary.Warning, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs Expiring:", summary.Expiring, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs Expired:", summary.Expired, width));
+        _ = builder.AppendLine(FormatSummaryLine("CRLs Failed:", summary.Errors, width));
     }
 
     private static void AppendSummaryRow(StringBuilder builder, string label, int value, string? colorStyle)
@@ -131,7 +112,7 @@ internal sealed class EmailReportReporter : IReporter
         var style = string.IsNullOrWhiteSpace(colorStyle)
             ? "text-align:right;"
             : FormattableString.Invariant($"text-align:right; {colorStyle}");
-        builder.AppendLine(FormattableString.Invariant($"<tr><td style=\"padding-right:12px;\">{label}</td><td style=\"{style}\">{value}</td></tr>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<tr><td style=\"padding-right:12px;\">{label}</td><td style=\"{style}\">{value}</td></tr>"));
     }
 
     private static string AppendHtmlLinkPlain(string body, string? url)
@@ -142,7 +123,7 @@ internal sealed class EmailReportReporter : IReporter
         }
 
         var builder = new StringBuilder(body);
-        builder.AppendLine(FormattableString.Invariant($"View full HTML report: {url}"));
+        _ = builder.AppendLine(FormattableString.Invariant($"View full HTML report: {url}"));
         return builder.ToString();
     }
 
@@ -156,14 +137,7 @@ internal sealed class EmailReportReporter : IReporter
         var builder = new StringBuilder(body);
         var insertionIndex = body.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
         var linkMarkup = FormattableString.Invariant($"<p><a style=\"display:inline-block;padding:10px 18px;background:#111827;color:#fff;text-decoration:none;border-radius:8px;\" href=\"{url}\">View full HTML report</a></p>");
-        if (insertionIndex >= 0)
-        {
-            builder.Insert(insertionIndex, linkMarkup);
-        }
-        else
-        {
-            builder.Append(linkMarkup);
-        }
+        _ = insertionIndex >= 0 ? builder.Insert(insertionIndex, linkMarkup) : builder.Append(linkMarkup);
         return builder.ToString();
     }
 

@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using System.DirectoryServices.Protocols;
 using CrlMonitor.Crl;
 using CrlMonitor.Diagnostics;
@@ -15,27 +11,18 @@ using CrlMonitor.State;
 
 namespace CrlMonitor.Runner;
 
-internal sealed class CrlCheckRunner
+internal sealed class CrlCheckRunner(
+    IFetcherResolver fetcherResolver,
+    ICrlParser parser,
+    ICrlSignatureValidator signatureValidator,
+    ICrlHealthEvaluator healthEvaluator,
+    IStateStore stateStore)
 {
-    private readonly IFetcherResolver _fetcherResolver;
-    private readonly ICrlParser _parser;
-    private readonly ICrlSignatureValidator _signatureValidator;
-    private readonly ICrlHealthEvaluator _healthEvaluator;
-    private readonly IStateStore _stateStore;
-
-    public CrlCheckRunner(
-        IFetcherResolver fetcherResolver,
-        ICrlParser parser,
-        ICrlSignatureValidator signatureValidator,
-        ICrlHealthEvaluator healthEvaluator,
-        IStateStore stateStore)
-    {
-        _fetcherResolver = fetcherResolver ?? throw new ArgumentNullException(nameof(fetcherResolver));
-        _parser = parser ?? throw new ArgumentNullException(nameof(parser));
-        _signatureValidator = signatureValidator ?? throw new ArgumentNullException(nameof(signatureValidator));
-        _healthEvaluator = healthEvaluator ?? throw new ArgumentNullException(nameof(healthEvaluator));
-        _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-    }
+    private readonly IFetcherResolver _fetcherResolver = fetcherResolver ?? throw new ArgumentNullException(nameof(fetcherResolver));
+    private readonly ICrlParser _parser = parser ?? throw new ArgumentNullException(nameof(parser));
+    private readonly ICrlSignatureValidator _signatureValidator = signatureValidator ?? throw new ArgumentNullException(nameof(signatureValidator));
+    private readonly ICrlHealthEvaluator _healthEvaluator = healthEvaluator ?? throw new ArgumentNullException(nameof(healthEvaluator));
+    private readonly IStateStore _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
 
     public async Task<CrlCheckRun> RunAsync(
         IReadOnlyList<CrlConfigEntry> entries,
@@ -58,15 +45,14 @@ internal sealed class CrlCheckRunner
             var localIndex = index;
             var entry = entries[localIndex];
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-            tasks.Add(Task.Run(async () =>
-            {
+            tasks.Add(Task.Run(async () => {
                 try
                 {
-                    results[localIndex] = await ProcessEntryAsync(entry, fetchTimeout, diagnostics, cancellationToken).ConfigureAwait(false);
+                    results[localIndex] = await this.ProcessEntryAsync(entry, fetchTimeout, diagnostics, cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
-                    semaphore.Release();
+                    _ = semaphore.Release();
                 }
             }, cancellationToken));
         }
@@ -84,12 +70,12 @@ internal sealed class CrlCheckRunner
         CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
-        var previousFetch = await TryGetLastFetchAsync(entry, diagnostics, cancellationToken).ConfigureAwait(false);
+        var previousFetch = await this.TryGetLastFetchAsync(entry, diagnostics, cancellationToken).ConfigureAwait(false);
         TimeSpan? downloadDuration = null;
         long? contentLength = null;
         try
         {
-            var fetcher = _fetcherResolver.Resolve(entry.Uri);
+            var fetcher = this._fetcherResolver.Resolve(entry.Uri);
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             if (fetchTimeout > TimeSpan.Zero)
             {
@@ -99,15 +85,15 @@ internal sealed class CrlCheckRunner
             var fetched = await fetcher.FetchAsync(entry, timeoutCts.Token).ConfigureAwait(false);
             downloadDuration = fetched.Duration;
             contentLength = fetched.ContentLength;
-            var parsed = _parser.Parse(fetched.Content);
-            var signature = _signatureValidator.Validate(parsed, entry);
-            var health = _healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
+            var parsed = this._parser.Parse(fetched.Content);
+            var signature = this._signatureValidator.Validate(parsed, entry);
+            var health = this._healthEvaluator.Evaluate(parsed, entry, DateTime.UtcNow);
             stopwatch.Stop();
 
             var status = DetermineStatus(entry, diagnostics, signature, health);
             var errorInfo = BuildErrorInfo(signature, health, status);
             var completedAt = DateTime.UtcNow;
-            await TrySaveLastFetchAsync(entry, diagnostics, completedAt, cancellationToken).ConfigureAwait(false);
+            await this.TrySaveLastFetchAsync(entry, diagnostics, completedAt, cancellationToken).ConfigureAwait(false);
 
             return new CrlCheckResult(
                 entry.Uri,
@@ -163,7 +149,7 @@ internal sealed class CrlCheckRunner
         catch (LdapException ldapEx)
         {
             stopwatch.Stop();
-            var friendly = ConvertLdapException(entry.Uri, ldapEx);
+            var friendly = ConvertLdapException(ldapEx);
             diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, friendly));
             return new CrlCheckResult(
                 entry.Uri,
@@ -196,10 +182,9 @@ internal sealed class CrlCheckRunner
         }
     }
 
-    private static string ConvertLdapException(Uri uri, LdapException ex)
+    private static string ConvertLdapException(LdapException ex)
     {
-        return ex.ErrorCode switch
-        {
+        return ex.ErrorCode switch {
             53 or 91 or 92 => "Could not connect to LDAP host.",
             _ => $"LDAP error {ex.ErrorCode}: {ex.Message}"
         };
@@ -227,8 +212,7 @@ internal sealed class CrlCheckRunner
         SignatureValidationResult signature,
         HealthEvaluationResult health)
     {
-        var healthStatus = (health.Status?.Trim().ToUpperInvariant()) switch
-        {
+        var healthStatus = (health.Status?.Trim().ToUpperInvariant()) switch {
             "EXPIRED" => CrlStatus.Expired,
             "EXPIRING" => CrlStatus.Expiring,
             "UNKNOWN" => CrlStatus.Warning,
@@ -282,17 +266,11 @@ internal sealed class CrlCheckRunner
     {
         const double OneKilobyte = 1024d;
         const double OneMegabyte = OneKilobyte * 1024d;
-        if (bytes >= OneMegabyte)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} MB", bytes / OneMegabyte);
-        }
-
-        if (bytes >= OneKilobyte)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0:0.##} KB", bytes / OneKilobyte);
-        }
-
-        return string.Format(CultureInfo.InvariantCulture, "{0} bytes", bytes);
+        return bytes >= OneMegabyte
+            ? string.Format(CultureInfo.InvariantCulture, "{0:0.##} MB", bytes / OneMegabyte)
+            : bytes >= OneKilobyte
+            ? string.Format(CultureInfo.InvariantCulture, "{0:0.##} KB", bytes / OneKilobyte)
+            : string.Format(CultureInfo.InvariantCulture, "{0} bytes", bytes);
     }
 
 #pragma warning disable CA1031
@@ -303,7 +281,7 @@ internal sealed class CrlCheckRunner
     {
         try
         {
-            return await _stateStore.GetLastFetchAsync(entry.Uri, cancellationToken).ConfigureAwait(false);
+            return await this._stateStore.GetLastFetchAsync(entry.Uri, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -320,7 +298,7 @@ internal sealed class CrlCheckRunner
     {
         try
         {
-            await _stateStore.SaveLastFetchAsync(entry.Uri, fetchedAtUtc, cancellationToken).ConfigureAwait(false);
+            await this._stateStore.SaveLastFetchAsync(entry.Uri, fetchedAtUtc, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

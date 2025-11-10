@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace CrlMonitor.Notifications;
+namespace CrlMonitor.Notifications.Email;
 
 internal sealed record EmailAttachment(string FileName, byte[] Content, string ContentType);
 
@@ -36,8 +31,7 @@ internal sealed class SmtpEmailClient : IEmailClient
             throw new InvalidOperationException("At least one recipient must be specified.");
         }
 
-        using var mail = new MailMessage
-        {
+        using var mail = new MailMessage {
             From = ParseAddress(options.From),
             Subject = message.Subject ?? string.Empty,
             Body = string.Empty,
@@ -85,8 +79,7 @@ internal sealed class SmtpEmailClient : IEmailClient
             }
         }
 
-        using var client = new SmtpClient(options.Host, options.Port)
-        {
+        using var client = new SmtpClient(options.Host, options.Port) {
             EnableSsl = options.EnableStartTls,
             UseDefaultCredentials = false,
             Credentials = new NetworkCredential(options.Username, options.Password),
@@ -104,8 +97,8 @@ internal sealed class SmtpEmailClient : IEmailClient
         var end = trimmed.IndexOf('>', StringComparison.Ordinal);
         if (start >= 0 && end > start)
         {
-            var name = trimmed.Substring(0, start).Trim();
-            var address = trimmed.Substring(start + 1, end - start - 1).Trim();
+            var name = trimmed[..start].Trim();
+            var address = trimmed[(start + 1)..end].Trim();
             return string.IsNullOrWhiteSpace(name)
                 ? new MailAddress(address)
                 : new MailAddress(address, name);

@@ -1,11 +1,6 @@
-using System;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -21,15 +16,14 @@ public sealed class HttpCrlFetcherTests
     public async Task FetchAsyncReturnsContent()
     {
         var responseBytes = new byte[] { 1, 2, 3 };
-        using var handler = new StubHandler(() => new HttpResponseMessage(HttpStatusCode.OK)
-        {
+        using var handler = new StubHandler(() => new HttpResponseMessage(HttpStatusCode.OK) {
             Content = new ByteArrayContent(responseBytes)
         });
         using var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
         var fetcher = new HttpCrlFetcher(httpClient);
         var entry = new CrlConfigEntry(new Uri("http://localhost/crl"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
-        var fetched = await fetcher.FetchAsync(entry, CancellationToken.None);
+        var fetched = await fetcher.FetchAsync(entry, CancellationToken.None).ConfigureAwait(true);
 
         Assert.Equal(responseBytes, fetched.Content);
         Assert.Equal(responseBytes.Length, fetched.ContentLength);
@@ -48,7 +42,7 @@ public sealed class HttpCrlFetcherTests
         var fetcher = new HttpCrlFetcher(httpClient);
         var entry = new CrlConfigEntry(new Uri("http://localhost/fail"), SignatureValidationMode.None, null, 0.8, null, 10 * 1024 * 1024);
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+        _ = await Assert.ThrowsAsync<HttpRequestException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -58,32 +52,26 @@ public sealed class HttpCrlFetcherTests
     public async Task FetchAsyncThrowsWhenContentTooLarge()
     {
         var responseBytes = new byte[] { 1, 2, 3 };
-        using var handler = new StubHandler(() => new HttpResponseMessage(HttpStatusCode.OK)
-        {
+        using var handler = new StubHandler(() => new HttpResponseMessage(HttpStatusCode.OK) {
             Content = new ByteArrayContent(responseBytes)
         });
         using var httpClient = new HttpClient(handler);
         var fetcher = new HttpCrlFetcher(httpClient);
         var entry = new CrlConfigEntry(new Uri("http://localhost/oversize"), SignatureValidationMode.None, null, 0.8, null, 2);
 
-        await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None));
+        _ = await Assert.ThrowsAsync<CrlTooLargeException>(() => fetcher.FetchAsync(entry, CancellationToken.None)).ConfigureAwait(true);
     }
 
-    private sealed class StubHandler : HttpMessageHandler
+    private sealed class StubHandler(Func<HttpResponseMessage> responseFactory) : HttpMessageHandler
     {
-        private readonly Func<HttpResponseMessage> _responseFactory;
-
-        public StubHandler(Func<HttpResponseMessage> responseFactory)
-        {
-            _responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
-        }
+        private readonly Func<HttpResponseMessage> _responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
 
         public int RequestCount { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            RequestCount++;
-            return Task.FromResult(_responseFactory());
+            this.RequestCount++;
+            return Task.FromResult(this._responseFactory());
         }
     }
 }

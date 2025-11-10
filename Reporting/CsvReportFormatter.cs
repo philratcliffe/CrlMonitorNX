@@ -1,8 +1,4 @@
-using System;
 using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
 using CrlMonitor.Models;
@@ -16,8 +12,7 @@ internal static class CsvReportFormatter
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(run);
 
-        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
+        var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture) {
             NewLine = Environment.NewLine,
             HasHeaderRecord = true
         };
@@ -38,27 +33,14 @@ internal static class CsvReportFormatter
 
     public static string NormalizeSignatureStatus(string? status)
     {
-        if (string.IsNullOrWhiteSpace(status))
-        {
-            return string.Empty;
-        }
-
-        if (status.Equals("Valid", StringComparison.OrdinalIgnoreCase))
-        {
-            return "VALID";
-        }
-
-        if (status.Equals("Invalid", StringComparison.OrdinalIgnoreCase))
-        {
-            return "INVALID";
-        }
-
-        if (status.Equals("Skipped", StringComparison.OrdinalIgnoreCase))
-        {
-            return "DISABLED";
-        }
-
-        return status;
+        return string.IsNullOrWhiteSpace(status)
+            ? string.Empty
+            : status.ToUpperInvariant() switch {
+                "VALID" => "VALID",
+                "INVALID" => "INVALID",
+                "SKIPPED" => "DISABLED",
+                _ => status
+            };
     }
 
     private static void WriteHeader(CsvWriter csv)

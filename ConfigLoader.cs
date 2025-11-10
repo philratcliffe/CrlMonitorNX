@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CrlMonitor.Crl;
@@ -33,8 +30,7 @@ internal static class ConfigLoader
         "ldaps",
         "file"
     };
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
+    private static readonly JsonSerializerOptions SerializerOptions = new() {
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip
     };
@@ -58,12 +54,12 @@ internal static class ConfigLoader
         var stateFilePath = RequirePath(document.StateFilePath, nameof(document.StateFilePath));
         var timeoutSeconds = document.FetchTimeoutSeconds ?? throw new InvalidOperationException("fetch_timeout_seconds is required.");
         var maxParallel = document.MaxParallelFetches ?? throw new InvalidOperationException("max_parallel_fetches is required.");
-        if (timeoutSeconds < MinFetchTimeoutSeconds || timeoutSeconds > MaxFetchTimeoutSeconds)
+        if (timeoutSeconds is < MinFetchTimeoutSeconds or > MaxFetchTimeoutSeconds)
         {
             throw new InvalidOperationException($"fetch_timeout_seconds must be between {MinFetchTimeoutSeconds} and {MaxFetchTimeoutSeconds} seconds.");
         }
 
-        if (maxParallel < MinParallelFetches || maxParallel > MaxParallelFetches)
+        if (maxParallel is < MinParallelFetches or > MaxParallelFetches)
         {
             throw new InvalidOperationException($"max_parallel_fetches must be between {MinParallelFetches} and {MaxParallelFetches}.");
         }
@@ -75,11 +71,9 @@ internal static class ConfigLoader
         var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
         var htmlEnabled = document.HtmlReportEnabled ?? false;
         var htmlPath = ResolveOptionalPath(configDirectory, document.HtmlReportPath);
-        if (htmlEnabled && string.IsNullOrWhiteSpace(htmlPath))
-        {
-            throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.");
-        }
-        return new RunOptions(
+        return htmlEnabled && string.IsNullOrWhiteSpace(htmlPath)
+            ? throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.")
+            : new RunOptions(
             document.ConsoleReports ?? true,
             document.CsvReports ?? true,
             ResolvePath(configDirectory, csvPath),
@@ -159,10 +153,10 @@ internal static class ConfigLoader
             return null;
         }
 
-        var relativePart = value.Substring("file://".Length);
+        var relativePart = value["file://".Length..];
         if (relativePart.StartsWith("./", StringComparison.Ordinal) || relativePart.StartsWith(".\\", StringComparison.Ordinal))
         {
-            relativePart = relativePart.Substring(2);
+            relativePart = relativePart[2..];
         }
 
         var combined = Path.Combine(baseDirectory, relativePart.TrimStart('/', '\\'));
@@ -172,17 +166,11 @@ internal static class ConfigLoader
 
     private static SignatureValidationMode ParseSignatureMode(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Equals("none", StringComparison.OrdinalIgnoreCase))
-        {
-            return SignatureValidationMode.None;
-        }
-
-        if (value.Equals("ca-cert", StringComparison.OrdinalIgnoreCase))
-        {
-            return SignatureValidationMode.CaCertificate;
-        }
-
-        throw new InvalidOperationException("signature_validation_mode must be 'none' or 'ca-cert'.");
+        return string.IsNullOrWhiteSpace(value) || value.Equals("none", StringComparison.OrdinalIgnoreCase)
+            ? SignatureValidationMode.None
+            : value.Equals("ca-cert", StringComparison.OrdinalIgnoreCase)
+            ? SignatureValidationMode.CaCertificate
+            : throw new InvalidOperationException("signature_validation_mode must be 'none' or 'ca-cert'.");
     }
 
     private static string? ResolveCaPath(
@@ -202,38 +190,26 @@ internal static class ConfigLoader
         }
 
         var resolved = ResolvePath(baseDirectory, caPath);
-        if (!File.Exists(resolved))
-        {
-            throw new InvalidOperationException($"ca_certificate_path '{caPath}' not found for URI {uri}.");
-        }
-
-        return resolved;
+        return !File.Exists(resolved)
+            ? throw new InvalidOperationException($"ca_certificate_path '{caPath}' not found for URI {uri}.")
+            : resolved;
     }
 
     private static double ParseExpiryThreshold(double? value, Uri uri)
     {
         var threshold = value ?? DefaultExpiryThreshold;
-        if (threshold < MinExpiryThreshold || threshold > MaxExpiryThreshold)
-        {
-            throw new InvalidOperationException($"expiry_threshold for {uri} must be between {MinExpiryThreshold} and {MaxExpiryThreshold}.");
-        }
-
-        return threshold;
+        return threshold is < MinExpiryThreshold or > MaxExpiryThreshold
+            ? throw new InvalidOperationException($"expiry_threshold for {uri} must be between {MinExpiryThreshold} and {MaxExpiryThreshold}.")
+            : threshold;
     }
 
     private static LdapCredentials? ParseLdap(LdapDocument? document, Uri uri)
     {
-        if (document == null)
-        {
-            return null;
-        }
-
-        if (string.IsNullOrWhiteSpace(document.Username) || string.IsNullOrWhiteSpace(document.Password))
-        {
-            throw new InvalidOperationException($"ldap.username and ldap.password must be supplied for {uri}.");
-        }
-
-        return new LdapCredentials(document.Username, document.Password);
+        return document == null
+            ? null
+            : string.IsNullOrWhiteSpace(document.Username) || string.IsNullOrWhiteSpace(document.Password)
+            ? throw new InvalidOperationException($"ldap.username and ldap.password must be supplied for {uri}.")
+            : new LdapCredentials(document.Username, document.Password);
     }
 
     private static void EnsureSupportedScheme(Uri uri)
@@ -252,32 +228,17 @@ internal static class ConfigLoader
 
     private static string ResolvePath(string baseDirectory, string path)
     {
-        if (Path.IsPathRooted(path))
-        {
-            return path;
-        }
-
-        return Path.GetFullPath(Path.Combine(baseDirectory, path));
+        return Path.IsPathRooted(path) ? path : Path.GetFullPath(Path.Combine(baseDirectory, path));
     }
 
     private static string? ResolveOptionalPath(string baseDirectory, string? path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return null;
-        }
-
-        return ResolvePath(baseDirectory, path);
+        return string.IsNullOrWhiteSpace(path) ? null : ResolvePath(baseDirectory, path);
     }
 
     private static string RequirePath(string? value, string name)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException($"{name} is required.");
-        }
-
-        return value;
+        return string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException($"{name} is required.") : value;
     }
 
     private static ReportOptions? ParseReportOptions(ReportsDocument? document, SmtpOptions? smtp)
@@ -320,7 +281,7 @@ internal static class ConfigLoader
         var statuses = ParseAlertStatuses(document.Statuses);
 
         var cooldownHours = document.CooldownHours ?? 6;
-        if (cooldownHours < MinAlertCooldownHours || cooldownHours > MaxAlertCooldownHours)
+        if (cooldownHours is < MinAlertCooldownHours or > MaxAlertCooldownHours)
         {
             throw new InvalidOperationException($"alerts.cooldown_hours must be between {MinAlertCooldownHours} and {MaxAlertCooldownHours}.");
         }
@@ -329,12 +290,9 @@ internal static class ConfigLoader
             ? DefaultAlertPrefix
             : document.SubjectPrefix;
         var includeDetails = document.IncludeDetails ?? true;
-        if (smtp == null)
-        {
-            throw new InvalidOperationException("smtp block is required when alerts are enabled.");
-        }
-
-        return new AlertOptions(
+        return smtp == null
+            ? throw new InvalidOperationException("smtp block is required when alerts are enabled.")
+            : new AlertOptions(
             true,
             recipients,
             statuses,
@@ -346,17 +304,13 @@ internal static class ConfigLoader
 
     private static ReportFrequency ParseReportFrequency(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException("reports.frequency is required when reports are enabled.");
-        }
-
-        return value.Trim().ToUpperInvariant() switch
-        {
-            "DAILY" => ReportFrequency.Daily,
-            "WEEKLY" => ReportFrequency.Weekly,
-            _ => throw new InvalidOperationException("reports.frequency must be 'daily' or 'weekly'.")
-        };
+        return string.IsNullOrWhiteSpace(value)
+            ? throw new InvalidOperationException("reports.frequency is required when reports are enabled.")
+            : value.Trim().ToUpperInvariant() switch {
+                "DAILY" => ReportFrequency.Daily,
+                "WEEKLY" => ReportFrequency.Weekly,
+                _ => throw new InvalidOperationException("reports.frequency must be 'daily' or 'weekly'.")
+            };
     }
 
     private static List<CrlStatus> ParseAlertStatuses(List<string>? statuses)
@@ -375,18 +329,14 @@ internal static class ConfigLoader
             }
         }
 
-        if (collected.Count == 0)
-        {
-            throw new InvalidOperationException("alerts.statuses must contain at least one status when alerts are enabled.");
-        }
-
-        return collected;
+        return collected.Count == 0
+            ? throw new InvalidOperationException("alerts.statuses must contain at least one status when alerts are enabled.")
+            : collected;
     }
 
     private static CrlStatus ParseCrlStatus(string value)
     {
-        return value.Trim().ToUpperInvariant() switch
-        {
+        return value.Trim().ToUpperInvariant() switch {
             "OK" => CrlStatus.Ok,
             "WARNING" => CrlStatus.Warning,
             "EXPIRING" => CrlStatus.Expiring,
@@ -404,12 +354,9 @@ internal static class ConfigLoader
         }
 
         var envPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-        if (string.IsNullOrWhiteSpace(envPassword))
-        {
-            throw new InvalidOperationException("SMTP password must be provided via config or SMTP_PASSWORD environment variable.");
-        }
-
-        return envPassword;
+        return string.IsNullOrWhiteSpace(envPassword)
+            ? throw new InvalidOperationException("SMTP password must be provided via config or SMTP_PASSWORD environment variable.")
+            : envPassword;
     }
 
     private static List<string> ParseRecipients(List<string>? recipients, string propertyName)
@@ -430,12 +377,7 @@ internal static class ConfigLoader
             list.Add(recipient.Trim());
         }
 
-        if (list.Count == 0)
-        {
-            throw new InvalidOperationException($"{propertyName} must contain at least one recipient.");
-        }
-
-        return list;
+        return list.Count == 0 ? throw new InvalidOperationException($"{propertyName} must contain at least one recipient.") : list;
     }
 
     private static SmtpOptions ParseSmtp(SmtpDocument? document, string propertyName)
@@ -623,11 +565,8 @@ internal static class ConfigLoader
     private static long ResolveMaxCrlSize(long? configuredValue, long fallback, string context)
     {
         var resolved = configuredValue ?? fallback;
-        if (resolved < MinMaxCrlSizeBytes || resolved > MaxMaxCrlSizeBytes)
-        {
-            throw new InvalidOperationException($"{context} must be between {MinMaxCrlSizeBytes} and {MaxMaxCrlSizeBytes} bytes.");
-        }
-
-        return resolved;
+        return resolved is < MinMaxCrlSizeBytes or > MaxMaxCrlSizeBytes
+            ? throw new InvalidOperationException($"{context} must be between {MinMaxCrlSizeBytes} and {MaxMaxCrlSizeBytes} bytes.")
+            : resolved;
     }
 }

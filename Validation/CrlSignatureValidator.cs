@@ -1,10 +1,5 @@
-using System;
-using System.IO;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Security.Certificates;
 using Org.BouncyCastle.X509;
 using CrlMonitor.Crl;
-using CrlMonitor.Models;
 
 namespace CrlMonitor.Validation;
 

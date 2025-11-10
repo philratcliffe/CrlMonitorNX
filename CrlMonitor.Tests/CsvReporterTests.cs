@@ -1,13 +1,7 @@
-using System;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Diagnostics;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
 using CrlMonitor.Tests.TestUtilities;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -33,9 +27,9 @@ public static class CsvReporterTests
             new[]
             {
                 new CrlCheckResult(
-                    new System.Uri("http://example.com"),
+                    new Uri("http://example.com"),
                     CrlStatus.Warning,
-                    System.TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1),
                     parsed,
                     "Signature validation disabled.",
                     previousFetch,
@@ -44,9 +38,9 @@ public static class CsvReporterTests
                     checkedAt,
                     "Valid"),
                 new CrlCheckResult(
-                    new System.Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"),
+                    new Uri("ldap://dc1.example.com/CN=Example,O=Example Corp"),
                     CrlStatus.Error,
-                    System.TimeSpan.FromMilliseconds(5),
+                    TimeSpan.FromMilliseconds(5),
                     null,
                     "Could not connect",
                     null,
@@ -58,10 +52,10 @@ public static class CsvReporterTests
             new RunDiagnostics(),
             generatedAt);
 
-        await reporter.ReportAsync(run, CancellationToken.None);
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         Assert.True(File.Exists(path));
-        var content = await File.ReadAllTextAsync(path);
+        var content = await File.ReadAllTextAsync(path).ConfigureAwait(true);
         var formattedPrev = TimeFormatter.FormatUtc(previousFetch);
         var formattedRun = TimeFormatter.FormatUtc(generatedAt);
         Assert.Contains("URI,Issuer_Name,Status,This_Update_UTC,Next_Update_UTC,CRL_Size_bytes,Download_Duration_ms,Signature_Valid,Revoked_Count,Checked_Time_UTC,Previous_Checked_Time_UTC,CRL_Type,Status_Details", content, StringComparison.Ordinal);
@@ -95,23 +89,23 @@ public static class CsvReporterTests
             new RunDiagnostics(),
             timestamp);
 
-        await reporter.ReportAsync(run, CancellationToken.None);
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
-        var content = await File.ReadAllTextAsync(path);
+        var content = await File.ReadAllTextAsync(path).ConfigureAwait(true);
         Assert.Contains(",VALID,", content, StringComparison.Ordinal);
         Assert.Contains(",INVALID,", content, StringComparison.Ordinal);
         Assert.Contains(",DISABLED,", content, StringComparison.Ordinal);
     }
 
-    private sealed class TempFolder : System.IDisposable
+    private sealed class TempFolder : IDisposable
     {
-        public string Path { get; } = System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.Guid.NewGuid().ToString())).FullName;
+        public string Path { get; } = Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString())).FullName;
 
         public void Dispose()
         {
             try
             {
-                System.IO.Directory.Delete(Path, true);
+                Directory.Delete(this.Path, true);
             }
             catch (IOException)
             {

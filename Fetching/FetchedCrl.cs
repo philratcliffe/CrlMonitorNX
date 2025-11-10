@@ -1,5 +1,3 @@
-using System;
-
 namespace CrlMonitor.Fetching;
 
 internal sealed record FetchedCrl(

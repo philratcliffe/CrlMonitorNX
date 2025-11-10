@@ -1,12 +1,6 @@
-using System;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using CrlMonitor.Diagnostics;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
-using Xunit;
 
 namespace CrlMonitor.Tests;
 
@@ -51,7 +45,7 @@ public static class ConsoleReporterTests
         using var writer = new StringWriter();
         Console.SetOut(writer);
 
-        await reporter.ReportAsync(run, CancellationToken.None);
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         var output = writer.ToString();
         var expectedGenerated = TimeFormatter.FormatUtc(generatedAt);

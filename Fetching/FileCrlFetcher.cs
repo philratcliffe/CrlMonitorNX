@@ -1,9 +1,3 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using CrlMonitor.Models;
-
 namespace CrlMonitor.Fetching;
 
 internal sealed class FileCrlFetcher : ICrlFetcher
