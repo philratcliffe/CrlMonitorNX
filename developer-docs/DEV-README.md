@@ -46,7 +46,7 @@ Use `./publish-windows.sh` to build the production bundle for Windows x64. The h
 
 - Ensures the git worktree is clean and performs `dotnet list package --vulnerable`.
 - Runs a self-contained `dotnet publish` (single file, no debug symbols).
-- Copies `config.json` into the publish directory so administrators have a ready-made template.
+- Copies `config.json` and `examples/CA-certs/DigiCertGlobalRootCA.crt` into the publish directory so the sample config works out of the box.
 - Zips the output as `CrlMonitor-v<version>-Windows.zip`, then validates the archive (integrity, required files, absence of `.pdb`, and basic size sanity).
 
 The ZIP is emitted next to the script and is ready for distribution/testing on Windows hosts.

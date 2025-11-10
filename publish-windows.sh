@@ -86,6 +86,8 @@ echo "Version: v${VERSION}"
 echo ""
 echo "Copying configuration files..."
 cp "${ROOT}/config.json" "${PUBLISH_DIR}/"
+mkdir -p "${PUBLISH_DIR}/examples/CA-certs"
+cp "${ROOT}/examples/CA-certs/DigiCertGlobalRootCA.crt" "${PUBLISH_DIR}/examples/CA-certs/"
 
 echo ""
 echo "Creating ZIP archive..."
