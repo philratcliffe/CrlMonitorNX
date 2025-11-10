@@ -11,7 +11,7 @@ internal static class LicenseBootstrapper
 
     // TODO: replace with the production RSA public key used to issue licenses for CrlMonitor.
     private const string PublicKey =
-        "<RSAKeyValue><Modulus>tQ0J9ugVf+1Sc9qZSuFTYnJv96skcYvN5pz50jdK5PajcNC8KQ4Op7/aNm5FkCbgwYJtKBXPSqV655zE+vDlDsZ3KEFqgmrEtNd3np+hdV9w7qMID+Yojf+rkR1ZXolGCseWQN0WrJQvjJt+QeL4MieCUxiiyj0qiRqKoJTGy5k=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7FY+RdhgwaYodbZQfnJkBtUWN/3K9bWDjfOVfz4pByv5myFYj6XjJf7nwmPvACIXh5R8Dlx5SYpesuUQdAshJg==";
 
     public static async Task EnsureLicensedAsync(CancellationToken cancellationToken)
     {
