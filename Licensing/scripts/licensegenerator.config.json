@@ -1,11 +1,11 @@
 {
-  "keysPath": "/path/to/license-keys.txt",
+  "keysPath": "~/.CrlMonitor/crl-monitor-license-keys.txt",
   "algorithm": "ecdsa",
   "defaultExpiryMonths": 12,
   "companyName": "Red Kestrel",
   "productName": "CrlMonitor",
   "defaultLicenseType": "standard",
-  "outputRoot": "/Users/philratcliffe/RiderProjects/CrlMonitorNX/generated_licenses",
+  "outputRoot": "~/RiderProjects/CrlMonitorNX/Licensing/generated_licenses",
   "defaultUserName": "",
   "defaultUserEmail": "",
   "defaultHostName": "",

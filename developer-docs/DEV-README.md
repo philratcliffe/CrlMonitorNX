@@ -39,3 +39,14 @@ Optional end-to-end checks live under `integration_tests/` and are not wired int
 - `python integration_tests/test_smtp_report.py` – spins up a local SMTP server, triggers an email report, and inspects the captured MIME payload.
 
 Both scripts accept `-keep_test_output` to retain generated configs/artifacts for debugging.
+
+## Windows Release Packaging
+
+Use `./publish-windows.sh` to build the production bundle for Windows x64. The helper script:
+
+- Ensures the git worktree is clean and performs `dotnet list package --vulnerable`.
+- Runs a self-contained `dotnet publish` (single file, no debug symbols).
+- Copies `config.json` into the publish directory so administrators have a ready-made template.
+- Zips the output as `CrlMonitorNX-v<version>-Windows.zip`, then validates the archive (integrity, required files, absence of `.pdb`, and basic size sanity).
+
+The ZIP is emitted next to the script and is ready for distribution/testing on Windows hosts.
