@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish CrlMonitorNX for Windows
+# Publish CrlMonitor for Windows
 
 set -euo pipefail
 
@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_FILE="${ROOT}/CrlMonitor.csproj"
 PUBLISH_DIR="${ROOT}/bin/Release/net8.0/win-x64/publish"
 
-echo "=== Publishing CrlMonitorNX for Windows ==="
+echo "=== Publishing CrlMonitor for Windows ==="
 echo ""
 
 cd "${ROOT}"
@@ -90,7 +90,7 @@ cp "${ROOT}/config.json" "${PUBLISH_DIR}/"
 echo ""
 echo "Creating ZIP archive..."
 cd "${PUBLISH_DIR}"
-ZIP_FILE="${ROOT}/CrlMonitorNX-v${VERSION}-Windows.zip"
+ZIP_FILE="${ROOT}/CrlMonitor-v${VERSION}-Windows.zip"
 rm -f "${ZIP_FILE}"
 zip -r -q "${ZIP_FILE}" .
 cd "${ROOT}"
