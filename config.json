@@ -41,13 +41,13 @@
   },
   "uris": [
     {
-      "uri": "https://crl3.digicert.com/DigiCertGlobalRootCA.crl",
+      "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.8
     },
     {
-      "uri": "http://crlX.globalsign.com/gsrsaovsslca2018.crl",
+      "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
       "signature_validation_mode": "ca-cert",
       "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
       "expiry_threshold": 0.1,

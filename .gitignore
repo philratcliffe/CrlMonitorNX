@@ -31,6 +31,7 @@
 Mapping.txt
 
 # Distribution archives (add project-specific patterns here if needed)
+CrlMonitor-*.zip
 
 # Test results and coverage
 [Tt]est[Rr]esult*/
