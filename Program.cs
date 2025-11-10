@@ -13,6 +13,7 @@ using CrlMonitor.Validation;
 using CrlMonitor.Health;
 using CrlMonitor.State;
 using CrlMonitor.Notifications;
+using CrlMonitor.Licensing;
 
 namespace CrlMonitor;
 
@@ -27,6 +28,7 @@ internal static class Program
     {
         try
         {
+            await LicenseBootstrapper.EnsureLicensedAsync(cancellationToken).ConfigureAwait(false);
             var configPath = ResolveConfigPath(args);
             var options = ConfigLoader.Load(configPath);
             await RunAsync(options, cancellationToken).ConfigureAwait(false);

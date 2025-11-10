@@ -22,4 +22,7 @@
     <EmbeddedResource Remove="CrlMonitor.Tests/**/*.resx" />
     <None Remove="CrlMonitor.Tests/**" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RedKestrel.Licensing\RedKestrel.Licensing\RedKestrel.Licensing.csproj" />
+  </ItemGroup>
 </Project>
