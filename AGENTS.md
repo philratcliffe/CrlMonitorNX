@@ -1,41 +1,88 @@
 # Repository Guidelines
 
-- In all interactions and commit messages, be extremely consise and sacrifice grammar for the sake of concision
 
-- Commits - Use 50/72 rule and write clear and concise Git commit messages
-- Commits - never reference Claude or Codex in the commit messages
+## CRITICAL Coding Directives (Must Follow)
+Non-negotiables
+
+TDD first. Write a failing test before production code. No exceptions.
+
+Minimise complexity; prefer simple, explicit code. Fewer concepts > cleverness.
+
+Validate all external inputs; narrow attack surface.
+
+Centralise exception handling; reduce the number of catch sites.
+
+Warnings are errors. Missing docs are errors.
+
+If a warning must be disabled, include a detailed justification comment and raise to a human reviewer.
+
+Follow A Philosophy of Software Design (Ousterhout). Avoid “rules by ritual” (do not apply Uncle Bob guidelines blindly).
+
+Commits: concise 50/72, never mention Codex/Claude/AI.
+
+### pre-commit hook
+Setup this pre-commit hook if it doesn't already exist
+
+#!/bin/bash
+dotnet format --verify-no-changes || {
+  echo "❌ Style violations. Run: dotnet format"
+  exit 1
+}
+dotnet build -warnaserror || exit 1
 
 
-# Coding
 
-## Compiler Warnings
-  1. Compiler Warnings as Errors)
+### .NET Code Analysis
 
-  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  - ALL compiler warnings fail the build
+Create a Directory.Build.props in the repo root with this content.
+<Project>
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisMode>All</AnalysisMode>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors> <!-- missing XML docs -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 
-## .NET Code Analysis
-  2. .NET Code Analysis)
-
-  <AnalysisMode>All</AnalysisMode>
-  <AnalysisLevel>latest</AnalysisLevel>
-  <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-  <EnableNETAnalyzers>true</EnableNETAnalyzers>
-  <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  - AnalysisMode>All: Enables all code analysis rules
-  - AnalysisLevel>latest: Uses latest analyzer versions
-  - EnforceCodeStyleInBuild: Code style violations fail build
-  - EnableNETAnalyzers: Enables .NET quality analyzers
-  - GenerateDocumentationFile: Requires XML documentation (warns on missing docs)
+  <!-- Force Release+checked arithmetic in CI to catch edge cases -->
+  <PropertyGroup Condition="'$(CI)' == 'true'">
+    <Optimize>true</Optimize>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+  </PropertyGroup>
+</Project>
 
 
-- Always use TDD
-- Always provide a detailed code comment if you have to disable a warning and raise it with human
-- Always look for way to Minimise Complexity.
-- reduce the number of places exceptions need to be handled,
-- Follow A Philosophy of Software Design Books by John Osterhout
-- Don't use Uncle Bob guidelines just for the sake of it
+## set .editor-config
 
+root = true
+
+[*.cs]
+dotnet_analyzer_diagnostic.severity = error
+dotnet_diagnostic.CA*.severity = error
+dotnet_diagnostic.IDE*.severity = error
+
+### Style (fail build on violations)
+csharp_style_var_elsewhere = true:error
+csharp_style_expression_bodied_methods = false:error
+csharp_prefer_static_local_function = true:error
+dotnet_style_qualification_for_field = true:error
+dotnet_style_qualification_for_property = true:error
+dotnet_style_qualification_for_method = true:error
+
+### Formatting
+csharp_new_line_before_open_brace = all:error
+indent_style = space
+indent_size = 4
+end_of_line = lf
+insert_final_newline = true
+
+### Documentation required
+dotnet_diagnostic.CS1591.severity = error
 
 ## Plans 
 - At the end of each plan, give me a list of unresolved questions to answer, if any. Make questions extremely consise. Sacrifice grammar for the sake of concision.
