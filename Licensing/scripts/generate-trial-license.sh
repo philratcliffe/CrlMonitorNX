@@ -144,10 +144,7 @@ OUTPUT_PATH="${OUTPUT_PATH/#\~/$HOME}"
 OUTPUT_DIR="$(dirname "$OUTPUT_PATH")"
 mkdir -p "$OUTPUT_DIR"
 
-declare -A CONFIG_FIELDS
-while IFS='=' read -r key value; do
-  CONFIG_FIELDS["$key"]="$value"
-done < <(python3 - "$CONFIG_PATH" <<'PY'
+CONFIG_SUMMARY=$(python3 - "$CONFIG_PATH" <<'PY'
 import json, sys
 fields = [
     "keysPath",
@@ -163,19 +160,17 @@ with open(sys.argv[1], "r", encoding='utf-8') as fh:
     data = json.load(fh)
 for field in fields:
     value = data.get(field)
-    if value is None:
-        value = ""
-    print(f"{field}={value}")
+    if value in (None, ""):
+        value = "<empty>"
+    print(f"{field}:{value}")
 PY
 )
 
 echo
 echo "Using the following fields from the config file:"
-for field in keysPath companyName productName defaultUserName defaultUserEmail expiry_date_utc defaultExpiryMonths outputRoot; do
-  value="${CONFIG_FIELDS[$field]:-}"
-  [[ -z "$value" ]] && value="<empty>"
-  printf "  %-20s %s\n" "$field" "$value"
-done
+while IFS=':' read -r key value; do
+  printf "  %-20s %s\n" "$key" "$value"
+done <<< "$CONFIG_SUMMARY"
 echo
 
 COMMAND_TEXT=$(cat <<EOF
