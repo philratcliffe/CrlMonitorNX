@@ -85,9 +85,28 @@ internal static class EulaAcceptanceManager
 
     private static string GetAcceptanceFilePath()
     {
-        return string.IsNullOrWhiteSpace(AcceptanceFilePathOverride)
-            ? Path.Combine(AppContext.BaseDirectory, AcceptanceFileName)
-            : AcceptanceFilePathOverride!;
+        if (!string.IsNullOrWhiteSpace(AcceptanceFilePathOverride))
+        {
+            return AcceptanceFilePathOverride!;
+        }
+
+        var baseDirectory = GetExecutableDirectory();
+        return Path.Combine(baseDirectory, AcceptanceFileName);
+    }
+
+    private static string GetExecutableDirectory()
+    {
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(processPath));
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                return directory;
+            }
+        }
+
+        return AppContext.BaseDirectory;
     }
 
     private static bool Matches(EulaAcceptanceRecord record, EulaMetadata metadata)
@@ -107,10 +126,7 @@ internal static class EulaAcceptanceManager
 
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
-            Console.WriteLine();
-            Console.WriteLine("=========== BEGIN EULA ===========");
-            Console.WriteLine(metadata.Text);
-            Console.WriteLine("============ END EULA ============");
+            DisplayEulaWithPaging(metadata.Text);
             Console.WriteLine();
             Console.Write("Type 'accept' to agree and continue [accept/decline]: ");
             var response = Console.ReadLine();
@@ -118,5 +134,27 @@ internal static class EulaAcceptanceManager
         }
 
         throw new InvalidOperationException("Cannot display the licence agreement in the current environment.");
+    }
+
+    private static void DisplayEulaWithPaging(string text)
+    {
+        const int PageSize = 24;
+        var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        Console.WriteLine("=========== BEGIN EULA ===========");
+        for (var i = 0; i < lines.Length; i++)
+        {
+            Console.WriteLine(lines[i]);
+            if ((i + 1) % PageSize == 0 && i + 1 < lines.Length)
+            {
+                Console.WriteLine("-- Press Enter to continue, or type 'q' then Enter to abort --");
+                var response = Console.ReadLine();
+                if (string.Equals(response, "q", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Licence agreement not accepted.");
+                }
+            }
+        }
+
+        Console.WriteLine("============ END EULA ============");
     }
 }
