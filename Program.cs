@@ -23,6 +23,7 @@ internal static class Program
     {
         try
         {
+            AnnounceDebugBuild();
             await LicenseBootstrapper.EnsureLicensedAsync(cancellationToken).ConfigureAwait(false);
             var configPath = ResolveConfigPath(args);
             var options = ConfigLoader.Load(configPath);
@@ -154,6 +155,21 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("If no argument is supplied, the application looks for 'config.json' in the executable directory.");
 #pragma warning restore CA1303
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void AnnounceDebugBuild()
+    {
+        var originalColor = Console.ForegroundColor;
+        try
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("DEBUG VERSION");
+        }
+        finally
+        {
+            Console.ForegroundColor = originalColor;
+        }
     }
 }
 
