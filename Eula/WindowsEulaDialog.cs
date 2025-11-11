@@ -58,7 +58,28 @@ internal static class WindowsEulaDialog
             Dock = DockStyle.Fill,
             Text = normalizedText,
             WordWrap = false,
-            Font = new System.Drawing.Font("Consolas", 9F)
+            Font = new System.Drawing.Font("Consolas", 9F),
+            DetectUrls = true
+        };
+
+        // Enable clickable URLs
+        textBox.LinkClicked += (sender, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.LinkText))
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = e.LinkText,
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    // Silently fail if browser can't open
+                }
+            }
         };
 
         var acceptButton = new Button
