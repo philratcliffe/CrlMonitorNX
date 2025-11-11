@@ -48,13 +48,17 @@ internal static class WindowsEulaDialog
             StartPosition = FormStartPosition.CenterScreen
         };
 
-        var textBox = new TextBox
+        // Normalize line endings for Windows Forms (LF -> CRLF)
+        var normalizedText = eulaText.Replace("\r\n", "\n", System.StringComparison.Ordinal).Replace("\n", "\r\n", System.StringComparison.Ordinal);
+
+        var textBox = new RichTextBox
         {
-            Multiline = true,
             ReadOnly = true,
-            ScrollBars = ScrollBars.Vertical,
+            ScrollBars = RichTextBoxScrollBars.Vertical,
             Dock = DockStyle.Fill,
-            Text = eulaText
+            Text = normalizedText,
+            WordWrap = false,
+            Font = new System.Drawing.Font("Consolas", 9F)
         };
 
         var acceptButton = new Button
