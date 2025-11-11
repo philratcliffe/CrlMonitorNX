@@ -36,8 +36,8 @@
    - This file guides the generator but contains no secrets.
 
 2. **Bundled trial licence**
-   - Every release: `dotnet run --project ../RedKestrel.Licensing/LicenseGenerator -- generate-license --config licensing/licensing.config.json --type trial --expires 2026-12-31 --output artifacts/license.lic`
-   - Copy `license.lic` into the ZIP next to executables.
+   - Generate the 12-month trial via `./Licensing/scripts/generate-trial-license.sh`. The script writes to `Licensing/generated_licenses/trial/<yyyy-mm-dd>-license.lic` (ignored by git so the file can be refreshed safely).
+   - Before cutting a release, copy the latest trial licence from that folder into the ZIP beside the executables.
 
 3. **Host licence issuance**
    - Collect the machine request code (from the bootstrapper output).
@@ -51,4 +51,3 @@
 - Should we provide a helper script in `tools/` to wrap the `dotnet run` commands?
 - Where do we store the secure key file path so build agents can access it (env var vs secrets vault)?
 - Do we need telemetry/logging for licence failures?
-

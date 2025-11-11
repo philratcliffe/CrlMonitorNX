@@ -13,7 +13,8 @@ Utilities that help CrlMonitor engineers work with the shared `LicenseGenerator`
    ./Licensing/scripts/generate-license-keys.sh
    ```
    If `LICENSE_PASSPHRASE` is not set the script will prompt for it and show the export example above.
-3. Keep the generated file private—do not commit it.
+3. The script refuses to overwrite an existing `crl-monitor-license-keys.txt`; move/backup the old file if you intend to rotate keys.
+4. Keep the generated file private—do not commit it.
 
 ### Installing the Public Key
 
@@ -36,3 +37,26 @@ dotnet run --project ../RedKestrel.Licensing/LicenseGenerator -- \
 ```
 
 Update the config to point at the key file created by the script (`"keysPath": "~/.CrlMonitorLicenseKeys/crl-monitor-license-keys.txt"`).
+
+### Generating the Bundled Trial Licence
+
+Use `generate-trial-license.sh` to create the 12-month trial `license.lic` that ships with every release:
+
+```bash
+export LICENSE_PASSPHRASE='choose-a-strong-secret'   # or enter it interactively
+./Licensing/scripts/generate-trial-license.sh
+```
+
+By default the script reads `licensegenerator.config.json`, computes the expiry date (default 12 months ahead) and sets the licence to expire at 23:59:59 UTC on that day. The generated file is written to `Licensing/generated_licenses/trial/<yyyy-mm-dd>-license.lic`, where the folder is ignored by git so you can regenerate safely. Pass a different config or output path if needed:
+
+```bash
+./Licensing/scripts/generate-trial-license.sh ~/crlmonitor.config.json ./artifacts/CrlMonitor/license.lic
+```
+
+Before publishing a release, copy the freshly generated trial licence from `Licensing/generated_licenses/trial/` into the shipping ZIP alongside the binaries.
+
+The bundled trial licence is stamped with:
+- Customer name: `Trial User`
+- Customer email: `support@redkestrel.co.uk`
+
+Update the config if those defaults ever change.

@@ -1,18 +1,17 @@
 {
-  "keysPath": "~/.CrlMonitor/crl-monitor-license-keys.txt",
+  "keysPath": "~/.CrlMonitorLicenseKeys/crl-monitor-license-keys.txt",
   "algorithm": "ecdsa",
   "defaultExpiryMonths": 12,
+  "expiry_date": "",
+  "_expiry_date_comment": "Set to yyyy-MM-dd to expire at 23:59:59Z on that day",
   "companyName": "Red Kestrel",
   "productName": "CrlMonitor",
-  "defaultLicenseType": "standard",
+  "defaultLicenseType": "trial",
   "outputRoot": "~/RiderProjects/CrlMonitorNX/Licensing/generated_licenses",
-  "defaultUserName": "",
-  "defaultUserEmail": "",
+  "defaultUserName": "Trial User",
+  "defaultUserEmail": "support@redkestrel.co.uk",
   "defaultHostName": "",
   "attributes": {
     "Product": "CrlMonitor"
-  },
-  "capabilities": {
-    "Feature": "Disabled"
   }
 }

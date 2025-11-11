@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+**Security rule:** Never inspect or delete sensitive private keys or passwords (including env vars like `LICENSE_PASSPHRASE`). If a command requires them, let the human provide/run it.
+
 
 ## CRITICAL Coding Directives (Must Follow)
 Non-negotiables

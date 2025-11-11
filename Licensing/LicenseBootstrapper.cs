@@ -1,5 +1,6 @@
 using RedKestrel.Licensing;
 using RedKestrel.Licensing.Trial;
+using Standard.Licensing;
 
 namespace CrlMonitor.Licensing;
 
@@ -7,7 +8,8 @@ internal static class LicenseBootstrapper
 {
     private const string CompanyName = "RedKestrel";
     private const string ProductName = "CrlMonitor";
-    private const string TrialStorageKey = "CrlMonitor_Trial_2025-11-09";
+    internal const string TrialStorageKey = "CrlMonitor_Trial_2025-11-09";
+    private const int TrialDays = 30;
 
     // TODO: replace with the production RSA public key used to issue licenses for CrlMonitor.
     private const string PublicKey =
@@ -17,41 +19,28 @@ internal static class LicenseBootstrapper
     {
         var fileAccessor = new LicenseFileAccessor();
         var validator = new LicenseValidator(fileAccessor, new LicenseValidationOptions {
-            PublicKey = PublicKey
+            PublicKey = ResolvePublicKey()
         });
 
         var validation = await validator.ValidateAsync(cancellationToken).ConfigureAwait(false);
-        if (validation.Success)
+        if (!validation.Success)
         {
-            return;
+            ThrowLicenceException(validation);
         }
 
-        if (validation.Error != LicenseValidationError.FileNotFound)
+        if (validation.License?.Type == LicenseType.Trial)
         {
-            Console.WriteLine("License validation failed: {0}", validation.ErrorMessage ?? validation.Error.ToString());
+            await EnforceTrialAsync(cancellationToken).ConfigureAwait(false);
         }
+    }
 
-        var trialOptions = new TrialOptions {
-            CompanyName = CompanyName,
-            ProductName = ProductName,
-            StorageKey = TrialStorageKey,
-            TrialDays = 30
-        };
-        var storage = TrialStorageFactory.CreateDefault(trialOptions);
-        var trialManager = new TrialManager(trialOptions, storage);
-        var trialStatus = await trialManager.EvaluateAsync(cancellationToken).ConfigureAwait(false);
-        if (!trialStatus.IsValid)
-        {
-            var requestCode = CreateRequestCode();
-            throw new InvalidOperationException($"Trial period expired. Please contact support with request code: {requestCode}");
-        }
-
-        Console.WriteLine("Trial mode: {0} day(s) remaining", trialStatus.DaysRemaining);
-        if (validation.Error == LicenseValidationError.FileNotFound)
-        {
-            var requestCode = CreateRequestCode();
-            Console.WriteLine("No license installed. Request code: {0}", requestCode);
-        }
+    private static string ResolvePublicKey()
+    {
+#if DEBUG
+        return LicenseBootstrapperTestAccess.PublicKeyOverride ?? PublicKey;
+#else
+        return PublicKey;
+#endif
     }
 
     private static string CreateRequestCode()
@@ -66,4 +55,77 @@ internal static class LicenseBootstrapper
         };
         return generator.Generate(options);
     }
+
+    private static async Task EnforceTrialAsync(CancellationToken cancellationToken)
+    {
+        var trialOptions = new TrialOptions {
+            CompanyName = CompanyName,
+            ProductName = ProductName,
+            StorageKey = TrialStorageKey,
+            TrialDays = TrialDays,
+#if DEBUG
+            ProgramDataOverridePath = LicenseBootstrapperTestAccess.TrialDataDirectoryOverride
+#endif
+        };
+
+        var storage = TrialStorageFactory.CreateDefault(trialOptions);
+        var manager = new TrialManager(trialOptions, storage);
+        var status = await manager.EvaluateAsync(cancellationToken).ConfigureAwait(false);
+        if (!status.IsValid)
+        {
+            ThrowTrialExpiryException();
+        }
+
+        Console.WriteLine("Trial mode: {0} day(s) remaining", status.DaysRemaining);
+    }
+
+    private static void ThrowTrialExpiryException()
+    {
+        var requestCode = CreateRequestCode();
+        var message = FormattableString.Invariant(
+            $"Trial period expired. Please contact sales@redkestrel.co.uk with request code: {requestCode}");
+        throw new InvalidOperationException(message);
+    }
+
+    private static void ThrowLicenceException(LicenseValidationResult validation)
+    {
+        var reason = string.IsNullOrWhiteSpace(validation.ErrorMessage)
+            ? validation.Error.ToString()
+            : validation.ErrorMessage;
+        var requestCode = CreateRequestCode();
+        var message = FormattableString.Invariant(
+            $"Licence validation failed ({reason}). Please contact support@redkestrel.co.uk with request code: {requestCode}");
+        throw new InvalidOperationException(message);
+    }
+
+#if DEBUG
+    internal static void SetTestPublicKey(string publicKey)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(publicKey);
+        LicenseBootstrapperTestAccess.PublicKeyOverride = publicKey;
+    }
+
+    internal static void SetTestTrialDataDirectory(string directory)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(directory);
+        LicenseBootstrapperTestAccess.TrialDataDirectoryOverride = directory;
+    }
+
+    internal static void ResetTestOverrides()
+    {
+        LicenseBootstrapperTestAccess.Reset();
+    }
+
+    private static class LicenseBootstrapperTestAccess
+    {
+        internal static string? PublicKeyOverride { get; set; }
+        internal static string? TrialDataDirectoryOverride { get; set; }
+
+        internal static void Reset()
+        {
+            PublicKeyOverride = null;
+            TrialDataDirectoryOverride = null;
+        }
+    }
+#endif
 }

@@ -139,6 +139,9 @@ crl-report.csv
 crlmonitor-state.json
 reports/
 
+# Licensing artefacts
+Licensing/generated_licenses/
+
 # Integration test output
 integration_tests/test_output/
 reports/
