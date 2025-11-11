@@ -32,5 +32,6 @@
     <None Include="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
 </Project>

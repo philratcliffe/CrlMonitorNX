@@ -9,6 +9,7 @@ using CrlMonitor.Notifications.Alerts;
 using CrlMonitor.Notifications.Email;
 using CrlMonitor.Notifications.Reports;
 using CrlMonitor.State;
+using CrlMonitor.Eula;
 
 namespace CrlMonitor;
 
@@ -24,6 +25,7 @@ internal static class Program
         try
         {
             AnnounceDebugBuild();
+            await EulaAcceptanceManager.EnsureAcceptedAsync(cancellationToken).ConfigureAwait(false);
             await LicenseBootstrapper.EnsureLicensedAsync(cancellationToken).ConfigureAwait(false);
             var configPath = ResolveConfigPath(args);
             var options = ConfigLoader.Load(configPath);
