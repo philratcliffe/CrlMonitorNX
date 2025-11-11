@@ -34,9 +34,8 @@
     </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
     <UseWindowsForms>true</UseWindowsForms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 </Project>

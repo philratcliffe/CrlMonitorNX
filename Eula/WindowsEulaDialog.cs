@@ -17,7 +17,7 @@ internal static class WindowsEulaDialog
             {
                 try
                 {
-                    accepted = ShowDialog(metadata);
+                    accepted = ShowDialog(metadata.Text);
                 }
                 finally
                 {
@@ -35,7 +35,7 @@ internal static class WindowsEulaDialog
         }
     }
 
-    private static bool ShowDialog(EulaMetadata metadata)
+    private static bool ShowDialog(string eulaText)
     {
         using var form = new Form
         {
@@ -51,23 +51,23 @@ internal static class WindowsEulaDialog
             ReadOnly = true,
             ScrollBars = ScrollBars.Vertical,
             Dock = DockStyle.Fill,
-            Text = metadata.Text
+            Text = eulaText
         };
 
         var acceptButton = new Button
         {
             Text = "Accept",
             DialogResult = DialogResult.OK,
-            Width = 120,
-            Anchor = AnchorStyles.Right | AnchorStyles.Bottom
+            Anchor = AnchorStyles.Right | AnchorStyles.Bottom,
+            Width = 120
         };
 
         var declineButton = new Button
         {
             Text = "Decline",
             DialogResult = DialogResult.Cancel,
-            Width = 120,
-            Anchor = AnchorStyles.Left | AnchorStyles.Bottom
+            Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
+            Width = 120
         };
 
         var buttonPanel = new Panel
@@ -75,17 +75,19 @@ internal static class WindowsEulaDialog
             Dock = DockStyle.Bottom,
             Height = 50
         };
+
         acceptButton.Left = buttonPanel.Width - acceptButton.Width - 10;
         acceptButton.Top = (buttonPanel.Height - acceptButton.Height) / 2;
         declineButton.Left = 10;
         declineButton.Top = (buttonPanel.Height - declineButton.Height) / 2;
+
         buttonPanel.Controls.Add(declineButton);
         buttonPanel.Controls.Add(acceptButton);
 
-        form.Controls.Add(textBox);
-        form.Controls.Add(buttonPanel);
         form.AcceptButton = acceptButton;
         form.CancelButton = declineButton;
+        form.Controls.Add(textBox);
+        form.Controls.Add(buttonPanel);
 
         return form.ShowDialog() == DialogResult.OK;
     }

@@ -74,7 +74,8 @@ echo "Publishing self-contained Windows build..."
 dotnet publish "${PROJECT_FILE}" -c Release -r win-x64 --self-contained true \
     /p:PublishSingleFile=true \
     /p:DebugType=None \
-    /p:DebugSymbols=false
+    /p:DebugSymbols=false \
+    /p:DefineConstants="WINDOWS"
 
 VERSION="$(extract_version)"
 if [[ -z "${VERSION}" ]]; then
