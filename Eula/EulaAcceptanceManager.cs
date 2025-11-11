@@ -90,23 +90,55 @@ internal static class EulaAcceptanceManager
             return AcceptanceFilePathOverride!;
         }
 
-        var baseDirectory = GetExecutableDirectory();
-        return Path.Combine(baseDirectory, AcceptanceFileName);
+        var path = Path.Combine(GetExecutableDirectory(), AcceptanceFileName);
+        RemoveLegacyAcceptanceFile(path);
+        return path;
     }
 
     private static string GetExecutableDirectory()
     {
+        var assemblyLocation = typeof(EulaAcceptanceManager).Assembly.Location;
+        if (!string.IsNullOrWhiteSpace(assemblyLocation))
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyLocation));
+            if (!string.IsNullOrWhiteSpace(assemblyDirectory))
+            {
+                return assemblyDirectory!;
+            }
+        }
+
         var processPath = Environment.ProcessPath;
         if (!string.IsNullOrWhiteSpace(processPath))
         {
-            var directory = Path.GetDirectoryName(Path.GetFullPath(processPath));
-            if (!string.IsNullOrWhiteSpace(directory))
+            var processDirectory = Path.GetDirectoryName(Path.GetFullPath(processPath));
+            if (!string.IsNullOrWhiteSpace(processDirectory))
             {
-                return directory;
+                return processDirectory!;
             }
         }
 
         return AppContext.BaseDirectory;
+    }
+
+    private static void RemoveLegacyAcceptanceFile(string targetPath)
+    {
+        try
+        {
+            var legacyPath = Path.Combine(AppContext.BaseDirectory, AcceptanceFileName);
+            var targetFullPath = Path.GetFullPath(targetPath);
+            var legacyFullPath = Path.GetFullPath(legacyPath);
+            if (!string.Equals(targetFullPath, legacyFullPath, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(legacyFullPath))
+            {
+                File.Delete(legacyFullPath);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     private static bool Matches(EulaAcceptanceRecord record, EulaMetadata metadata)
