@@ -66,7 +66,11 @@ internal static class ConfigLoader
 
         var maxCrlSizeBytes = ResolveMaxCrlSize(document.MaxCrlSizeBytes, DefaultMaxCrlSizeBytes, "max_crl_size_bytes");
         var entries = BuildEntries(document.Uris, configDirectory, maxCrlSizeBytes);
-        var smtpOptions = document.Smtp != null ? ParseSmtp(document.Smtp, "smtp") : null;
+
+        // Only parse SMTP if reports or alerts are enabled
+        var smtpNeeded = (document.Reports?.Enabled == true) || (document.Alerts?.Enabled == true);
+        var smtpOptions = smtpNeeded && document.Smtp != null ? ParseSmtp(document.Smtp, "smtp") : null;
+
         var reportOptions = ParseReportOptions(document.Reports, smtpOptions);
         var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
         var htmlEnabled = document.HtmlReportEnabled ?? false;
