@@ -1,0 +1,14 @@
+<License>
+  <Id>3c3a9e41-171c-410c-938c-1b4a8a017920</Id>
+  <Type>Trial</Type>
+  <Expiration>Tue, 11 Nov 2025 23:59:59 GMT</Expiration>
+  <Customer>
+    <Name>Trial User</Name>
+    <Email>support@redkestrel.co.uk</Email>
+  </Customer>
+  <LicenseAttributes>
+    <Attribute name="Product">CrlMonitor</Attribute>
+    <Attribute name="Company">Red Kestrel</Attribute>
+  </LicenseAttributes>
+  <Signature>MEQCIHIWcN2rxNVXgs6s+ogHzkS3f09HfzzApM+lOWhGS0FsAiB/SJmjQXP24I8orlKbKrdMWndHkQW4Y0E6QdLzqlw28w==</Signature>
+</License>
