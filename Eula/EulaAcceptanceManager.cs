@@ -90,9 +90,43 @@ internal static class EulaAcceptanceManager
             return AcceptanceFilePathOverride!;
         }
 
+        // Try ProgramData on Windows first, fallback to exe directory
+        if (OperatingSystem.IsWindows())
+        {
+            var programDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "RedKestrel",
+                "CrlMonitor",
+                "accepted.json");
+
+            // Test if we can write to ProgramData location
+            var directory = Path.GetDirectoryName(programDataPath);
+            if (!string.IsNullOrWhiteSpace(directory) && TryEnsureDirectoryWritable(directory))
+            {
+                RemoveLegacyAcceptanceFile(programDataPath);
+                return programDataPath;
+            }
+        }
+
+        // Fallback to executable directory
         var path = Path.Combine(GetExecutableDirectory(), AcceptanceFileName);
         RemoveLegacyAcceptanceFile(path);
         return path;
+    }
+
+    private static bool TryEnsureDirectoryWritable(string directory)
+    {
+#pragma warning disable CA1031 // Defensive: test if directory writable, any exception means not writable
+        try
+        {
+            _ = Directory.CreateDirectory(directory);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+#pragma warning restore CA1031
     }
 
     private static string GetExecutableDirectory()
