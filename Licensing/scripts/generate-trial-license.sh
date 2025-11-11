@@ -94,7 +94,47 @@ print(f"{date_part}|{iso_expiry}")
 PY
 }
 
-IFS='|' read -r EXPIRY_DATE EXPIRY_ISO <<< "$(calc_expiry_date)"
+CONFIG_EXPIRY_RAW=$(python3 - "$CONFIG_PATH" <<'PY'
+import json, sys
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+print(data.get("expiry_date_utc", ""))
+PY
+)
+
+if [[ -n "$CONFIG_EXPIRY_RAW" ]]; then
+  if [[ "$CONFIG_EXPIRY_RAW" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    EXPIRY_DATE="$CONFIG_EXPIRY_RAW"
+    EXPIRY_ISO="${CONFIG_EXPIRY_RAW}T23:59:59Z"
+  else
+    PARSED=$(python3 - "$CONFIG_EXPIRY_RAW" <<'PY'
+import sys, datetime
+value = sys.argv[1]
+try:
+    text = value
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    dt = datetime.datetime.fromisoformat(text)
+    dt = dt.astimezone(datetime.timezone.utc)
+    iso = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    date_part = dt.strftime("%Y-%m-%d")
+    print(f"{iso}|{date_part}")
+except ValueError:
+    sys.exit(1)
+PY
+)
+    if [[ $? -eq 0 ]]; then
+      IFS='|' read -r EXPIRY_ISO EXPIRY_DATE <<< "$PARSED"
+    else
+      echo "warning: expiry_date_utc must be yyyy-MM-dd or ISO 8601 UTC (e.g. 2025-11-10T12:30:00Z). Ignoring config value." >&2
+      CONFIG_EXPIRY_RAW=""
+    fi
+  fi
+fi
+
+if [[ -z "$CONFIG_EXPIRY_RAW" ]]; then
+  IFS='|' read -r EXPIRY_DATE EXPIRY_ISO <<< "$(calc_expiry_date)"
+fi
 
 default_output_dir="$REPO_ROOT/Licensing/generated_licenses/trial"
 mkdir -p "$default_output_dir"
@@ -104,9 +144,10 @@ OUTPUT_PATH="${OUTPUT_PATH/#\~/$HOME}"
 OUTPUT_DIR="$(dirname "$OUTPUT_PATH")"
 mkdir -p "$OUTPUT_DIR"
 
-echo
-echo "Using the following fields from the config file:"
-python3 - "$CONFIG_PATH" <<'PY'
+declare -A CONFIG_FIELDS
+while IFS='=' read -r key value; do
+  CONFIG_FIELDS["$key"]="$value"
+done < <(python3 - "$CONFIG_PATH" <<'PY'
 import json, sys
 fields = [
     "keysPath",
@@ -114,18 +155,27 @@ fields = [
     "productName",
     "defaultUserName",
     "defaultUserEmail",
-    "expiry_date",
+    "expiry_date_utc",
     "defaultExpiryMonths",
     "outputRoot"
 ]
-with open(sys.argv[1], "r", encoding="utf-8") as fh:
+with open(sys.argv[1], "r", encoding='utf-8') as fh:
     data = json.load(fh)
 for field in fields:
     value = data.get(field)
-    if value in (None, ""):
-        value = "<empty>"
-    print(f"  {field:<20} {value}")
+    if value is None:
+        value = ""
+    print(f"{field}={value}")
 PY
+)
+
+echo
+echo "Using the following fields from the config file:"
+for field in keysPath companyName productName defaultUserName defaultUserEmail expiry_date_utc defaultExpiryMonths outputRoot; do
+  value="${CONFIG_FIELDS[$field]:-}"
+  [[ -z "$value" ]] && value="<empty>"
+  printf "  %-20s %s\n" "$field" "$value"
+done
 echo
 
 COMMAND_TEXT=$(cat <<EOF
