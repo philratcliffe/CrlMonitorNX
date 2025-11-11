@@ -90,6 +90,10 @@ mkdir -p "${PUBLISH_DIR}/examples/CA-certs"
 cp "${ROOT}/examples/CA-certs/DigiCertGlobalRootCA.crt" "${PUBLISH_DIR}/examples/CA-certs/"
 
 echo ""
+echo "Removing XML documentation files..."
+find "${PUBLISH_DIR}" -name "*.xml" -delete
+
+echo ""
 echo "Creating ZIP archive..."
 cd "${PUBLISH_DIR}"
 ZIP_FILE="${ROOT}/CrlMonitor-v${VERSION}-Windows.zip"
