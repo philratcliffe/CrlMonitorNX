@@ -178,6 +178,7 @@ internal static class EulaAcceptanceManager
             Console.WriteLine(lines[i]);
             if ((i + 1) % PageSize == 0 && i + 1 < lines.Length)
             {
+                Console.WriteLine();
                 Console.WriteLine("-- Press Enter to continue, or type 'q' then Enter to abort --");
                 var response = Console.ReadLine();
                 if (string.Equals(response, "q", StringComparison.OrdinalIgnoreCase))
