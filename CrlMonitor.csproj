@@ -17,6 +17,13 @@
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
     <PackageReference Include="System.DirectoryServices.Protocols" Version="9.0.10" />
   </ItemGroup>
+  <!-- Windows Forms for win-x64 builds (cross-compile safe) -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Remove="CrlMonitor.Tests/**/*.cs" />
     <EmbeddedResource Remove="CrlMonitor.Tests/**/*.resx" />
@@ -34,8 +41,4 @@
     </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-    <UseWindowsForms>true</UseWindowsForms>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
-  </PropertyGroup>
 </Project>

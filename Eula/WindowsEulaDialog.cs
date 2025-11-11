@@ -1,19 +1,20 @@
 #if WINDOWS
-using System;
-using System.Threading;
+#pragma warning disable IDE0055 // Windows Forms code with specific formatting for readability
 using System.Windows.Forms;
 
 namespace CrlMonitor.Eula;
 
 internal static class WindowsEulaDialog
 {
+    [System.Runtime.Versioning.SupportedOSPlatform("windows6.1")]
     public static bool TryShow(EulaMetadata metadata)
     {
+#pragma warning disable CA1031 // Defensive: all exceptions should result in fallback to console EULA
         try
         {
             var accepted = false;
-            var completed = new ManualResetEventSlim();
-            var thread = new Thread(() =>
+            using var completed = new System.Threading.ManualResetEventSlim();
+            var thread = new System.Threading.Thread(() =>
             {
                 try
                 {
@@ -24,7 +25,7 @@ internal static class WindowsEulaDialog
                     completed.Set();
                 }
             });
-            thread.SetApartmentState(ApartmentState.STA);
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
             thread.Start();
             completed.Wait();
             return accepted;
@@ -33,8 +34,10 @@ internal static class WindowsEulaDialog
         {
             return false;
         }
+#pragma warning restore CA1031
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows6.1")]
     private static bool ShowDialog(string eulaText)
     {
         using var form = new Form
@@ -92,4 +95,5 @@ internal static class WindowsEulaDialog
         return form.ShowDialog() == DialogResult.OK;
     }
 }
+#pragma warning restore IDE0055
 #endif

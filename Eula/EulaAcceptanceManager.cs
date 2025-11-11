@@ -155,7 +155,7 @@ internal static class EulaAcceptanceManager
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
 #if WINDOWS
-            if (OperatingSystem.IsWindows() && WindowsEulaDialog.TryShow(metadata))
+            if (OperatingSystem.IsWindowsVersionAtLeast(6, 1) && WindowsEulaDialog.TryShow(metadata))
             {
                 return true;
             }
