@@ -97,14 +97,10 @@ internal static class EulaAcceptanceManager
 
     private static string GetExecutableDirectory()
     {
-        var assemblyLocation = typeof(EulaAcceptanceManager).Assembly.Location;
-        if (!string.IsNullOrWhiteSpace(assemblyLocation))
+        var baseDirectory = AppContext.BaseDirectory;
+        if (!string.IsNullOrWhiteSpace(baseDirectory))
         {
-            var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyLocation));
-            if (!string.IsNullOrWhiteSpace(assemblyDirectory))
-            {
-                return assemblyDirectory!;
-            }
+            return Path.GetFullPath(baseDirectory);
         }
 
         var processPath = Environment.ProcessPath;
@@ -117,7 +113,7 @@ internal static class EulaAcceptanceManager
             }
         }
 
-        return AppContext.BaseDirectory;
+        return Directory.GetCurrentDirectory();
     }
 
     private static void RemoveLegacyAcceptanceFile(string targetPath)
@@ -158,6 +154,12 @@ internal static class EulaAcceptanceManager
 
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
+#if WINDOWS
+            if (OperatingSystem.IsWindows() && WindowsEulaDialog.TryShow(metadata))
+            {
+                return true;
+            }
+#endif
             DisplayEulaWithPaging(metadata.Text);
             Console.WriteLine();
             Console.Write("Type 'accept' to agree and continue [accept/decline]: ");
