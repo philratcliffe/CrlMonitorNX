@@ -120,16 +120,20 @@ internal static class Program
 
     private static string ResolveConfigPath(string[] args)
     {
-        if (args.Length == 0)
+        if (args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
         {
+            var defaultPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "config.json"));
+            if (File.Exists(defaultPath))
+            {
+                return defaultPath;
+            }
+
             PrintUsage();
-            throw new InvalidOperationException("Configuration path argument is required.");
+            throw new InvalidOperationException(
+                $"Configuration path argument is required (default '{defaultPath}' not found).");
         }
 
-        var candidate = args[0];
-        return string.IsNullOrWhiteSpace(candidate)
-            ? throw new InvalidOperationException("Configuration path argument must not be empty.")
-            : Path.GetFullPath(candidate);
+        return Path.GetFullPath(args[0]);
     }
 
     private static void ReportError(string message)
@@ -147,6 +151,8 @@ internal static class Program
         Console.WriteLine("Examples:");
         Console.WriteLine("  CrlMonitor config.json");
         Console.WriteLine("  CrlMonitor ./configs/prod.json");
+        Console.WriteLine();
+        Console.WriteLine("If no argument is supplied, the application looks for 'config.json' in the executable directory.");
 #pragma warning restore CA1303
     }
 }

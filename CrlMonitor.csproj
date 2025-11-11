@@ -25,4 +25,9 @@
   <ItemGroup>
     <ProjectReference Include="..\RedKestrel.Licensing\RedKestrel.Licensing\RedKestrel.Licensing.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="license.lic">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
