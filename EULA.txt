@@ -1,6 +1,6 @@
 END USER LICENSE AGREEMENT (EULA)
 
-    Version: 1.0 
+    Version: 1.0
     Effective Date: 11 Nov 2025
 
 FOR CrlMonitor (SUBSCRIPTION)
@@ -11,150 +11,168 @@ THESE TERMS. IF YOU ARE ENTERING INTO THIS AGREEMENT ON BEHALF OF A
 COMPANY OR OTHER LEGAL ENTITY, YOU REPRESENT THAT YOU HAVE AUTHORITY
 TO BIND SUCH ENTITY TO THESE TERMS.
 
-1. Definitions 
+1. Definitions
 
-Licensor:       Red Kestrel Consulting Limited (a UK entity).
+Term             | Definition
+-----------------+------------------------------------------------------
+Licensor         | Red Kestrel Consulting Limited (a UK entity).
+Licensee         | The business entity or individual accepting this
+                 | Agreement.
+Licensed Machine | A single, specific physical or virtual machine
+                 | identified by hostname or hardware ID that is
+                 | authorised to run the Software. A licence assigned
+                 | to a Licensed Machine is non-shareable and
+                 | non-transferable to any other machine without the
+                 | Licensor’s written consent or as permitted in Clause
+                 | 2.1.
+Software         | The CrlMonitor application, including all updates,
+                 | documentation, and related components.
+Effective Date   | The date the Licensee first clicks “I Accept” or
+                 | commences use of the Software.
+Subscription Term| The period during which the Licensee is authorised
+                 | to use the Software, including any free trial or
+                 | evaluation period, and any subsequent paid period of
+                 | access.
 
-Licensee:       The business entity or individual accepting this Agreement.
+2. Licence Grant
 
-Licensed Machine: A single, specific physical or virtual machine
-identified by hostname or hardware ID that is authorised to run 
-the Software. A licence assigned
-to a Licensed Machine is non-shareable and non-transferable to any
-other machine without the Licensor’s written consent or as permitted
-in Clause 2.1.  Software: The CrlMonitor application, including all
-updates, documentation, and related components.  Effective Date: The
-date the Licensee first clicks “I Accept” or commences use of the
-Software.  Subscription Term: The period during which the Licensee is
-authorised to use the Software, including any free trial or evaluation
-period, and any subsequent paid period of access.
+2.1. Grant and Use Restrictions: Subject to these terms, the Licensor
+grants the Licensee a limited, non-exclusive, non-transferable, and
+revocable licence to install and use the Software on one Licensed
+Machine solely for the Licensee’s internal business purposes during
+the Subscription Term. If the Licensee wishes to move the Software to
+a different machine, the Software must first be fully uninstalled from
+the original Licensed Machine and may only be reactivated on the new
+machine with the Licensor’s approval.
 
-2. Licence Grant 2.1 Grant and Use Restrictions: Subject to these
-terms, the Licensor grants the Licensee a limited, non-exclusive,
-non-transferable, and revocable licence to install and use the
-Software on one Licensed Machine solely for the Licensee’s internal
-business purposes during the Subscription Term. If the Licensee wishes
-to move the Software to a different machine, the Software must first
-be fully uninstalled from the original Licensed Machine and may only
-be reactivated on the new machine with the Licensor’s approval.
-
-2.2 Ownership: The Software is licensed, not sold. All rights, title,
+2.2. Ownership: The Software is licensed, not sold. All rights, title,
 and intellectual property in and to the Software remain with the
 Licensor.
 
-2.3 Feedback: Any suggestions or feedback provided by the Licensee may
-be used freely by the Licensor without obligation of confidentiality
-or compensation.
+2.3. Feedback: Any suggestions or feedback provided by the Licensee
+may be used freely by the Licensor without obligation of
+confidentiality or compensation.
 
-2.4 Restrictions: The Licensee shall not copy, modify, reverse
+2.4. Restrictions: The Licensee shall not copy, modify, reverse
 engineer, distribute, sell, lease, transfer, or otherwise attempt to
 derive the source code of the Software except as mandated by law and
 after written notice to the Licensor.
 
-2.5 Prohibited Conduct: You shall not use the Software for malicious,
+2.5. Prohibited Conduct: You shall not use the Software for malicious,
 unlawful, or unauthorised purposes.
 
-2.6 Commercial Distribution: The Software and its licence file may not
-be resold, sublicensed, or rented. Any attempt to transfer the licence
-is void.
+2.6. Commercial Distribution: The Software and its licence file may
+not be resold, sublicensed, or rented. Any attempt to transfer the
+licence is void.
 
-2.7 High Risk Prohibition: The Software must not be used in High Risk
+2.7. High Risk Prohibition: The Software must not be used in High Risk
 Systems (nuclear facilities, air traffic control, medical devices,
 etc.) where failure could result in injury or death.
 
-2.8 Internal Use Only: Without a separate written agreement, you may
+2.8. Internal Use Only: Without a separate written agreement, you may
 not use the Software to provide CRL monitoring, alerting, or reporting
 services to third parties.
 
-2.9 Safeguarding: The Licensee must protect the Software and licence
+2.9. Safeguarding: The Licensee must protect the Software and licence
 file from unauthorised use or distribution.
 
-2.10 Open Source Compliance: Open-source components included in the
+2.10. Open Source Compliance: Open-source components included in the
 Software remain subject to their respective licences as listed in
 THIRD-PARTY-LICENSES.md.
 
-3. Subscription and Termination 3.1 Trial Use: If provided for
-evaluation, the Software may be used for the trial period specified by
-the Licensor, solely for internal testing on one Licensed Machine.
-Trial use is “AS IS” without warranty. All other provisions of this
-Agreement apply.
+3. Subscription and Termination
 
-3.2 Fees and Renewal: The Licensee shall pay subscription fees in
+3.1. Trial Use: If provided for evaluation, the Software may be used
+for the trial period specified by the Licensor, solely for internal
+testing on one Licensed Machine. Trial use is “AS IS” without
+warranty. All other provisions of this Agreement apply.
+
+3.2. Fees and Renewal: The Licensee shall pay subscription fees in
 advance for the Subscription Term. Renewals require explicit purchase;
 automatic renewal is not provided.
 
-3.3 Termination: This Agreement terminates automatically upon expiry
+3.3. Termination: This Agreement terminates automatically upon expiry
 of the Subscription Term or upon notice of breach by the Licensor. The
 Licensor may also terminate for convenience with 30 days’ notice, in
 which case a pro-rata refund of unused fees will be provided.
 
-3.4 Post-Termination: All rights to use the Software cease
+3.4. Post-Termination: All rights to use the Software cease
 immediately; the Licensee must remove the Software and delete the
 licence file from all systems.
 
-4. Technical Support and Maintenance 4.1 Support: Email support is
-available at support@redkestrel.co.uk during the Subscription Term.
-The Licensor will endeavour to respond within two business days.
+4. Technical Support and Maintenance
 
-4.2 Updates: All generally available updates and patches will be
+4.1. Support: Email support is available at support@redkestrel.co.uk
+during the Subscription Term. The Licensor will endeavour to respond
+within two business days.
+
+4.2. Updates: All generally available updates and patches will be
 provided at no extra cost during the Subscription Term. To receive
 support, the Licensee must use the current version of the Software.
 
-4.3 Limitations: Support does not include training, customisation, or
+4.3. Limitations: Support does not include training, customisation, or
 integration services. The Licensor makes no guarantee that every issue
 will be resolved or that updates will meet specific requirements.
 
-5. Disclaimer of Warranties THE SOFTWARE AND DOCUMENTATION ARE
-PROVIDED “AS IS” AND “AS AVAILABLE”, WITHOUT WARRANTY OF ANY KIND. TO
-THE MAXIMUM EXTENT PERMITTED BY LAW, ALL IMPLIED WARRANTIES (INCLUDING
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE) ARE DISCLAIMED.
-THE LICENSOR MAKES NO REPRESENTATION THAT THE SOFTWARE WILL MEET THE
-LICENSEE’S REQUIREMENTS, BE ERROR-FREE, OR PROVIDE ACCURATE RESULTS.
+5. Disclaimer of Warranties
 
-6. Limitation of Liability EXCEPT FOR LIABILITY THAT CANNOT BE
-EXCLUDED BY LAW (E.G. DEATH, PERSONAL INJURY, FRAUD), THE LICENSOR’S
-TOTAL AGGREGATE LIABILITY FOR ALL CLAIMS UNDER THIS AGREEMENT SHALL
-NOT EXCEED THE GREATER OF £100 OR THE SUBSCRIPTION FEES PAID BY THE
-LICENSEE IN THE TWELVE (12) MONTHS PRECEDING THE EVENT. IN NO CASE
-SHALL THE LICENSOR BE LIABLE FOR INDIRECT OR CONSEQUENTIAL LOSS
-INCLUDING LOSS OF DATA OR BUSINESS.
+THE SOFTWARE AND DOCUMENTATION ARE PROVIDED “AS IS” AND “AS
+AVAILABLE”, WITHOUT WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT
+PERMITTED BY LAW, ALL IMPLIED WARRANTIES (INCLUDING MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE) ARE DISCLAIMED. THE LICENSOR
+MAKES NO REPRESENTATION THAT THE SOFTWARE WILL MEET THE LICENSEE’S
+REQUIREMENTS, BE ERROR-FREE, OR PROVIDE ACCURATE RESULTS.
 
-7. Privacy and Data Protection 7.1 Local Operation: The Software is
-designed to run entirely within the Licensee’s environment.  It does
-not transmit CRLs, certificates, monitoring results, or any analysed
-data to the Licensor.  CrlMonitor may send email alerts to recipients
-configured by the Licensee using their own SMTP server.
+6. Limitation of Liability
 
-7.2 Personal Data: The Licensor may collect limited licensing
+EXCEPT FOR LIABILITY THAT CANNOT BE EXCLUDED BY LAW (E.G. DEATH,
+PERSONAL INJURY, FRAUD), THE LICENSOR’S TOTAL AGGREGATE LIABILITY FOR
+ALL CLAIMS UNDER THIS AGREEMENT SHALL NOT EXCEED THE GREATER OF £100
+OR THE SUBSCRIPTION FEES PAID BY THE LICENSEE IN THE TWELVE (12)
+MONTHS PRECEDING THE EVENT. IN NO CASE SHALL THE LICENSOR BE LIABLE
+FOR INDIRECT OR CONSEQUENTIAL LOSS INCLUDING LOSS OF DATA OR
+BUSINESS.
+
+7. Privacy and Data Protection
+
+7.1. Local Operation: The Software is designed to run entirely within
+the Licensee’s environment. It does not transmit CRLs, certificates,
+monitoring results, or any analysed data to the Licensor. CrlMonitor
+may send email alerts to recipients configured by the Licensee using
+their own SMTP server.
+
+7.2. Personal Data: The Licensor may collect limited licensing
 information (hostname, licence ID, contact details) solely to manage
 subscriptions and support. Processing is governed by the Licensor’s
 Privacy and Cookie Policy: https://redkestrel.co.uk/privacy
 
-8. General Provisions 8.1 Force Majeure: Neither party is liable for
-failure to perform due to events beyond its reasonable control.
+8. General Provisions
 
-8.2 Indemnification: The Licensee shall indemnify and hold harmless
+8.1. Force Majeure: Neither party is liable for failure to perform due
+to events beyond its reasonable control.
+
+8.2. Indemnification: The Licensee shall indemnify and hold harmless
 the Licensor from losses arising from misuse of the Software or breach
 of this Agreement.
 
-8.3 IP Infringement: If the Software is alleged to infringe
+8.3. IP Infringement: If the Software is alleged to infringe
 third-party IP rights, the Licensor may (1) procure the right to
 continue use, (2) modify the Software, or (3) terminate and refund
 unused fees.
 
-8.4 Governing Law: This Agreement is governed by the laws of England
+8.4. Governing Law: This Agreement is governed by the laws of England
 and Wales. The courts of England and Wales have exclusive
 jurisdiction.
 
-8.5 Notices: Formal notices shall be sent by email to
+8.5. Notices: Formal notices shall be sent by email to
 legal@redkestrel.co.uk.
 
-8.6 Entire Agreement and Severability: This Agreement constitutes the
+8.6. Entire Agreement and Severability: This Agreement constitutes the
 entire agreement between the parties. If any provision is found
 invalid, the remaining provisions remain in effect.
 
-8.7 Export Compliance and Local Rights: The Licensee must comply with
+8.7. Export Compliance and Local Rights: The Licensee must comply with
 applicable export laws and consumer rights legislation.
 
-8.8 Non-Waiver: Failure by the Licensor to enforce any provision shall
-not constitute a waiver of its rights.
+8.8. Non-Waiver: Failure by the Licensor to enforce any provision
+shall not constitute a waiver of its rights.
