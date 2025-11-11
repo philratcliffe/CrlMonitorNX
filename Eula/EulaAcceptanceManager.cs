@@ -157,13 +157,7 @@ internal static class EulaAcceptanceManager
 #if WINDOWS
             if (OperatingSystem.IsWindowsVersionAtLeast(6, 1))
             {
-                var accepted = WindowsEulaDialog.TryShow(metadata);
-                if (!accepted)
-                {
-                    return false;
-                }
-
-                return true;
+                return WindowsEulaDialog.TryShow(metadata);
             }
 #endif
             DisplayEulaWithPaging(metadata.Text);

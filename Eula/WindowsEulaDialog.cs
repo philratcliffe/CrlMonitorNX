@@ -67,9 +67,10 @@ internal static class WindowsEulaDialog
         {
             if (!string.IsNullOrWhiteSpace(e.LinkText))
             {
+#pragma warning disable CA1031 // Defensive: all exceptions should be silently ignored for URL opening
                 try
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    _ = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = e.LinkText,
                         UseShellExecute = true
@@ -79,6 +80,7 @@ internal static class WindowsEulaDialog
                 {
                     // Silently fail if browser can't open
                 }
+#pragma warning restore CA1031
             }
         };
 
