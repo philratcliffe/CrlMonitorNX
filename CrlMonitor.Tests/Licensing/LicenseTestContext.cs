@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.IsolatedStorage;
 using System.Text;
 using CrlMonitor.Licensing;
 
@@ -42,6 +43,24 @@ internal sealed class LicenseTestContext : IDisposable
         var file = Path.Combine(this._trialDataDirectory, $".data_{hash}");
         var content = timestampUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
         File.WriteAllText(file, content, Encoding.UTF8);
+    }
+
+    public static void ClearIsolatedStorage()
+    {
+        var hash = TestLicenseFactory.ComputeStorageHash(LicenseBootstrapper.TrialStorageKey);
+        var fileName = $".data_{hash}";
+        try
+        {
+            using var store = IsolatedStorageFile.GetUserStoreForAssembly();
+            if (store.FileExists(fileName))
+            {
+                store.DeleteFile(fileName);
+            }
+        }
+        catch (IsolatedStorageException)
+        {
+            // Ignore cleanup failures
+        }
     }
 
     public void Dispose()

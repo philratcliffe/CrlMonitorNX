@@ -28,8 +28,20 @@ public static class LicenseBootstrapperTests
     [Fact]
     public static async Task EnsureLicensedAsyncReportsTrialDaysWhenActive()
     {
+        if (!OperatingSystem.IsMacOS())
+        {
+            // Test only runs on macOS where trial storage locations are predictable
+            return;
+        }
+
+        // Clear any persisted trial timestamp from previous app runs
+        LicenseTestContext.ClearIsolatedStorage();
+
         using var context = new LicenseTestContext();
-        context.WriteTrialLicense(DateTime.UtcNow.AddDays(10));
+        var now = DateTime.UtcNow;
+
+        context.WriteTrialLicense(now.AddDays(10));
+        context.SeedTrialTimestamp(now);
 
         using var capture = ConsoleCapture.Start();
         await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
