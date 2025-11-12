@@ -125,28 +125,17 @@ internal sealed class FileStateStore : IStateStore, IDisposable
             return new StateDocument();
         }
 
-        using var document = JsonDocument.Parse(json);
-        if (document.RootElement.ValueKind == JsonValueKind.Object &&
-            document.RootElement.TryGetProperty("last_fetch", out _))
+        try
         {
             var state = JsonSerializer.Deserialize<StateDocument>(json, SerializerOptions) ?? new StateDocument();
             state.Normalize();
             return state;
         }
-
-        var legacy = JsonSerializer.Deserialize<Dictionary<string, DateTime>>(json, SerializerOptions);
-        if (legacy != null)
+        catch (JsonException)
         {
-            var state = new StateDocument();
-            foreach (var pair in legacy)
-            {
-                state.LastFetch[pair.Key] = DateTime.SpecifyKind(pair.Value, DateTimeKind.Utc);
-            }
-
-            return state;
+            // Corrupt state file - return empty state (defensive fallback)
+            return new StateDocument();
         }
-
-        return new StateDocument();
     }
 
     private async Task WriteStateAsync(StateDocument state, CancellationToken cancellationToken)
@@ -197,7 +186,7 @@ internal sealed class FileStateStore : IStateStore, IDisposable
             NormalizeDictionary(this.AlertCooldowns);
             if (this.LastReportSentUtc.HasValue)
             {
-                this.LastReportSentUtc = DateTime.SpecifyKind(this.LastReportSentUtc.Value, DateTimeKind.Utc);
+                this.LastReportSentUtc = NormalizeDateTime(this.LastReportSentUtc.Value);
             }
         }
 
@@ -206,8 +195,20 @@ internal sealed class FileStateStore : IStateStore, IDisposable
             var keys = new List<string>(dictionary.Keys);
             foreach (var key in keys)
             {
-                dictionary[key] = DateTime.SpecifyKind(dictionary[key], DateTimeKind.Utc);
+                dictionary[key] = NormalizeDateTime(dictionary[key]);
             }
+        }
+
+        private static DateTime NormalizeDateTime(DateTime value)
+        {
+            // System.Text.Json may deserialize timezone-aware DateTimes as Local kind
+            // Convert to UTC to ensure consistency across timezones
+            return value.Kind switch {
+                DateTimeKind.Local => value.ToUniversalTime(),
+                DateTimeKind.Utc => value,
+                DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
+                _ => throw new ArgumentOutOfRangeException(nameof(value), value.Kind, "Unexpected DateTimeKind value.")
+            };
         }
     }
 }

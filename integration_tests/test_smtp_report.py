@@ -182,7 +182,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
             },
             "reports": {
                 "enabled": True,
-                "frequency": "daily",
+                "report_frequency_hours": 24,
                 "recipients": ["recipient@example.com"],
                 "subject": "CRL Health Report",
                 "include_summary": True,
@@ -274,6 +274,383 @@ class SmtpReportIntegrationTest(unittest.TestCase):
             charset = part.get_content_charset() or "utf-8"
             return payload.decode(charset, errors="replace")
         raise AssertionError(f"{content_type} part not found in message")
+
+    def test_report_frequency_guard_prevents_duplicate_sends(self) -> None:
+        """Core behavior: frequency guard blocks reports within threshold, but allows alerts."""
+        repo_root = Path(__file__).resolve().parents[1]
+        crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
+        ca_path = (repo_root / "examples" / "CA-certs" / "DigiCertGlobalRootCA.crt").resolve()
+        missing_crl = self.test_output_dir / "missing.crl"
+
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
+
+        smtp_host = "127.0.0.1"
+        smtp_port = _find_free_port()
+
+        config: dict[str, Any] = {
+            "console_reports": False,
+            "csv_reports": False,
+            "csv_output_path": str(self.test_output_dir / "report.csv"),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "smtp": {
+                "host": smtp_host,
+                "port": smtp_port,
+                "username": "reporter@example.com",
+                "password": "password!",
+                "from": "CRL Monitor <monitor@example.com>",
+                "enable_starttls": False,
+            },
+            "reports": {
+                "enabled": True,
+                "report_frequency_hours": 24,
+                "recipients": ["recipient@example.com"],
+                "subject": "CRL Health Report",
+                "include_summary": True,
+                "include_full_csv": False,
+            },
+            "alerts": {
+                "enabled": True,
+                "recipients": ["alerts@example.com"],
+                "statuses": ["ERROR"],
+                "cooldown_hours": 0,
+                "subject_prefix": "[CRL Alert]",
+                "include_details": True
+            },
+            "uris": [
+                {
+                    "uri": crl_path.as_uri(),
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                },
+                {
+                    "uri": missing_crl.as_uri(),
+                    "signature_validation_mode": "none",
+                    "expiry_threshold": 0.8
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        # Run 1: Both report and alert should be sent (first run, no state)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=2, timeout_seconds=5)
+            report_message = self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+            alert_message = self._find_message(smtp_server.messages, "[CRL Alert]")
+
+        self.assertEqual(report_message.recipients, ["recipient@example.com"])
+        self.assertEqual(alert_message.recipients, ["alerts@example.com"])
+
+        # Verify state file created with last_report_sent_utc
+        self.assertTrue(state_file.exists(), "State file should be created after first run")
+        state_data = json.loads(state_file.read_text(encoding="utf-8"))
+        self.assertIn("last_report_sent_utc", state_data, "State must track last_report_sent_utc")
+        first_report_timestamp = state_data["last_report_sent_utc"]
+        self.assertIsNotNone(first_report_timestamp, "Timestamp must be set after sending report")
+
+        # Run 2: Only alert should be sent (report blocked by frequency guard)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            # Should ONLY have alert, no report
+            self.assertEqual(len(smtp_server.messages), 1, "Only alert should be sent on second run")
+            alert_message = self._find_message(smtp_server.messages, "[CRL Alert]")
+            self.assertEqual(alert_message.recipients, ["alerts@example.com"])
+            # Verify no report message
+            with self.assertRaises(AssertionError):
+                self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+        # Verify state timestamp unchanged (report was not sent)
+        state_data = json.loads(state_file.read_text(encoding="utf-8"))
+        self.assertEqual(state_data["last_report_sent_utc"], first_report_timestamp,
+                        "Timestamp should not change when report skipped by frequency guard")
+
+    def test_report_frequency_guard_allows_send_after_threshold(self) -> None:
+        """Frequency guard allows report send when threshold elapsed."""
+        repo_root = Path(__file__).resolve().parents[1]
+        crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
+        ca_path = (repo_root / "examples" / "CA-certs" / "DigiCertGlobalRootCA.crt").resolve()
+
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
+
+        smtp_host = "127.0.0.1"
+        smtp_port = _find_free_port()
+
+        # Pre-populate state with old timestamp (25 hours ago)
+        from datetime import datetime, timedelta, timezone
+        old_timestamp = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+        state_file.write_text(json.dumps({
+            "last_fetch": {},
+            "alert_cooldowns": {},
+            "last_report_sent_utc": old_timestamp
+        }), encoding="utf-8")
+
+        config: dict[str, Any] = {
+            "console_reports": False,
+            "csv_reports": False,
+            "csv_output_path": str(self.test_output_dir / "report.csv"),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "smtp": {
+                "host": smtp_host,
+                "port": smtp_port,
+                "username": "reporter@example.com",
+                "password": "password!",
+                "from": "CRL Monitor <monitor@example.com>",
+                "enable_starttls": False,
+            },
+            "reports": {
+                "enabled": True,
+                "report_frequency_hours": 24,
+                "recipients": ["recipient@example.com"],
+                "subject": "CRL Health Report",
+                "include_summary": True,
+                "include_full_csv": False,
+            },
+            "alerts": {
+                "enabled": False,
+                "recipients": [],
+                "statuses": [],
+                "cooldown_hours": 0,
+                "subject_prefix": "",
+                "include_details": False
+            },
+            "uris": [
+                {
+                    "uri": crl_path.as_uri(),
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        # Run: Report should be sent (threshold exceeded)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            report_message = self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+        self.assertEqual(report_message.recipients, ["recipient@example.com"])
+
+        # Verify state timestamp updated to new value
+        state_data = json.loads(state_file.read_text(encoding="utf-8"))
+        new_timestamp = state_data["last_report_sent_utc"]
+        self.assertNotEqual(new_timestamp, old_timestamp, "Timestamp must be updated after sending report")
+
+    def test_report_sends_when_frequency_omitted(self) -> None:
+        """Omitting report_frequency_hours means always send (for testing/debugging)."""
+        repo_root = Path(__file__).resolve().parents[1]
+        crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
+        ca_path = (repo_root / "examples" / "CA-certs" / "DigiCertGlobalRootCA.crt").resolve()
+
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
+
+        smtp_host = "127.0.0.1"
+        smtp_port = _find_free_port()
+
+        config: dict[str, Any] = {
+            "console_reports": False,
+            "csv_reports": False,
+            "csv_output_path": str(self.test_output_dir / "report.csv"),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "smtp": {
+                "host": smtp_host,
+                "port": smtp_port,
+                "username": "reporter@example.com",
+                "password": "password!",
+                "from": "CRL Monitor <monitor@example.com>",
+                "enable_starttls": False,
+            },
+            "reports": {
+                "enabled": True,
+                # NO report_frequency_hours field - should always send
+                "recipients": ["recipient@example.com"],
+                "subject": "CRL Health Report",
+                "include_summary": True,
+                "include_full_csv": False,
+            },
+            "alerts": {
+                "enabled": False,
+                "recipients": [],
+                "statuses": [],
+                "cooldown_hours": 0,
+                "subject_prefix": "",
+                "include_details": False
+            },
+            "uris": [
+                {
+                    "uri": crl_path.as_uri(),
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        # Run 1: Report should send
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+        # Run 2: Report should send AGAIN (no frequency guard active)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+    def test_report_sends_with_clock_skew_future_timestamp(self) -> None:
+        """Clock skew: future timestamp in state should trigger send (defensive)."""
+        repo_root = Path(__file__).resolve().parents[1]
+        crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
+        ca_path = (repo_root / "examples" / "CA-certs" / "DigiCertGlobalRootCA.crt").resolve()
+
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
+
+        smtp_host = "127.0.0.1"
+        smtp_port = _find_free_port()
+
+        # Pre-populate state with FUTURE timestamp (5 hours ahead)
+        from datetime import datetime, timedelta, timezone
+        future_timestamp = (datetime.now(timezone.utc) + timedelta(hours=5)).isoformat()
+        state_file.write_text(json.dumps({
+            "last_fetch": {},
+            "alert_cooldowns": {},
+            "last_report_sent_utc": future_timestamp
+        }), encoding="utf-8")
+
+        config: dict[str, Any] = {
+            "console_reports": False,
+            "csv_reports": False,
+            "csv_output_path": str(self.test_output_dir / "report.csv"),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "smtp": {
+                "host": smtp_host,
+                "port": smtp_port,
+                "username": "reporter@example.com",
+                "password": "password!",
+                "from": "CRL Monitor <monitor@example.com>",
+                "enable_starttls": False,
+            },
+            "reports": {
+                "enabled": True,
+                "report_frequency_hours": 24,
+                "recipients": ["recipient@example.com"],
+                "subject": "CRL Health Report",
+                "include_summary": True,
+                "include_full_csv": False,
+            },
+            "alerts": {
+                "enabled": False,
+                "recipients": [],
+                "statuses": [],
+                "cooldown_hours": 0,
+                "subject_prefix": "",
+                "include_details": False
+            },
+            "uris": [
+                {
+                    "uri": crl_path.as_uri(),
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        # Run: Report should send anyway (negative elapsed = clock skew)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            report_message = self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+        self.assertEqual(report_message.recipients, ["recipient@example.com"])
+
+    def test_report_sends_with_corrupt_state_file(self) -> None:
+        """Corrupt state file should not block report (defensive fallback)."""
+        repo_root = Path(__file__).resolve().parents[1]
+        crl_path = (repo_root / "examples" / "crls" / "DigiCertGlobalRootCA.crl").resolve()
+        ca_path = (repo_root / "examples" / "CA-certs" / "DigiCertGlobalRootCA.crt").resolve()
+
+        state_file = self.test_output_dir / "state.json"
+        config_path = self.test_output_dir / "config.json"
+
+        smtp_host = "127.0.0.1"
+        smtp_port = _find_free_port()
+
+        # Create corrupt state file (invalid JSON)
+        state_file.write_text("{this is not valid json!}", encoding="utf-8")
+
+        config: dict[str, Any] = {
+            "console_reports": False,
+            "csv_reports": False,
+            "csv_output_path": str(self.test_output_dir / "report.csv"),
+            "csv_append_timestamp": False,
+            "fetch_timeout_seconds": 30,
+            "max_parallel_fetches": 1,
+            "state_file_path": str(state_file),
+            "smtp": {
+                "host": smtp_host,
+                "port": smtp_port,
+                "username": "reporter@example.com",
+                "password": "password!",
+                "from": "CRL Monitor <monitor@example.com>",
+                "enable_starttls": False,
+            },
+            "reports": {
+                "enabled": True,
+                "report_frequency_hours": 24,
+                "recipients": ["recipient@example.com"],
+                "subject": "CRL Health Report",
+                "include_summary": True,
+                "include_full_csv": False,
+            },
+            "alerts": {
+                "enabled": False,
+                "recipients": [],
+                "statuses": [],
+                "cooldown_hours": 0,
+                "subject_prefix": "",
+                "include_details": False
+            },
+            "uris": [
+                {
+                    "uri": crl_path.as_uri(),
+                    "signature_validation_mode": "ca-cert",
+                    "ca_certificate_path": str(ca_path),
+                    "expiry_threshold": 0.8,
+                }
+            ],
+        }
+        config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+        # Run: Report should send anyway (corrupt state = treat as first run)
+        with _SmtpServerController(smtp_host, smtp_port) as smtp_server:
+            self._run_monitor(repo_root, config_path)
+            self._wait_for_messages(smtp_server.messages, expected=1, timeout_seconds=5)
+            report_message = self._find_message(smtp_server.messages, "Subject: CRL Health Report")
+
+        self.assertEqual(report_message.recipients, ["recipient@example.com"])
 
 
 def _find_free_port() -> int:

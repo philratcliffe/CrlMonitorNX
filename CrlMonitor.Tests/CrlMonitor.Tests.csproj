@@ -25,4 +25,18 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <!-- Run Python integration tests after build when explicitly requested -->
+  <Target Name="RunIntegrationTests" AfterTargets="Build" Condition="'$(Integration)' == 'true'">
+    <Message Text="======================================" Importance="high" />
+    <Message Text="Running Python integration tests..." Importance="high" />
+    <Message Text="======================================" Importance="high" />
+    <Exec Command="python3 integration_tests/test_csv_report.py"
+          WorkingDirectory="$(ProjectDir)../" />
+    <Exec Command="python3 integration_tests/test_smtp_report.py"
+          WorkingDirectory="$(ProjectDir)../" />
+    <Message Text="======================================" Importance="high" />
+    <Message Text="All integration tests passed ✓" Importance="high" />
+    <Message Text="======================================" Importance="high" />
+  </Target>
 </Project>

@@ -9,7 +9,7 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 - Fetching CRLs over HTTP(S) and LDAP(S).
 - Parsing CRLs and extracting issuer, validity, and revocation data.
 - Evaluating CRL health (OK/EXPIRING/EXPIRED/ERROR).
-- Persisting per-URI state (last successful fetch timestamp).
+- Persisting CRL monitor state (per-URI last fetch timestamps, per-alert cooldowns, and last report send time) in a resilient file format.
 - Generating console, CSV, and optional email reports plus targeted alert e-mails.
 - Capturing diagnostics (state persistence failures, signature validation warnings, configuration warnings).
 - Configurable signature validation modes (initial release):
@@ -52,7 +52,8 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 - Provide reporters:
   - Console: table output, safe when output redirected/non-interactive.
   - CSV: deterministic schema matching existing format.
-- Email reports: scheduled summaries (daily/weekly) with optional CSV attachment via SMTP.
+-   - HTML: static summary file plus optional public URL when `html_report_enabled` is true.
+- Email reports: scheduled summaries delivered via SMTP when `reports.enabled` is true, optionally throttled by `reports.report_frequency_hours` (1–8760 hours; omit to send every run) and with CSV attachments when configured.
 - Email alerts: status-based notifications (ERROR/EXPIRED/EXPIRING/WARNING/OK, typically ERROR/EXPIRED) with cooldowns.
 
 ### Non-Functional
@@ -65,16 +66,13 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 
 ### Configuration Inputs
 
-- Standard config fields (SMTP, reporting flags, timeouts, caches).
-- Global `smtp` block (host/port/username/from/starttls) used by all email reporters.
-- `html_report_enabled` plus `html_report_path`/`html_report_url` to emit a shareable HTML report and include links in emails.
-- `reports` block (enabled/frequency/recipients) controlling scheduled summaries.
-- `alerts` block (enabled/statuses/cooldown/recipients) controlling which statuses trigger notifications.
-- `max_crl_size_bytes` cap applied globally (default 10 MB) with optional per-URI `max_crl_size_bytes` overrides to prevent oversized payloads.
-- `signature_validation_level` with default `full-chain`.
-- `alert_on_signature_failure` boolean to trigger diagnostics.
-- `smtp.password` field optional when `SMTP_PASSWORD` environment variable is present; loader falls back to the env var to avoid storing secrets in config.
-- CA certificates larger than 200 KB are considered invalid inputs; signature validation is skipped with a warning to avoid processing corrupted or malicious anchors.
+- Core runtime controls: `console_reports`, `csv_reports`, `csv_output_path`, `csv_append_timestamp`, `state_file_path`, `fetch_timeout_seconds` (1–600 seconds), `max_parallel_fetches` (1–64), and `max_crl_size_bytes` (default 10 MB, overridable per URI) govern how the monitor executes and stores results.
+- HTML reporting: `html_report_enabled` with paired `html_report_path` (required when enabled) and optional `html_report_url` expose the generated summary file locally and/or via a published URL.
+- Global `smtp` block (host/port/username/password/from/enable_starttls) is required whenever reports or alerts are enabled. The password can be omitted if `SMTP_PASSWORD` is set in the environment; the loader falls back automatically.
+- `reports` block controls scheduled email summaries: `enabled`, `recipients`, optional custom `subject`, `include_summary`, `include_full_csv`, and optional `report_frequency_hours`. The frequency guard must be greater than 0 and at most 8760 hours (one year); omitting it sends a report on every execution.
+- `alerts` block governs targeted notifications: `enabled`, `recipients`, `statuses` (subset of OK/WARNING/EXPIRING/EXPIRED/ERROR), `cooldown_hours` (0–168), `subject_prefix`, and `include_details`. Alerts also inherit the global SMTP settings.
+- `uris` collection defines every CRL to fetch. Each entry supplies a `uri`, `signature_validation_mode` (`none` or `ca-cert`), optional `ca_certificate_path` (mandatory for `ca-cert`), `expiry_threshold` (0–1), optional per-entry `max_crl_size_bytes`, and optional `ldap` credentials (username/password) for LDAP targets.
+- CA certificates above 200 KB are treated as invalid inputs; the signature validator skips them with a warning to prevent processing corrupted anchors.
 
 ### Outputs
 

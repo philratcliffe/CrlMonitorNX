@@ -65,29 +65,6 @@ public static class FileStateStoreTests
     }
 
     /// <summary>
-    /// Ensures legacy state layout is still readable.
-    /// </summary>
-    [Fact]
-    public static async Task GetLastFetchAsyncReadsLegacyFormat()
-    {
-        using var temp = new TempFolder();
-        var path = Path.Combine(temp.Path, "state.json");
-        var legacy = /*lang=json,strict*/ """
-        {
-          "http://example.com/": "2024-01-01T00:00:00Z"
-        }
-        """;
-        await File.WriteAllTextAsync(path, legacy);
-        using var store = new FileStateStore(path);
-
-        var result = await store.GetLastFetchAsync(new Uri("http://example.com"), CancellationToken.None);
-
-        _ = Assert.NotNull(result);
-        Assert.Equal(DateTimeKind.Utc, result!.Value.Kind);
-        Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), result.Value);
-    }
-
-    /// <summary>
     /// Ensures report timestamps persist.
     /// </summary>
     [Fact]
