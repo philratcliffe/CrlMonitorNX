@@ -75,10 +75,12 @@ internal static class ConfigLoader
         var alertOptions = ParseAlertOptions(document.Alerts, smtpOptions);
         var htmlEnabled = document.HtmlReportEnabled ?? false;
         var htmlPath = ResolveOptionalPath(configDirectory, document.HtmlReportPath);
+        var consoleVerbose = document.ConsoleVerbose ?? false;
         return htmlEnabled && string.IsNullOrWhiteSpace(htmlPath)
             ? throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.")
             : new RunOptions(
             document.ConsoleReports ?? true,
+            consoleVerbose,
             document.CsvReports ?? true,
             ResolvePath(configDirectory, csvPath),
             document.CsvAppendTimestamp ?? false,
@@ -428,6 +430,9 @@ internal static class ConfigLoader
     {
         [JsonPropertyName("console_reports")]
         public bool? ConsoleReports { get; init; }
+
+        [JsonPropertyName("console_verbose")]
+        public bool? ConsoleVerbose { get; init; }
 
         [JsonPropertyName("csv_reports")]
         public bool? CsvReports { get; init; }

@@ -115,7 +115,7 @@ internal static class Program
 
         if (options.ConsoleReports)
         {
-            reporters.Add(new ConsoleReporter(reportingStatus));
+            reporters.Add(new ConsoleReporter(reportingStatus, options.ConsoleVerbose));
         }
 
         return new CompositeReporter(reporters);

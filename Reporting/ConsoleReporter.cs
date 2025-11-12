@@ -4,16 +4,18 @@ using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
 
-internal sealed class ConsoleReporter(ReportingStatus status) : IReporter
+internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = true) : IReporter
 {
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
     private const int NextUpdateColumnWidth = 15;
     private const int DaysColumnWidth = 6;
     private const int StatusColumnWidth = 10;
+    private const int MaxErrorsInSummary = 3;
     private static readonly CompositeFormat TableRowFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}{{1,-{NextUpdateColumnWidth}}}{{2,-{DaysColumnWidth}}}{{3,-{StatusColumnWidth}}}");
     private static readonly CompositeFormat UriPadFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}");
     private readonly ReportingStatus _status = status ?? throw new ArgumentNullException(nameof(status));
+    private readonly bool _verbose = verbose;
 
     public Task ReportAsync(CrlCheckRun run, CancellationToken cancellationToken)
     {
@@ -21,6 +23,21 @@ internal sealed class ConsoleReporter(ReportingStatus status) : IReporter
         cancellationToken.ThrowIfCancellationRequested();
 
         TryClearConsole();
+
+        if (this._verbose)
+        {
+            this.WriteFullReport(run);
+        }
+        else
+        {
+            this.WriteSummaryReport(run);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void WriteFullReport(CrlCheckRun run)
+    {
         WriteBanner(run.GeneratedAtUtc, run.Results.Count);
         WriteTableHeader();
         foreach (var result in run.Results)
@@ -32,7 +49,115 @@ internal sealed class ConsoleReporter(ReportingStatus status) : IReporter
         this.WriteSummary(run.Results);
         WriteResultNotes(run.Results);
         WriteDiagnostics(run);
-        return Task.CompletedTask;
+    }
+
+    private void WriteSummaryReport(CrlCheckRun run)
+    {
+        var line = new string('=', ConsoleWidth);
+#pragma warning disable CA1303
+        Console.WriteLine(line);
+        Console.WriteLine("CRL Monitor - Summary");
+        Console.WriteLine(line);
+#pragma warning restore CA1303
+
+        WriteSimpleSummary(run.Results);
+        WriteErrorSummary(run.Results);
+        this.WriteReportPaths();
+    }
+
+    private static void WriteSimpleSummary(IReadOnlyList<CrlCheckResult> results)
+    {
+        var summary = CrlStatusSummary.FromResults(results);
+
+#pragma warning disable CA1303
+        Console.WriteLine();
+        Console.WriteLine("Summary:");
+        Console.WriteLine($"  Total: {summary.Total}");
+        Console.WriteLine($"  OK: {summary.Ok}");
+        Console.WriteLine($"  Warning: {summary.Warning}");
+        Console.WriteLine($"  Expiring: {summary.Expiring}");
+        Console.WriteLine($"  Expired: {summary.Expired}");
+        Console.WriteLine($"  Errors: {summary.Errors}");
+#pragma warning restore CA1303
+    }
+
+    private static void WriteErrorSummary(IReadOnlyList<CrlCheckResult> results)
+    {
+        var errors = results.Where(r => r.Status == CrlStatus.Error).ToList();
+        if (errors.Count == 0)
+        {
+            return;
+        }
+
+        Console.WriteLine();
+#pragma warning disable CA1303
+        Console.WriteLine($"Errors ({errors.Count}):");
+#pragma warning restore CA1303
+
+        var shown = Math.Min(errors.Count, MaxErrorsInSummary);
+        for (var i = 0; i < shown; i++)
+        {
+            var error = errors[i];
+            var fileName = ExtractFileName(error.Uri);
+            var reason = string.IsNullOrWhiteSpace(error.ErrorInfo) ? "Unknown error" : error.ErrorInfo;
+#pragma warning disable CA1303
+            Console.WriteLine($"  - {fileName}: {reason}");
+#pragma warning restore CA1303
+        }
+
+        if (errors.Count > MaxErrorsInSummary)
+        {
+            var remaining = errors.Count - MaxErrorsInSummary;
+#pragma warning disable CA1303
+            Console.WriteLine($"  \u2026 and {remaining} more {(remaining == 1 ? "error" : "errors")} (full list in CSV/HTML report)");
+#pragma warning restore CA1303
+        }
+    }
+
+    private void WriteReportPaths()
+    {
+        var hasCsv = this._status.CsvWritten && !string.IsNullOrWhiteSpace(this._status.CsvPath);
+        var hasHtml = this._status.HtmlWritten && !string.IsNullOrWhiteSpace(this._status.HtmlReportPath);
+
+        if (!hasCsv && !hasHtml)
+        {
+            return;
+        }
+
+        Console.WriteLine();
+#pragma warning disable CA1303
+        Console.WriteLine("Reports:");
+#pragma warning restore CA1303
+
+        if (hasCsv)
+        {
+#pragma warning disable CA1303
+            Console.WriteLine($"  CSV: {this._status.CsvPath}");
+#pragma warning restore CA1303
+        }
+
+        if (hasHtml)
+        {
+#pragma warning disable CA1303
+            Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
+#pragma warning restore CA1303
+        }
+    }
+
+    private static string ExtractFileName(Uri uri)
+    {
+        var segments = uri.Segments;
+        if (segments.Length > 0)
+        {
+            var lastSegment = segments[^1].TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(lastSegment))
+            {
+                return lastSegment;
+            }
+        }
+
+        var str = uri.ToString();
+        return Truncate(str, 50);
     }
 
     private static void WriteBanner(DateTime generatedAtUtc, int count)

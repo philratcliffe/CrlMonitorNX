@@ -4,6 +4,7 @@ namespace CrlMonitor;
 
 internal sealed record RunOptions(
     bool ConsoleReports,
+    bool ConsoleVerbose,
     bool CsvReports,
     string CsvOutputPath,
     bool CsvAppendTimestamp,
