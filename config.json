@@ -4,7 +4,7 @@
   "csv_output_path": "crl-report.csv",
   "csv_reports": true,
   "fetch_timeout_seconds": 30,
-  "max_parallel_fetches": 2,
+  "max_parallel_fetches": 6,
   "max_crl_size_bytes": 10000000,
   "state_file_path": "crlmonitor-state.json",
   "html_report_enabled": true,
@@ -19,7 +19,7 @@
     "enable_starttls": true
   },
   "reports": {
-    "enabled": true,
+    "enabled": false,
     "frequency": "daily",
     "recipients": [
       "pki-admin@redkestrel.co.uk"
@@ -29,7 +29,7 @@
     "include_full_csv": true
   },
   "alerts": {
-    "enabled": true,
+    "enabled": false,
     "recipients": [
       "alert@redkestrel.co.uk",
       "admin@redkestrel.co.uk"
