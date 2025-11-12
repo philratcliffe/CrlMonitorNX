@@ -39,6 +39,10 @@
     <None Include="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="examples/**/*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>examples/%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
 </Project>
