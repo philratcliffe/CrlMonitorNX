@@ -259,20 +259,33 @@ internal static class ConfigLoader
             throw new InvalidOperationException("smtp block is required when reports are enabled.");
         }
 
-        var frequency = ParseReportFrequency(document.Frequency);
         var recipients = ParseRecipients(document.Recipients, "reports.recipients");
         var subject = string.IsNullOrWhiteSpace(document.Subject)
             ? DefaultReportSubject
             : document.Subject;
         var includeSummary = document.IncludeSummary ?? true;
         var includeFullCsv = document.IncludeFullCsv ?? true;
+        var frequencyHours = document.ReportFrequencyHours;
+        if (frequencyHours.HasValue)
+        {
+            if (frequencyHours.Value <= 0)
+            {
+                throw new InvalidOperationException("report_frequency_hours must be > 0.");
+            }
+
+            if (frequencyHours.Value > 8760)
+            {
+                throw new InvalidOperationException("report_frequency_hours must be <= 8760 (1 year).");
+            }
+        }
+
         return new ReportOptions(
             true,
-            frequency,
             recipients,
             subject,
             includeSummary,
             includeFullCsv,
+            frequencyHours,
             smtp);
     }
 
@@ -306,17 +319,6 @@ internal static class ConfigLoader
             subjectPrefix,
             includeDetails,
             smtp);
-    }
-
-    private static ReportFrequency ParseReportFrequency(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            ? throw new InvalidOperationException("reports.frequency is required when reports are enabled.")
-            : value.Trim().ToUpperInvariant() switch {
-                "DAILY" => ReportFrequency.Daily,
-                "WEEKLY" => ReportFrequency.Weekly,
-                _ => throw new InvalidOperationException("reports.frequency must be 'daily' or 'weekly'.")
-            };
     }
 
     private static List<CrlStatus> ParseAlertStatuses(List<string>? statuses)
@@ -512,9 +514,6 @@ internal static class ConfigLoader
         [JsonPropertyName("enabled")]
         public bool? Enabled { get; init; }
 
-        [JsonPropertyName("frequency")]
-        public string? Frequency { get; init; }
-
         [JsonPropertyName("recipients")]
         public List<string>? Recipients { get; init; }
 
@@ -526,6 +525,9 @@ internal static class ConfigLoader
 
         [JsonPropertyName("include_full_csv")]
         public bool? IncludeFullCsv { get; init; }
+
+        [JsonPropertyName("report_frequency_hours")]
+        public double? ReportFrequencyHours { get; init; }
     }
 
     private sealed record AlertsDocument

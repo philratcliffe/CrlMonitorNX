@@ -23,6 +23,31 @@ internal sealed class EmailReportReporter(ReportOptions options, IEmailClient em
             return;
         }
 
+        // Check frequency guard if configured
+        if (this._options.FrequencyHours.HasValue)
+        {
+            var lastSent = await this._stateStore.GetLastReportSentAsync(cancellationToken).ConfigureAwait(false);
+            if (lastSent.HasValue)
+            {
+                var elapsed = run.GeneratedAtUtc - lastSent.Value;
+                var threshold = TimeSpan.FromHours(this._options.FrequencyHours.Value);
+
+                // Clock skew detected (negative elapsed) - send anyway (defensive)
+                if (elapsed < TimeSpan.Zero)
+                {
+                    // TODO: Log warning when Serilog added - clock skew detected
+                }
+                else if (elapsed < threshold)
+                {
+                    // TODO: Log info when Serilog added - skipping report, too soon
+                    return;
+                }
+                // else: elapsed >= threshold, proceed to send
+            }
+            // else: no last sent record (first run), proceed to send
+        }
+        // else: frequency not configured, always send
+
         var summary = CrlStatusSummary.FromResults(run.Results);
         var subject = BuildSubject(this._options.Subject, summary.Errors);
         var plainBody = BuildPlainTextBody(run, this._options, summary);

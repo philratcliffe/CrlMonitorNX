@@ -21,11 +21,11 @@ public static class EmailReportReporterTests
     {
         var options = new ReportOptions(
             true,
-            ReportFrequency.Daily,
             new List<string> { "ops@example.com" },
             "Test Report",
             IncludeSummary: true,
             IncludeFullCsv: true,
+            FrequencyHours: null,
             new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
         var state = new InMemoryStateStore();
         var client = new RecordingEmailClient();
@@ -54,11 +54,11 @@ public static class EmailReportReporterTests
     {
         var options = new ReportOptions(
             true,
-            ReportFrequency.Daily,
             new List<string> { "ops@example.com" },
             "Test Report",
             IncludeSummary: true,
             IncludeFullCsv: true,
+            FrequencyHours: null,
             new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
         var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(-2) };
         var client = new RecordingEmailClient();
@@ -70,6 +70,131 @@ public static class EmailReportReporterTests
 
         Assert.True(client.WasSent);
         Assert.True(reportingStatus.EmailReportSent);
+    }
+
+    /// <summary>
+    /// Ensures reporter sends when frequency omitted (always send).
+    /// </summary>
+    [Fact]
+    public static async Task SendsWhenFrequencyOmitted()
+    {
+        var options = new ReportOptions(
+            true,
+            new List<string> { "ops@example.com" },
+            "Test Report",
+            IncludeSummary: true,
+            IncludeFullCsv: true,
+            FrequencyHours: null,
+            new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
+        var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(-2) };
+        var client = new RecordingEmailClient();
+        var reportingStatus = new ReportingStatus();
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, null);
+        var run = BuildRun();
+
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+        Assert.True(client.WasSent);
+    }
+
+    /// <summary>
+    /// Ensures reporter sends when no last report in state (first run).
+    /// </summary>
+    [Fact]
+    public static async Task SendsWhenNoLastReportInState()
+    {
+        var options = new ReportOptions(
+            true,
+            new List<string> { "ops@example.com" },
+            "Test Report",
+            IncludeSummary: true,
+            IncludeFullCsv: true,
+            FrequencyHours: 24,
+            new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
+        var state = new InMemoryStateStore { LastReportSentUtc = null };
+        var client = new RecordingEmailClient();
+        var reportingStatus = new ReportingStatus();
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, null);
+        var run = BuildRun();
+
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+        Assert.True(client.WasSent);
+    }
+
+    /// <summary>
+    /// Ensures reporter sends when frequency elapsed.
+    /// </summary>
+    [Fact]
+    public static async Task SendsWhenFrequencyElapsed()
+    {
+        var options = new ReportOptions(
+            true,
+            new List<string> { "ops@example.com" },
+            "Test Report",
+            IncludeSummary: true,
+            IncludeFullCsv: true,
+            FrequencyHours: 24,
+            new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
+        var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(-25) };
+        var client = new RecordingEmailClient();
+        var reportingStatus = new ReportingStatus();
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, null);
+        var run = BuildRun();
+
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+        Assert.True(client.WasSent);
+    }
+
+    /// <summary>
+    /// Ensures reporter skips when frequency not elapsed.
+    /// </summary>
+    [Fact]
+    public static async Task SkipsWhenFrequencyNotElapsed()
+    {
+        var options = new ReportOptions(
+            true,
+            new List<string> { "ops@example.com" },
+            "Test Report",
+            IncludeSummary: true,
+            IncludeFullCsv: true,
+            FrequencyHours: 24,
+            new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
+        var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(-12) };
+        var client = new RecordingEmailClient();
+        var reportingStatus = new ReportingStatus();
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, null);
+        var run = BuildRun();
+
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+        Assert.False(client.WasSent);
+    }
+
+    /// <summary>
+    /// Ensures reporter sends when elapsed negative (clock skew).
+    /// </summary>
+    [Fact]
+    public static async Task SendsWhenElapsedNegative()
+    {
+        var options = new ReportOptions(
+            true,
+            new List<string> { "ops@example.com" },
+            "Test Report",
+            IncludeSummary: true,
+            IncludeFullCsv: true,
+            FrequencyHours: 24,
+            new SmtpOptions("smtp.example.com", 25, "svc", "pw", "sender@example.com", true));
+        var state = new InMemoryStateStore { LastReportSentUtc = DateTime.UtcNow.AddHours(5) };
+        var client = new RecordingEmailClient();
+        var reportingStatus = new ReportingStatus();
+        var reporter = new EmailReportReporter(options, client, state, reportingStatus, null);
+        var run = BuildRun();
+
+        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+        Assert.True(client.WasSent);
     }
 
     private static CrlCheckRun BuildRun()

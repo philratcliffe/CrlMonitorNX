@@ -2,12 +2,6 @@ using CrlMonitor.Models;
 
 namespace CrlMonitor.Notifications;
 
-internal enum ReportFrequency
-{
-    Daily,
-    Weekly
-}
-
 internal sealed record SmtpOptions(
     string Host,
     int Port,
@@ -18,11 +12,11 @@ internal sealed record SmtpOptions(
 
 internal sealed record ReportOptions(
     bool Enabled,
-    ReportFrequency Frequency,
     IReadOnlyList<string> Recipients,
     string Subject,
     bool IncludeSummary,
     bool IncludeFullCsv,
+    double? FrequencyHours,
     SmtpOptions Smtp);
 
 internal sealed record AlertOptions(

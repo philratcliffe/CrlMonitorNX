@@ -1,6 +1,5 @@
 using System.Text.Json;
 using CrlMonitor.Crl;
-using CrlMonitor.Notifications;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Tests;
@@ -344,7 +343,6 @@ public static class ConfigLoaderTests
           },
           "reports": {
             "enabled": true,
-            "frequency": "weekly",
             "recipients": ["ops@example.com"],
             "subject": "Weekly CRL",
             "include_summary": true,
@@ -373,7 +371,6 @@ public static class ConfigLoaderTests
         Assert.NotNull(options.Reports);
         var reports = options.Reports!;
         Assert.True(reports.Enabled);
-        Assert.Equal(ReportFrequency.Weekly, reports.Frequency);
         _ = Assert.Single(reports.Recipients);
         Assert.Equal("Weekly CRL", reports.Subject);
         Assert.True(reports.IncludeSummary);
@@ -581,10 +578,10 @@ public static class ConfigLoaderTests
     }
 
     /// <summary>
-    /// Ensures invalid report frequency is rejected.
+    /// Ensures negative report frequency hours rejected.
     /// </summary>
     [Fact]
-    public static void LoadThrowsWhenReportFrequencyInvalid()
+    public static void LoadThrowsWhenReportFrequencyHoursNegative()
     {
         using var temp = new TempFolder();
         var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
@@ -605,7 +602,8 @@ public static class ConfigLoaderTests
           },
           "reports": {
             "enabled": true,
-            "frequency": "hourly",
+            "frequency": "daily",
+            "report_frequency_hours": -1,
             "recipients": ["ops@example.com"]
           },
           "uris": [
@@ -615,7 +613,124 @@ public static class ConfigLoaderTests
         """);
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
-        Assert.Contains("reports.frequency", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("report_frequency_hours must be > 0", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Ensures zero report frequency hours rejected.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenReportFrequencyHoursZero()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 25,
+            "username": "svc",
+            "password": "pw",
+            "from": "svc@example.com"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "daily",
+            "report_frequency_hours": 0,
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("report_frequency_hours must be > 0", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Ensures excessive report frequency hours rejected.
+    /// </summary>
+    [Fact]
+    public static void LoadThrowsWhenReportFrequencyHoursTooLarge()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 25,
+            "username": "svc",
+            "password": "pw",
+            "from": "svc@example.com"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "daily",
+            "report_frequency_hours": 9000,
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(configPath));
+        Assert.Contains("report_frequency_hours must be <= 8760", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Ensures omitted report frequency hours accepted.
+    /// </summary>
+    [Fact]
+    public static void LoadAcceptsOmittedReportFrequencyHours()
+    {
+        using var temp = new TempFolder();
+        var configPath = temp.WriteJson("config.json", /*lang=json,strict*/ """
+        {
+          "console_reports": true,
+          "csv_reports": true,
+          "csv_output_path": "report.csv",
+          "csv_append_timestamp": false,
+          "fetch_timeout_seconds": 30,
+          "max_parallel_fetches": 1,
+          "state_file_path": "state.json",
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 25,
+            "username": "svc",
+            "password": "pw",
+            "from": "svc@example.com"
+          },
+          "reports": {
+            "enabled": true,
+            "frequency": "daily",
+            "recipients": ["ops@example.com"]
+          },
+          "uris": [
+            { "uri": "http://example.com/root.crl" }
+          ]
+        }
+        """);
+
+        var options = ConfigLoader.Load(configPath);
+        Assert.NotNull(options.Reports);
+        Assert.Null(options.Reports.FrequencyHours);
     }
 
     /// <summary>
