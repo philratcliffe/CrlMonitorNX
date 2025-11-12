@@ -20,7 +20,7 @@
   },
   "reports": {
     "enabled": false,
-    "frequency": "daily",
+    "report_frequency_hours": 24,
     "recipients": [
       "pki-admin@redkestrel.co.uk"
     ],
