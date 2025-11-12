@@ -92,9 +92,16 @@ internal static class LicenseBootstrapper
         var reason = string.IsNullOrWhiteSpace(validation.ErrorMessage)
             ? validation.Error.ToString()
             : validation.ErrorMessage;
+
+        // Soften wording for common error messages
+        if (reason.Contains("expired", StringComparison.OrdinalIgnoreCase))
+        {
+            reason = "this product's licence has expired";
+        }
+
         var requestCode = CreateRequestCode();
         var message = FormattableString.Invariant(
-            $"Licence validation failed ({reason}). Please contact support@redkestrel.co.uk with request code: {requestCode}");
+            $"Licence validation failed — {reason}.\nPlease contact support@redkestrel.co.uk with request code:\n{requestCode}");
         throw new InvalidOperationException(message);
     }
 
