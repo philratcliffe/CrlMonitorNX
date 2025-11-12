@@ -93,6 +93,9 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         var output = writer.ToString();
+        Assert.Contains("CRL Monitor Report", output, StringComparison.Ordinal);
+        Assert.Contains("URI", output, StringComparison.Ordinal);
+        Assert.Contains("Status", output, StringComparison.Ordinal);
         Assert.Contains("Summary", output, StringComparison.Ordinal);
         Assert.Contains("Total: 2", output, StringComparison.Ordinal);
         Assert.Contains("OK: 1", output, StringComparison.Ordinal);
@@ -101,7 +104,6 @@ public static class ConsoleReporterTests
         Assert.Contains("Connection failed", output, StringComparison.Ordinal);
         Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
         Assert.DoesNotContain("Result details:", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("URI                                          ", output, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -129,11 +131,11 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         var output = writer.ToString();
-        Assert.Contains("error1.crl", output, StringComparison.Ordinal);
-        Assert.Contains("error2.crl", output, StringComparison.Ordinal);
-        Assert.Contains("error3.crl", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("error4.crl", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("error5.crl", output, StringComparison.Ordinal);
+        Assert.Contains("  - error1.crl: Error 1", output, StringComparison.Ordinal);
+        Assert.Contains("  - error2.crl: Error 2", output, StringComparison.Ordinal);
+        Assert.Contains("  - error3.crl: Error 3", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("  - error4.crl: Error 4", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("  - error5.crl: Error 5", output, StringComparison.Ordinal);
         Assert.Contains("and 2 more", output, StringComparison.Ordinal);
         Assert.Contains("full list in CSV/HTML report", output, StringComparison.Ordinal);
     }

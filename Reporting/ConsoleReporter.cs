@@ -53,13 +53,14 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
     private void WriteSummaryReport(CrlCheckRun run)
     {
-        var line = new string('=', ConsoleWidth);
-#pragma warning disable CA1303
-        Console.WriteLine(line);
-        Console.WriteLine("CRL Monitor - Summary");
-        Console.WriteLine(line);
-#pragma warning restore CA1303
+        WriteBanner(run.GeneratedAtUtc, run.Results.Count);
+        WriteTableHeader();
+        foreach (var result in run.Results)
+        {
+            WriteResultRow(result);
+        }
 
+        Console.WriteLine();
         WriteSimpleSummary(run.Results);
         WriteErrorSummary(run.Results);
         this.WriteReportPaths();
