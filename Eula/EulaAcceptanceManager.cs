@@ -23,7 +23,7 @@ internal static class EulaAcceptanceManager
 
         if (!await PromptForAcceptanceAsync(metadata, cancellationToken).ConfigureAwait(false))
         {
-            throw new InvalidOperationException("ERROR: Licence agreement not accepted.\nPlease run the application again and accept the EULA to continue.");
+            throw new InvalidOperationException("Licence agreement not accepted.\nPlease run the application again and accept the EULA to continue.");
         }
 
         var acceptanceRecord = new EulaAcceptanceRecord {
