@@ -8,6 +8,7 @@ using CrlMonitor.Models;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
 using CrlMonitor.State;
+using Serilog;
 
 namespace CrlMonitor.Runner;
 
@@ -112,6 +113,7 @@ internal sealed class CrlCheckRunner(
             stopwatch.Stop();
             var message = BuildOversizeStatusMessage(ex);
             diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, message));
+            Log.Warning("CRL size exceeded limit for {Uri}: {Message}", entry.Uri, message);
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Warning,
@@ -134,6 +136,7 @@ internal sealed class CrlCheckRunner(
 
             var msg = $"Fetch timed out after {fetchTimeout.TotalSeconds:F1}s";
             diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, msg));
+            Log.Error("CRL fetch timeout for {Uri}: {Message}", entry.Uri, msg);
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Error,
@@ -151,6 +154,7 @@ internal sealed class CrlCheckRunner(
             stopwatch.Stop();
             var friendly = ConvertLdapException(ldapEx);
             diagnostics.AddRuntimeWarning(BuildProcessingErrorMessage(entry.Uri, friendly));
+            Log.Error(ldapEx, "LDAP fetch failed for {Uri}: {ErrorCode} - {Message}", entry.Uri, ldapEx.ErrorCode, friendly);
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Error,
@@ -168,6 +172,7 @@ internal sealed class CrlCheckRunner(
             stopwatch.Stop();
             var message = BuildProcessingErrorMessage(entry.Uri, ex.Message);
             diagnostics.AddRuntimeWarning(message);
+            LogFetchError(entry.Uri, ex);
             return new CrlCheckResult(
                 entry.Uri,
                 CrlStatus.Error,
@@ -179,6 +184,42 @@ internal sealed class CrlCheckRunner(
                 contentLength,
                 DateTime.UtcNow,
                 null);
+        }
+    }
+
+    private static void LogFetchError(Uri uri, Exception ex)
+    {
+        switch (ex)
+        {
+            case HttpRequestException httpEx:
+                LogHttpError(uri, httpEx);
+                break;
+            case FileNotFoundException fileEx:
+                Log.Error(fileEx, "File not found for {Uri}: {Path}", uri, fileEx.FileName);
+                break;
+            case IOException ioEx:
+                Log.Error(ioEx, "File read failure for {Uri}: {Message}", uri, ioEx.Message);
+                break;
+            default:
+                Log.Error(ex, "CRL fetch failed for {Uri}: {Message}", uri, ex.Message);
+                break;
+        }
+    }
+
+    private static void LogHttpError(Uri uri, HttpRequestException ex)
+    {
+        var innerMessage = ex.InnerException?.Message ?? ex.Message;
+        if (ex.StatusCode.HasValue)
+        {
+            Log.Error(ex, "HTTP fetch failed for {Uri}: HTTP {StatusCode} - {Message}", uri, (int)ex.StatusCode.Value, innerMessage);
+        }
+        else if (ex.InnerException is System.Net.Sockets.SocketException)
+        {
+            Log.Error(ex, "TCP connection failed for {Uri}: {Message}", uri, innerMessage);
+        }
+        else
+        {
+            Log.Error(ex, "HTTP fetch failed for {Uri}: {Message}", uri, innerMessage);
         }
     }
 
