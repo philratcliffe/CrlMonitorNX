@@ -239,12 +239,13 @@ This order must match the bit ordering in TS codes.
 Verify settings.json format matches specification:
 ```json
 {
-  "ProfileCreated_d3a9a070669681f7": "2025-11-13T17:30:45.1234567Z"
+  "ProfileCreated_D3A9A070": "2025-11-13T17:30:45.1234567Z"
 }
 ```
 
 Key points:
 - Key prefix: `ProfileCreated_`
+- Hash: 8 uppercase hex characters (first 4 bytes of SHA256)
 - Timestamp format: ISO 8601 ("O" format)
 - Multiple trial keys supported in same file
 

@@ -136,14 +136,14 @@ Position 0 ────>1 = File SUCCESS
 | 3 (MSB) | Leftmost | IsolatedStorage | User isolated storage |
 | 2 | Middle-left | Registry | N/A (Windows only) |
 | 1 | Middle-right | Settings | `~/.local/share/RedKestrel/CrlMonitor/settings.json` |
-| 0 (LSB) | Rightmost | File | `~/.local/share/RedKestrel/CrlMonitor/.data_d3a9a070669681f7` |
+| 0 (LSB) | Rightmost | File | `~/.local/share/RedKestrel/CrlMonitor/.data_D3A9A070` |
 
 | Position | Bit | Storage | Location (Windows) |
 |----------|-----|---------|-------------------|
 | 3 (MSB) | Leftmost | IsolatedStorage | User isolated storage |
-| 2 | Middle-left | Registry | `HKCU\Software\RedKestrel\CrlMonitor\{hash}` |
+| 2 | Middle-left | Registry | `HKCU\Software\RedKestrel\CrlMonitor\D3A9A070` |
 | 1 | Middle-right | Settings | `%ProgramData%\RedKestrel\CrlMonitor\settings.json` |
-| 0 (LSB) | Rightmost | File | `%ProgramData%\RedKestrel\CrlMonitor\.data_d3a9a070669681f7` |
+| 0 (LSB) | Rightmost | File | `%ProgramData%\RedKestrel\CrlMonitor\.data_D3A9A070` |
 
 ### Quick Reference Table
 
@@ -322,10 +322,10 @@ TS Read Code: TS-R-0000  (no data readable)
 
 Current CrlMonitor storage key: `CrlMonitor_Trial_2025-11-09`
 
-SHA256 hash (first 16 chars): `d3a9a070669681f7`
+SHA256 hash (first 4 bytes as 8 uppercase hex chars): `D3A9A070`
 
 This hash is used in:
-- File storage: `.data_d3a9a070669681f7`
-- Settings key: `ProfileCreated_d3a9a070669681f7`
-- Registry path: `...\CrlMonitor\d3a9a070669681f7` (Windows)
-- Isolated storage: `.data_d3a9a070669681f7`
+- File storage: `.data_D3A9A070`
+- Settings key: `ProfileCreated_D3A9A070`
+- Registry path: `...\CrlMonitor\D3A9A070` (Windows)
+- Isolated storage: `.data_D3A9A070`
