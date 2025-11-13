@@ -129,6 +129,8 @@ Position 1 ────>1 = Settings SUCCESS
 Position 0 ────>1 = File SUCCESS
 ```
 
+**Important**: A `0` bit indicates either "storage not available" or "operation failed". Storage providers not added to the composite storage list (e.g., Registry on non-Windows platforms) always produce a `0` bit, regardless of success or failure - they're simply not checked. This behaviour applies to any future storage backends that may be conditionally included.
+
 ### Storage Location Details
 
 | Position | Bit | Storage | Location (macOS/Linux) |
