@@ -199,3 +199,8 @@ env LICENSE_PASSPHRASE="$PASSPHRASE" \
   --type trial \
   --output "$OUTPUT_PATH" | sed '/^License created:/d'
 echo "Trial licence written to $OUTPUT_PATH"
+
+# Copy to project root
+ROOT_LICENSE="$REPO_ROOT/license.lic"
+cp "$OUTPUT_PATH" "$ROOT_LICENSE"
+echo "Trial licence copied to $ROOT_LICENSE"
