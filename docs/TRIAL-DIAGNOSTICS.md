@@ -54,15 +54,15 @@ LoggingSetup.LogTrialStatus(status.DaysRemaining, status.ReadCode, status.WriteC
 2025-11-13 17:30:45.456 +00:00 [INF] License type: Trial
 2025-11-13 17:30:45.567 +00:00 [INF] Trial period: VALID (30 days remaining)
 2025-11-13 17:30:45.678 +00:00 [INF] TS Read Code: TS-R-0000
-2025-11-13 17:30:45.789 +00:00 [INF] TS Write Code: TS-W-0111
+2025-11-13 17:30:45.789 +00:00 [INF] TS Write Code: TS-W-1011
 ```
 
 **Interpretation**:
 - `TS-R-0000` = No trial data found (expected on first run)
-- `TS-W-0111` = File, Settings, Registry written successfully
-  - Binary: `0111`
-  - Bit 3 (IsolatedStorage): `0` = Failed
-  - Bit 2 (Registry): `1` = Success
+- `TS-W-1011` = File, Settings, IsolatedStorage written successfully
+  - Binary: `1011`
+  - Bit 3 (IsolatedStorage): `1` = Success
+  - Bit 2 (Registry): `0` = Not in storage list (macOS)
   - Bit 1 (Settings): `1` = Success
   - Bit 0 (File): `1` = Success
 
@@ -74,11 +74,11 @@ LoggingSetup.LogTrialStatus(status.DaysRemaining, status.ReadCode, status.WriteC
 2025-11-14 08:15:30.345 +00:00 [INF] License validation: VALID
 2025-11-14 08:15:30.456 +00:00 [INF] License type: Trial
 2025-11-14 08:15:30.567 +00:00 [INF] Trial period: VALID (29 days remaining)
-2025-11-14 08:15:30.678 +00:00 [INF] TS Read Code: TS-R-0111
+2025-11-14 08:15:30.678 +00:00 [INF] TS Read Code: TS-R-1011
 ```
 
 **Interpretation**:
-- `TS-R-0111` = File, Settings, Registry readable
+- `TS-R-1011` = File, Settings, IsolatedStorage readable
 - No write code logged (only logged on first run)
 - Trial data successfully retrieved from multiple locations
 
@@ -119,12 +119,12 @@ TS-{R|W}-bbbb
 **Critical**: Bit positions are **left to right** (MSB to LSB).
 
 ```
-TS Code:  TS-R-0111
+TS Code:  TS-R-1011
 Binary:         ||||
 Bit:            3210
                 ||||
-Position 3 ────>0 = IsolatedStorage FAILED
-Position 2 ────>1 = Registry SUCCESS
+Position 3 ────>1 = IsolatedStorage SUCCESS
+Position 2 ────>0 = Registry NOT IN LIST (macOS)
 Position 1 ────>1 = Settings SUCCESS
 Position 0 ────>1 = File SUCCESS
 ```
@@ -147,17 +147,17 @@ Position 0 ────>1 = File SUCCESS
 
 ### Quick Reference Table
 
-| Code | Binary | File | Settings | Registry | IsolatedStorage |
-|------|--------|------|----------|----------|-----------------|
-| `TS-R-1111` | 1111 | ✓ | ✓ | ✓ | ✓ |
-| `TS-R-0111` | 0111 | ✓ | ✓ | ✓ | ✗ |
-| `TS-R-1011` | 1011 | ✓ | ✓ | ✗ | ✓ |
-| `TS-R-0011` | 0011 | ✓ | ✓ | ✗ | ✗ |
-| `TS-R-1101` | 1101 | ✓ | ✗ | ✓ | ✓ |
-| `TS-R-0101` | 0101 | ✓ | ✗ | ✓ | ✗ |
-| `TS-R-1001` | 1001 | ✓ | ✗ | ✗ | ✓ |
-| `TS-R-0001` | 0001 | ✓ | ✗ | ✗ | ✗ |
-| `TS-R-0000` | 0000 | ✗ | ✗ | ✗ | ✗ |
+| Code | Binary | File | Settings | Registry | IsolatedStorage | Notes |
+|------|--------|------|----------|----------|-----------------|-------|
+| `TS-R-1111` | 1111 | ✓ | ✓ | ✓ | ✓ | Windows only |
+| `TS-R-1011` | 1011 | ✓ | ✓ | ✗ | ✓ | Typical macOS/Linux |
+| `TS-R-0111` | 0111 | ✓ | ✓ | ✓ | ✗ | Windows, IsolatedStorage failed |
+| `TS-R-0011` | 0011 | ✓ | ✓ | ✗ | ✗ | Only File and Settings |
+| `TS-R-1101` | 1101 | ✓ | ✗ | ✓ | ✓ | Settings failed |
+| `TS-R-1001` | 1001 | ✓ | ✗ | ✗ | ✓ | Only File and IsolatedStorage |
+| `TS-R-0101` | 0101 | ✓ | ✗ | ✓ | ✗ | Windows, Settings and IsolatedStorage failed |
+| `TS-R-0001` | 0001 | ✓ | ✗ | ✗ | ✗ | Only File working |
+| `TS-R-0000` | 0000 | ✗ | ✗ | ✗ | ✗ | No storage readable |
 
 ## Common Scenarios
 
@@ -165,23 +165,23 @@ Position 0 ────>1 = File SUCCESS
 
 ```
 TS Read Code: TS-R-0000  (no data found)
-TS Write Code: TS-W-0111 (File, Settings, Registry written)
+TS Write Code: TS-W-1011 (File, Settings, IsolatedStorage written)
 ```
 
-**Note**: Registry shows success despite being N/A because it's skipped gracefully on non-Windows platforms.
+**Note**: Registry bit is 0 because RegistryTrialStorage is not added to the storage list on non-Windows platforms.
 
 ### Healthy Subsequent Run (macOS/Linux)
 
 ```
-TS Read Code: TS-R-0111  (File, Settings, Registry readable)
+TS Read Code: TS-R-1011  (File, Settings, IsolatedStorage readable)
 ```
 
 No write code logged (only appears on first run).
 
-### Settings File Corrupted
+### Settings File Corrupted (macOS/Linux)
 
 ```
-TS Read Code: TS-R-0101  (File and Registry readable, Settings failed)
+TS Read Code: TS-R-1001  (File and IsolatedStorage readable, Settings failed)
 ```
 
 **Action**: Trial still works. Settings file may be corrupted but other locations provide backup.
@@ -279,10 +279,10 @@ TS Read Code: TS-R-0000  (no data readable)
 
 **First Run**:
 - Read: `TS-R-0000`
-- Write: `TS-W-0111` (Registry bit shows success but N/A on these platforms)
+- Write: `TS-W-1011` (File, Settings, IsolatedStorage only - Registry not in storage list)
 
 **Subsequent Run**:
-- Read: `TS-R-0111`
+- Read: `TS-R-1011`
 
 ## When to Escalate
 
@@ -308,7 +308,7 @@ TS Read Code: TS-R-0000  (no data readable)
 
 ### Informational (No Action Required)
 
-1. **Partial success with 2+ bits set**: e.g., `TS-R-0011`, `TS-R-0111`
+1. **Partial success with 2+ bits set**: e.g., `TS-R-1011` (macOS/Linux), `TS-R-0111` (Windows)
    - Normal operation
    - Redundancy working as designed
 
