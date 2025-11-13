@@ -196,9 +196,25 @@ internal static class EulaAcceptanceManager
 #endif
             DisplayEulaWithPaging(metadata.Text);
             Console.WriteLine();
-            Console.Write("Type 'accept' to agree and continue [accept/decline]: ");
-            var response = Console.ReadLine();
-            return string.Equals(response, "accept", StringComparison.OrdinalIgnoreCase);
+
+            while (true)
+            {
+                Console.Write("Type 'accept' to agree and continue, or 'decline' to reject and exit: ");
+                var response = Console.ReadLine()?.Trim();
+
+                if (string.Equals(response, "accept", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (string.Equals(response, "decline", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("Invalid input. Please type 'accept' or 'decline'.");
+                Console.WriteLine();
+            }
         }
 
         throw new InvalidOperationException("Cannot display the licence agreement in the current environment.");
