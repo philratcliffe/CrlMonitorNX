@@ -1,6 +1,8 @@
 using RedKestrel.Licensing;
 using RedKestrel.Licensing.Trial;
 using Standard.Licensing;
+using CrlMonitor.Logging;
+using Serilog;
 
 namespace CrlMonitor.Licensing;
 
@@ -23,6 +25,9 @@ internal static class LicenseBootstrapper
         });
 
         var validation = await validator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+
+        LogLicenseValidation(validation);
+
         if (!validation.Success)
         {
             ThrowLicenceException(validation);
@@ -70,12 +75,17 @@ internal static class LicenseBootstrapper
 
         var storage = TrialStorageFactory.CreateDefault(trialOptions);
         var manager = new TrialManager(trialOptions, storage);
+
+        // TODO: Add TS status codes once RedKestrel.Licensing library supports them
+        // For now, log basic trial status without diagnostic codes
         var status = await manager.EvaluateAsync(cancellationToken).ConfigureAwait(false);
+
         if (!status.IsValid)
         {
             ThrowTrialExpiryException();
         }
 
+        LoggingSetup.LogTrialStatus(status.DaysRemaining);
         Console.WriteLine("Trial mode: {0} day(s) remaining", status.DaysRemaining);
     }
 
@@ -133,6 +143,29 @@ internal static class LicenseBootstrapper
             return false;
         }
 #pragma warning restore CA1031
+    }
+
+    private static void LogLicenseValidation(LicenseValidationResult validation)
+    {
+        if (!string.IsNullOrWhiteSpace(validation.LicensePath) && File.Exists(validation.LicensePath))
+        {
+            var fileInfo = new FileInfo(validation.LicensePath);
+            Log.Information("License file found at {LicensePath} ({FileSize} bytes)", validation.LicensePath, fileInfo.Length);
+        }
+
+        if (validation.Success && validation.License != null)
+        {
+            Log.Information("License validation: VALID");
+            Log.Information("License type: {LicenseType}", validation.License.Type.ToString());
+            Log.Information("License expires: {ExpirationDate}", validation.License.Expiration);
+
+            var daysUntilExpiry = (validation.License.Expiration - DateTime.Now).Days;
+            Log.Information("Days until expiration: {Days}", daysUntilExpiry);
+        }
+        else
+        {
+            Log.Warning("License validation: INVALID - {Error}", validation.ErrorMessage ?? validation.Error.ToString());
+        }
     }
 
 #if DEBUG
