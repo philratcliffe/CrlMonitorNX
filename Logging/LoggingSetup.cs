@@ -79,12 +79,20 @@ internal static class LoggingSetup
     }
 
     /// <summary>
-    /// Logs trial status information.
+    /// Logs trial status information including TS diagnostic codes.
     /// </summary>
     /// <param name="daysRemaining">Number of days remaining in the trial period.</param>
-    public static void LogTrialStatus(int daysRemaining)
+    /// <param name="readCode">TS diagnostic code indicating which storage locations successfully read trial data.</param>
+    /// <param name="writeCode">TS diagnostic code indicating which storage locations successfully wrote trial data, or null if no write occurred.</param>
+    public static void LogTrialStatus(int daysRemaining, string readCode, string? writeCode)
     {
         Log.Information("Trial period: VALID ({Days} days remaining)", daysRemaining);
+        Log.Information("TS Read Code: {ReadCode}", readCode);
+
+        if (!string.IsNullOrWhiteSpace(writeCode))
+        {
+            Log.Information("TS Write Code: {WriteCode}", writeCode);
+        }
     }
 
     /// <summary>

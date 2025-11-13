@@ -76,8 +76,6 @@ internal static class LicenseBootstrapper
         var storage = TrialStorageFactory.CreateDefault(trialOptions);
         var manager = new TrialManager(trialOptions, storage);
 
-        // TODO: Add TS status codes once RedKestrel.Licensing library supports them
-        // For now, log basic trial status without diagnostic codes
         var status = await manager.EvaluateAsync(cancellationToken).ConfigureAwait(false);
 
         if (!status.IsValid)
@@ -85,7 +83,7 @@ internal static class LicenseBootstrapper
             ThrowTrialExpiryException();
         }
 
-        LoggingSetup.LogTrialStatus(status.DaysRemaining);
+        LoggingSetup.LogTrialStatus(status.DaysRemaining, status.ReadCode, status.WriteCode);
         Console.WriteLine("Trial mode: {0} day(s) remaining", status.DaysRemaining);
     }
 
