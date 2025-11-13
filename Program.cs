@@ -5,6 +5,7 @@ using CrlMonitor.Runner;
 using CrlMonitor.Validation;
 using CrlMonitor.Health;
 using CrlMonitor.Licensing;
+using CrlMonitor.Logging;
 using CrlMonitor.Notifications.Alerts;
 using CrlMonitor.Notifications.Email;
 using CrlMonitor.Notifications.Reports;
@@ -25,9 +26,14 @@ internal static class Program
         try
         {
             AnnounceDebugBuild();
+
+            var configPath = ResolveConfigPath(args);
+            LoggingSetup.Initialize(configPath);
+            LoggingSetup.LogStartup();
+
             await EulaAcceptanceManager.EnsureAcceptedAsync(cancellationToken).ConfigureAwait(false);
             await LicenseBootstrapper.EnsureLicensedAsync(cancellationToken).ConfigureAwait(false);
-            var configPath = ResolveConfigPath(args);
+
             var options = ConfigLoader.Load(configPath);
             await RunAsync(options, cancellationToken).ConfigureAwait(false);
             return 0;
@@ -46,6 +52,10 @@ internal static class Program
         {
             ReportError(ex.Message);
             return 1;
+        }
+        finally
+        {
+            LoggingSetup.Shutdown();
         }
     }
 

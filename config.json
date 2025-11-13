@@ -1,4 +1,10 @@
 {
+  "logging": {
+    "min_level": "Information",
+    "log_file_path": "CrlMonitor.log",
+    "rolling_interval": "Day",
+    "retained_file_count_limit": 7
+  },
   "console_reports": true,
   "csv_append_timestamp": false,
   "csv_output_path": "crl-report.csv",
