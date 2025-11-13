@@ -93,16 +93,46 @@ internal static class LicenseBootstrapper
             ? validation.Error.ToString()
             : validation.ErrorMessage;
 
+        var requestCode = CreateRequestCode();
+
+        // Check if this is an expired trial license (unexpected state)
+        if (validation.Error == LicenseValidationError.Expired && IsTrialLicense(validation))
+        {
+            var message = FormattableString.Invariant(
+                $"Unexpected licence state — trial licence has expired.\nPlease contact support@redkestrel.co.uk with request code:\n{requestCode}");
+            throw new InvalidOperationException(message);
+        }
+
         // Soften wording for common error messages
         if (reason.Contains("expired", StringComparison.OrdinalIgnoreCase))
         {
             reason = "this product's licence has expired";
         }
 
-        var requestCode = CreateRequestCode();
-        var message = FormattableString.Invariant(
+        var standardMessage = FormattableString.Invariant(
             $"Licence validation failed — {reason}.\nPlease contact support@redkestrel.co.uk with request code:\n{requestCode}");
-        throw new InvalidOperationException(message);
+        throw new InvalidOperationException(standardMessage);
+    }
+
+    private static bool IsTrialLicense(LicenseValidationResult validation)
+    {
+        if (string.IsNullOrWhiteSpace(validation.LicensePath) || !File.Exists(validation.LicensePath))
+        {
+            return false;
+        }
+
+#pragma warning disable CA1031 // Defensive: any exception means we can't determine type, treat as non-trial
+        try
+        {
+            var content = File.ReadAllText(validation.LicensePath);
+            var license = License.Load(content);
+            return license.Type == LicenseType.Trial;
+        }
+        catch
+        {
+            return false;
+        }
+#pragma warning restore CA1031
     }
 
 #if DEBUG
