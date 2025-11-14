@@ -73,7 +73,7 @@ internal static class LoggingSetup
             Log.Information("License type: {LicenseType}", license.Type.ToString());
             Log.Information("License expires: {ExpiryDate}", license.Expiration);
 
-            var daysUntilExpiry = (license.Expiration - DateTime.Now).Days;
+            var daysUntilExpiry = Math.Max(0, (license.Expiration - DateTime.UtcNow).Days);
             Log.Information("Days until expiration: {Days}", daysUntilExpiry);
         }
     }

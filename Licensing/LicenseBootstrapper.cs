@@ -170,7 +170,7 @@ internal static class LicenseBootstrapper
             Log.Information("License type: {LicenseType}", validation.License.Type.ToString());
             Log.Information("License expires: {ExpirationDate}", validation.License.Expiration);
 
-            var daysUntilExpiry = (validation.License.Expiration - DateTime.Now).Days;
+            var daysUntilExpiry = Math.Max(0, (validation.License.Expiration - DateTime.UtcNow).Days);
             Log.Information("Days until expiration: {Days}", daysUntilExpiry);
         }
         else
