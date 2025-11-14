@@ -101,4 +101,4 @@ dotnet_diagnostic.CS1591.severity = error
 The enforced `.editorconfig` sets four-space indentation, spaces not tabs, `LF` endings, and trimmed trailing whitespace. Prefer `var` when the type is evident, keep braces even around single statements, and group `using` directives with `System` first. Never suppress warnings without a documented reason—the build promotes them to errors. Run `dotnet format` before opening a PR to keep style clean.
 
 ## Security & Configuration Tips
-Treat `config.json` and `uri_list.txt` as sensitive; never commit secrets and validate new fields before use. Enable verbose logging only when diagnosing issues (`touch enable-logging.txt`) and remove the flag afterwards to reduce noise.
+Treat `config.json` as sensitive; never commit secrets (SMTP passwords, LDAP credentials) and validate new fields before use. Enable verbose logging only when diagnosing issues and use minimal log levels in production to reduce noise.

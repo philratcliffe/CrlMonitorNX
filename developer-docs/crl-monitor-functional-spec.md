@@ -27,9 +27,9 @@ Deliver a pluggable certificate revocation list (CRL) monitoring engine that sup
 ## User Flows
 
 1. **CLI Run**
-   - User supplies config (`config.json`) and URI list (`uri_list.txt`).
-   - Console shows progress banner → summary table → optional warnings.
-   - CSV artifact produced when enabled.
+   - User supplies single config file (`config.json`) containing CRL URIs and all settings.
+   - Console shows banner with license info → CRL status table → summary → optional error details.
+   - CSV and HTML reports produced when enabled.
    - Exit code signals overall health (0 = healthy, 1 = any failure/warnings).
 
 2. **Scheduled Service (Future)**
