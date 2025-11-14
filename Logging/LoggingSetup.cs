@@ -47,14 +47,8 @@ internal static class LoggingSetup
         var currentDir = Directory.GetCurrentDirectory();
         var appDir = AppContext.BaseDirectory;
 
-        // Log banner
-        var separator = new string('=', 80);
-        Log.Information(separator);
-        Log.Information("                   Red Kestrel CrlMonitor: v{Version}", version);
-        Log.Information(separator);
-        Log.Information("");
-
-        // Log environment details
+        Log.Information("CRL Monitor starting");
+        Log.Information("Version: {Version}", version);
         Log.Information("OS: {OS}", osDescription);
         Log.Information(".NET Runtime: {Runtime}", runtimeVersion);
         Log.Information("Build configuration: {BuildConfig}", buildConfig);
@@ -72,34 +66,16 @@ internal static class LoggingSetup
     public static void LogLicenseInfo(string licensePath, long fileSize, License? license, bool isValid)
     {
         Log.Information("License file found at {LicensePath} ({FileSize} bytes)", licensePath, fileSize);
-        Log.Information("");
+        Log.Information("License validation: {Status}", isValid ? "VALID" : "INVALID");
 
-        if (license != null && isValid)
+        if (license != null)
         {
-            Log.Information("License Type: {LicenseType}", license.Type.ToString());
+            Log.Information("License type: {LicenseType}", license.Type.ToString());
+            Log.Information("License expires: {ExpiryDate}", license.Expiration);
 
-            if (license.Type != LicenseType.Trial)
-            {
-                // Standard/Enterprise license
-                var customerName = license.Customer?.Name ?? "Unknown";
-                Log.Information("Licensed To: {CustomerName}", customerName);
-                Log.Information("Licensed Until: {ExpiryDate:d MMM yyyy}", license.Expiration);
-            }
-            else
-            {
-                // Trial license - don't show Licensed To
-                var daysUntilExpiry = (license.Expiration - DateTime.Now).Days;
-                Log.Information("Days Remaining: {Days} days", daysUntilExpiry);
-            }
+            var daysUntilExpiry = (license.Expiration - DateTime.Now).Days;
+            Log.Information("Days until expiration: {Days}", daysUntilExpiry);
         }
-        else
-        {
-            Log.Information("License validation: {Status}", isValid ? "VALID" : "INVALID");
-        }
-
-        var separator = new string('=', 80);
-        Log.Information(separator);
-        Log.Information("");
     }
 
     /// <summary>
