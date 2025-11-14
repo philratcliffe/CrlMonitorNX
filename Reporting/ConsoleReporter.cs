@@ -3,6 +3,8 @@ using System.Text;
 using CrlMonitor.Licensing;
 using CrlMonitor.Models;
 
+#pragma warning disable CA1303 // Console reporter emits English-only diagnostic output; no localization planned
+
 namespace CrlMonitor.Reporting;
 
 internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = true) : IReporter
@@ -84,7 +86,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         var summary = CrlStatusSummary.FromResults(results);
         var colorEnabled = IsColorEnabled();
 
-#pragma warning disable CA1303
         Console.WriteLine();
         Console.WriteLine("Summary:");
         if (colorEnabled)
@@ -105,7 +106,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             Console.WriteLine($"  {"Expired:",-10} {summary.Expired}");
             Console.WriteLine($"  {"Errors:",-10} {summary.Errors}");
         }
-#pragma warning restore CA1303
     }
 
     private static void WriteErrorSummary(IReadOnlyList<CrlCheckResult> results)
@@ -118,7 +118,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
         var colorEnabled = IsColorEnabled();
         Console.WriteLine();
-#pragma warning disable CA1303
         if (colorEnabled)
         {
             Console.WriteLine($"{Ansi.Red}Errors ({errors.Count}):{Ansi.Reset}");
@@ -127,7 +126,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         {
             Console.WriteLine($"Errors ({errors.Count}):");
         }
-#pragma warning restore CA1303
 
         var shown = Math.Min(errors.Count, MaxErrorsInSummary);
         for (var i = 0; i < shown; i++)
@@ -135,7 +133,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             var error = errors[i];
             var fileName = ExtractFileName(error.Uri);
             var reason = string.IsNullOrWhiteSpace(error.ErrorInfo) ? "Unknown error" : error.ErrorInfo;
-#pragma warning disable CA1303
             if (colorEnabled)
             {
                 Console.WriteLine($"  {Ansi.White}- {fileName}: {reason}{Ansi.Reset}");
@@ -144,15 +141,12 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             {
                 Console.WriteLine($"  - {fileName}: {reason}");
             }
-#pragma warning restore CA1303
         }
 
         if (errors.Count > MaxErrorsInSummary)
         {
             var remaining = errors.Count - MaxErrorsInSummary;
-#pragma warning disable CA1303
             Console.WriteLine($"  \u2026 and {remaining} more {(remaining == 1 ? "error" : "errors")} (full list in CSV/HTML report)");
-#pragma warning restore CA1303
         }
     }
 
@@ -168,13 +162,10 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
         var colorEnabled = IsColorEnabled();
         Console.WriteLine();
-#pragma warning disable CA1303
         Console.WriteLine("Reports:");
-#pragma warning restore CA1303
 
         if (hasCsv)
         {
-#pragma warning disable CA1303
             if (colorEnabled)
             {
                 Console.WriteLine($"  {Ansi.White}CSV: {this._status.CsvPath}{Ansi.Reset}");
@@ -183,12 +174,10 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             {
                 Console.WriteLine($"  CSV: {this._status.CsvPath}");
             }
-#pragma warning restore CA1303
         }
 
         if (hasHtml)
         {
-#pragma warning disable CA1303
             if (colorEnabled)
             {
                 Console.WriteLine($"  {Ansi.White}HTML: {this._status.HtmlReportPath}{Ansi.Reset}");
@@ -197,7 +186,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             {
                 Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
             }
-#pragma warning restore CA1303
         }
     }
 
@@ -225,7 +213,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         var title = $"Red Kestrel CrlMonitor v{semver}";
         var colorEnabled = IsColorEnabled();
 
-#pragma warning disable CA1303
         if (colorEnabled)
         {
             Console.WriteLine($"{Ansi.Grey}{line}{Ansi.Reset}");
@@ -275,7 +262,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         }
 
         Console.WriteLine();
-#pragma warning restore CA1303
     }
 
     private static void WriteTableHeader()
@@ -288,10 +274,8 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             "Days",
             "Status");
 
-#pragma warning disable CA1303
         Console.WriteLine(header);
         Console.WriteLine(new string('-', header.Length));
-#pragma warning restore CA1303
     }
 
     private static void WriteResultRow(CrlCheckResult result)
@@ -308,7 +292,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             days,
             statusDisplay);
 
-#pragma warning disable CA1303
         if (IsColorEnabled())
         {
             var colorCode = GetStatusColorCode(statusDisplay);
@@ -318,7 +301,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         {
             Console.WriteLine(line);
         }
-#pragma warning restore CA1303
     }
 
     private static string CalculateDaysRemaining(DateTime? nextUpdate)
@@ -336,7 +318,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     {
         var summary = CrlStatusSummary.FromResults(results);
 
-#pragma warning disable CA1303
         Console.WriteLine("Summary:");
         Console.WriteLine($"  Total:    {summary.Total}");
         Console.WriteLine($"  OK:       {summary.Ok}");
@@ -364,10 +345,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         {
             Console.WriteLine("  HTML: (not generated)");
         }
-#pragma warning restore CA1303
-#pragma warning disable CA1303
         Console.WriteLine(this._status.EmailReportSent ? "Report email sent successfully." : "Report email not sent.");
-#pragma warning restore CA1303
     }
 
     private static void WriteResultNotes(IReadOnlyList<CrlCheckResult> results)
@@ -380,10 +358,8 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             return;
         }
 
-#pragma warning disable CA1303
         Console.WriteLine();
         Console.WriteLine("Result details:");
-#pragma warning restore CA1303
         foreach (var entry in notes)
         {
             var uri = Truncate(entry.Uri.ToString(), UriColumnWidth);
@@ -430,9 +406,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             if (!hasEntries)
             {
                 Console.WriteLine();
-#pragma warning disable CA1303
                 Console.WriteLine(title + ":");
-#pragma warning restore CA1303
                 hasEntries = true;
             }
 

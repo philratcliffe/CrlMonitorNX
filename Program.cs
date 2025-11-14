@@ -151,14 +151,14 @@ internal static class Program
 
     private static void ReportError(string message)
     {
-#pragma warning disable CA1303
+#pragma warning disable CA1303 // CLI tool emits English-only error messages; no localization planned
         Console.Error.WriteLine($"ERROR: {message}");
 #pragma warning restore CA1303
     }
 
     private static void PrintUsage()
     {
-#pragma warning disable CA1303
+#pragma warning disable CA1303 // CLI tool emits English-only usage instructions; no localization planned
         Console.WriteLine("Usage: CrlMonitor <path-to-config.json>");
         Console.WriteLine();
         Console.WriteLine("Examples:");
