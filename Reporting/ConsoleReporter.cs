@@ -7,6 +7,18 @@ namespace CrlMonitor.Reporting;
 
 internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = true) : IReporter
 {
+    private static class Ansi
+    {
+        public const string Green = "\u001b[32m";
+        public const string Yellow = "\u001b[33m";
+        public const string BrightYellow = "\u001b[93m";
+        public const string Red = "\u001b[31m";
+        public const string Magenta = "\u001b[35m";
+        public const string Grey = "\x1b[90m";
+        public const string Cyan = "\u001b[36m";
+        public const string White = "\u001b[97m";
+        public const string Reset = "\u001b[0m";
+    }
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
     private const int NextUpdateColumnWidth = 15;
@@ -70,16 +82,29 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     private static void WriteSimpleSummary(IReadOnlyList<CrlCheckResult> results)
     {
         var summary = CrlStatusSummary.FromResults(results);
+        var colorEnabled = IsColorEnabled();
 
 #pragma warning disable CA1303
         Console.WriteLine();
         Console.WriteLine("Summary:");
-        Console.WriteLine($"  Total: {summary.Total}");
-        Console.WriteLine($"  OK: {summary.Ok}");
-        Console.WriteLine($"  Warning: {summary.Warning}");
-        Console.WriteLine($"  Expiring: {summary.Expiring}");
-        Console.WriteLine($"  Expired: {summary.Expired}");
-        Console.WriteLine($"  Errors: {summary.Errors}");
+        if (colorEnabled)
+        {
+            Console.WriteLine($"  {"Total:",-10} {Ansi.White}{summary.Total}{Ansi.Reset}");
+            Console.WriteLine($"  {"OK:",-10} {Ansi.White}{summary.Ok}{Ansi.Reset}");
+            Console.WriteLine($"  {"Warning:",-10} {Ansi.White}{summary.Warning}{Ansi.Reset}");
+            Console.WriteLine($"  {"Expiring:",-10} {Ansi.White}{summary.Expiring}{Ansi.Reset}");
+            Console.WriteLine($"  {"Expired:",-10} {Ansi.White}{summary.Expired}{Ansi.Reset}");
+            Console.WriteLine($"  {"Errors:",-10} {Ansi.White}{summary.Errors}{Ansi.Reset}");
+        }
+        else
+        {
+            Console.WriteLine($"  {"Total:",-10} {summary.Total}");
+            Console.WriteLine($"  {"OK:",-10} {summary.Ok}");
+            Console.WriteLine($"  {"Warning:",-10} {summary.Warning}");
+            Console.WriteLine($"  {"Expiring:",-10} {summary.Expiring}");
+            Console.WriteLine($"  {"Expired:",-10} {summary.Expired}");
+            Console.WriteLine($"  {"Errors:",-10} {summary.Errors}");
+        }
 #pragma warning restore CA1303
     }
 
@@ -91,9 +116,17 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             return;
         }
 
+        var colorEnabled = IsColorEnabled();
         Console.WriteLine();
 #pragma warning disable CA1303
-        Console.WriteLine($"Errors ({errors.Count}):");
+        if (colorEnabled)
+        {
+            Console.WriteLine($"{Ansi.Red}Errors ({errors.Count}):{Ansi.Reset}");
+        }
+        else
+        {
+            Console.WriteLine($"Errors ({errors.Count}):");
+        }
 #pragma warning restore CA1303
 
         var shown = Math.Min(errors.Count, MaxErrorsInSummary);
@@ -103,7 +136,14 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             var fileName = ExtractFileName(error.Uri);
             var reason = string.IsNullOrWhiteSpace(error.ErrorInfo) ? "Unknown error" : error.ErrorInfo;
 #pragma warning disable CA1303
-            Console.WriteLine($"  - {fileName}: {reason}");
+            if (colorEnabled)
+            {
+                Console.WriteLine($"  {Ansi.White}- {fileName}: {reason}{Ansi.Reset}");
+            }
+            else
+            {
+                Console.WriteLine($"  - {fileName}: {reason}");
+            }
 #pragma warning restore CA1303
         }
 
@@ -126,6 +166,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             return;
         }
 
+        var colorEnabled = IsColorEnabled();
         Console.WriteLine();
 #pragma warning disable CA1303
         Console.WriteLine("Reports:");
@@ -134,14 +175,28 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         if (hasCsv)
         {
 #pragma warning disable CA1303
-            Console.WriteLine($"  CSV: {this._status.CsvPath}");
+            if (colorEnabled)
+            {
+                Console.WriteLine($"  {Ansi.White}CSV: {this._status.CsvPath}{Ansi.Reset}");
+            }
+            else
+            {
+                Console.WriteLine($"  CSV: {this._status.CsvPath}");
+            }
 #pragma warning restore CA1303
         }
 
         if (hasHtml)
         {
 #pragma warning disable CA1303
-            Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
+            if (colorEnabled)
+            {
+                Console.WriteLine($"  {Ansi.White}HTML: {this._status.HtmlReportPath}{Ansi.Reset}");
+            }
+            else
+            {
+                Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
+            }
 #pragma warning restore CA1303
         }
     }
@@ -167,24 +222,50 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         var line = new string('=', ConsoleWidth);
         var assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         var semver = assemblyVersion != null ? $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}" : "unknown";
-        var title = $"Red Kestrel CrlMonitor: v{semver}";
+        var title = $"Red Kestrel CrlMonitor v{semver}";
+        var colorEnabled = IsColorEnabled();
+
 #pragma warning disable CA1303
-        Console.WriteLine(line);
-        Console.WriteLine(title.PadLeft((ConsoleWidth + title.Length) / 2));
-        Console.WriteLine(line);
+        if (colorEnabled)
+        {
+            Console.WriteLine($"{Ansi.Grey}{line}{Ansi.Reset}");
+            Console.WriteLine($"                     {Ansi.Cyan}{title}{Ansi.Reset}");
+            Console.WriteLine($"{Ansi.Grey}{line}{Ansi.Reset}");
+        }
+        else
+        {
+            Console.WriteLine(line);
+            Console.WriteLine(title.PadLeft((ConsoleWidth + title.Length) / 2));
+            Console.WriteLine(line);
+        }
+
         Console.WriteLine();
 
         var license = LicenseBootstrapper.ValidatedLicense;
         if (license != null)
         {
-            Console.WriteLine($"License Type:   {license.Type}");
+            if (colorEnabled)
+            {
+                Console.WriteLine($"License Type:   {Ansi.White}{license.Type}{Ansi.Reset}");
+            }
+            else
+            {
+                Console.WriteLine($"License Type:   {license.Type}");
+            }
 
             if (license.Type == Standard.Licensing.LicenseType.Trial)
             {
                 var trialStatus = LicenseBootstrapper.TrialStatus;
                 if (trialStatus != null)
                 {
-                    Console.WriteLine($"Days Remaining: {trialStatus.DaysRemaining}");
+                    if (colorEnabled)
+                    {
+                        Console.WriteLine($"Days Remaining: {Ansi.White}{trialStatus.DaysRemaining}{Ansi.Reset}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Days Remaining: {trialStatus.DaysRemaining}");
+                    }
                 }
             }
             else
@@ -218,20 +299,26 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         var uri = Truncate(result.Uri.ToString(), UriColumnWidth);
         var nextUpdate = result.ParsedCrl?.NextUpdate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
         var days = CalculateDaysRemaining(result.ParsedCrl?.NextUpdate);
+        var statusDisplay = result.Status.ToDisplayString();
         var line = string.Format(
             CultureInfo.InvariantCulture,
             TableRowFormat,
             uri,
             nextUpdate,
             days,
-            result.Status.ToDisplayString());
+            statusDisplay);
 
-        var original = Console.ForegroundColor;
-        Console.ForegroundColor = GetStatusColor(result.Status);
 #pragma warning disable CA1303
-        Console.WriteLine(line);
+        if (IsColorEnabled())
+        {
+            var colorCode = GetStatusColorCode(statusDisplay);
+            Console.WriteLine($"{colorCode}{line}{Ansi.Reset}");
+        }
+        else
+        {
+            Console.WriteLine(line);
+        }
 #pragma warning restore CA1303
-        Console.ForegroundColor = original;
     }
 
     private static string CalculateDaysRemaining(DateTime? nextUpdate)
@@ -353,21 +440,26 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         }
     }
 
-    private static ConsoleColor GetStatusColor(CrlStatus status)
+    private static string GetStatusColorCode(string status)
     {
         return status switch {
-            CrlStatus.Ok => ConsoleColor.Green,
-            CrlStatus.Warning => ConsoleColor.Yellow,
-            CrlStatus.Expiring => ConsoleColor.Yellow,
-            CrlStatus.Expired => ConsoleColor.Red,
-            CrlStatus.Error => ConsoleColor.Red,
-            _ => ConsoleColor.Gray
+            "OK" => Ansi.Green,
+            "WARNING" => Ansi.Yellow,
+            "EXPIRING" => Ansi.BrightYellow,
+            "EXPIRED" => Ansi.Red,
+            "ERROR" => Ansi.Red,
+            _ => string.Empty
         };
     }
 
     private static string Truncate(string value, int width)
     {
         return string.IsNullOrWhiteSpace(value) || value.Length <= width ? value : width <= 3 ? value[..width] : value[..(width - 3)] + "...";
+    }
+
+    private static bool IsColorEnabled()
+    {
+        return !Console.IsOutputRedirected && Console.Out is not StringWriter;
     }
 
     private static void TryClearConsole()
