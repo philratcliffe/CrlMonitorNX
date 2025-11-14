@@ -149,19 +149,9 @@ internal static class LicenseBootstrapper
         if (!string.IsNullOrWhiteSpace(validation.LicensePath) && File.Exists(validation.LicensePath))
         {
             var fileInfo = new FileInfo(validation.LicensePath);
-            Log.Information("License file found at {LicensePath} ({FileSize} bytes)", validation.LicensePath, fileInfo.Length);
+            LoggingSetup.LogLicenseInfo(validation.LicensePath, fileInfo.Length, validation.License, validation.Success);
         }
-
-        if (validation.Success && validation.License != null)
-        {
-            Log.Information("License validation: VALID");
-            Log.Information("License type: {LicenseType}", validation.License.Type.ToString());
-            Log.Information("License expires: {ExpirationDate}", validation.License.Expiration);
-
-            var daysUntilExpiry = (validation.License.Expiration - DateTime.Now).Days;
-            Log.Information("Days until expiration: {Days}", daysUntilExpiry);
-        }
-        else
+        else if (!validation.Success)
         {
             Log.Warning("License validation: INVALID - {Error}", validation.ErrorMessage ?? validation.Error.ToString());
         }
