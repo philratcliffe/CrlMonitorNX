@@ -145,3 +145,6 @@ Licensing/generated_licenses/
 # Integration test output
 integration_tests/test_output/
 reports/
+
+# Trial reset scripts (must not go into GitHub)
+scripts/Clear-CrlMonitor-Trial.ps1
