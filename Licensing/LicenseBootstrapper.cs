@@ -68,6 +68,7 @@ internal static class LicenseBootstrapper
             ProductName = ProductName,
             StorageKey = TrialStorageKey,
             TrialDays = TrialDays,
+            FileStorageScope = StorageScope.MachineWide, // Use ProgramData for shared access between user and LocalSystem
 #if DEBUG
             ProgramDataOverridePath = LicenseBootstrapperTestAccess.TrialDataDirectoryOverride
 #endif
