@@ -18,6 +18,16 @@ from typing import Any, cast
 KEEP_TEST_OUTPUT = False
 
 
+def _create_logging_config(log_file_path: Path) -> dict[str, Any]:
+    """Create logging configuration section for test configs."""
+    return {
+        "min_level": "Information",
+        "log_file_path": str(log_file_path),
+        "rolling_interval": "Day",
+        "retained_file_count_limit": 7
+    }
+
+
 @dataclass
 class CapturedMessage:
     mail_from: str
@@ -160,11 +170,13 @@ class SmtpReportIntegrationTest(unittest.TestCase):
         output_csv = self.test_output_dir / "report.csv"
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(output_csv),
@@ -284,11 +296,13 @@ class SmtpReportIntegrationTest(unittest.TestCase):
 
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(self.test_output_dir / "report.csv"),
@@ -378,6 +392,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
 
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
@@ -392,6 +407,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
         }), encoding="utf-8")
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(self.test_output_dir / "report.csv"),
@@ -455,11 +471,13 @@ class SmtpReportIntegrationTest(unittest.TestCase):
 
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(self.test_output_dir / "report.csv"),
@@ -522,6 +540,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
 
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
@@ -536,6 +555,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
         }), encoding="utf-8")
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(self.test_output_dir / "report.csv"),
@@ -594,6 +614,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
 
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
 
         smtp_host = "127.0.0.1"
         smtp_port = _find_free_port()
@@ -602,6 +623,7 @@ class SmtpReportIntegrationTest(unittest.TestCase):
         state_file.write_text("{this is not valid json!}", encoding="utf-8")
 
         config: dict[str, Any] = {
+            "logging": _create_logging_config(log_file),
             "console_reports": False,
             "csv_reports": False,
             "csv_output_path": str(self.test_output_dir / "report.csv"),

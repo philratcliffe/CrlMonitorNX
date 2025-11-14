@@ -42,7 +42,14 @@ class CsvReportIntegrationTest(unittest.TestCase):
         output_csv = self.test_output_dir / "report.csv"
         state_file = self.test_output_dir / "state.json"
         config_path = self.test_output_dir / "config.json"
+        log_file = self.test_output_dir / "test.log"
         config = {
+            "logging": {
+                "min_level": "Information",
+                "log_file_path": str(log_file),
+                "rolling_interval": "Day",
+                "retained_file_count_limit": 7
+            },
             "console_reports": False,
             "csv_reports": True,
             "csv_output_path": str(output_csv),
