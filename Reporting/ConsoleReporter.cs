@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using CrlMonitor.Licensing;
 using CrlMonitor.Models;
 
 namespace CrlMonitor.Reporting;
@@ -38,7 +39,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
     private void WriteFullReport(CrlCheckRun run)
     {
-        WriteBanner(run.GeneratedAtUtc, run.Results.Count);
+        WriteBanner();
         WriteTableHeader();
         foreach (var result in run.Results)
         {
@@ -53,7 +54,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
     private void WriteSummaryReport(CrlCheckRun run)
     {
-        WriteBanner(run.GeneratedAtUtc, run.Results.Count);
+        WriteBanner();
         WriteTableHeader();
         foreach (var result in run.Results)
         {
@@ -161,16 +162,37 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         return Truncate(str, 50);
     }
 
-    private static void WriteBanner(DateTime generatedAtUtc, int count)
+    private static void WriteBanner()
     {
         var line = new string('=', ConsoleWidth);
-        var timestamp = TimeFormatter.FormatUtc(generatedAtUtc);
+        var assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var semver = assemblyVersion != null ? $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}" : "unknown";
+        var title = $"Red Kestrel CrlMonitor: v{semver}";
 #pragma warning disable CA1303
         Console.WriteLine(line);
-        Console.WriteLine("CRL Monitor Report");
+        Console.WriteLine(title.PadLeft((ConsoleWidth + title.Length) / 2));
         Console.WriteLine(line);
-        Console.WriteLine($"Generated (UTC): {timestamp}");
-        Console.WriteLine($"CRLs Checked: {count}");
+        Console.WriteLine();
+
+        var license = LicenseBootstrapper.ValidatedLicense;
+        if (license != null)
+        {
+            Console.WriteLine($"License Type:   {license.Type}");
+
+            if (license.Type == Standard.Licensing.LicenseType.Trial)
+            {
+                var trialStatus = LicenseBootstrapper.TrialStatus;
+                if (trialStatus != null)
+                {
+                    Console.WriteLine($"Days Remaining: {trialStatus.DaysRemaining}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Valid Until:    {license.Expiration:d MMM yyyy}");
+            }
+        }
+
         Console.WriteLine();
 #pragma warning restore CA1303
     }

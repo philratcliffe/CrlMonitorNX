@@ -50,7 +50,7 @@ public static class ConsoleReporterTests
         var output = writer.ToString();
         var expectedGenerated = TimeFormatter.FormatUtc(generatedAt);
         var expectedPrevious = TimeFormatter.FormatUtc(fetchedAt);
-        Assert.Contains("CRL Monitor Report", output, StringComparison.Ordinal);
+        Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
         Assert.Contains(expectedGenerated, output, StringComparison.Ordinal);
         Assert.Contains("URI", output, StringComparison.Ordinal);
         Assert.Contains("Status", output, StringComparison.Ordinal);
@@ -93,7 +93,7 @@ public static class ConsoleReporterTests
         await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
         var output = writer.ToString();
-        Assert.Contains("CRL Monitor Report", output, StringComparison.Ordinal);
+        Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
         Assert.Contains("URI", output, StringComparison.Ordinal);
         Assert.Contains("Status", output, StringComparison.Ordinal);
         Assert.Contains("Summary", output, StringComparison.Ordinal);

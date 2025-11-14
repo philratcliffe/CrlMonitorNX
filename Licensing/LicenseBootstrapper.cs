@@ -17,6 +17,16 @@ internal static class LicenseBootstrapper
     private const string PublicKey =
         "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7FY+RdhgwaYodbZQfnJkBtUWN/3K9bWDjfOVfz4pByv5myFYj6XjJf7nwmPvACIXh5R8Dlx5SYpesuUQdAshJg==";
 
+    /// <summary>
+    /// The validated license. Null if not yet validated or validation failed.
+    /// </summary>
+    public static License? ValidatedLicense { get; private set; }
+
+    /// <summary>
+    /// Trial status if using a trial license. Null if not a trial or not yet evaluated.
+    /// </summary>
+    public static TrialStatus? TrialStatus { get; private set; }
+
     public static async Task EnsureLicensedAsync(CancellationToken cancellationToken)
     {
         var fileAccessor = new LicenseFileAccessor();
@@ -32,6 +42,8 @@ internal static class LicenseBootstrapper
         {
             ThrowLicenceException(validation);
         }
+
+        ValidatedLicense = validation.License;
 
         if (validation.License?.Type == LicenseType.Trial)
         {
@@ -84,8 +96,8 @@ internal static class LicenseBootstrapper
             ThrowTrialExpiryException();
         }
 
+        TrialStatus = status;
         LoggingSetup.LogTrialStatus(status.DaysRemaining, status.ReadCode, status.WriteCode);
-        Console.WriteLine("Trial mode: {0} day(s) remaining", status.DaysRemaining);
     }
 
     private static void ThrowTrialExpiryException()
