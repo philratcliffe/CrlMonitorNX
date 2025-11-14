@@ -38,6 +38,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         cancellationToken.ThrowIfCancellationRequested();
 
         TryClearConsole();
+        AnnounceDebugBuild();
 
         if (this._verbose)
         {
@@ -452,6 +453,22 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         }
         catch (UnauthorizedAccessException)
         {
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void AnnounceDebugBuild()
+    {
+        var originalColor = Console.ForegroundColor;
+        try
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("DEBUG VERSION");
+            Console.WriteLine();
+        }
+        finally
+        {
+            Console.ForegroundColor = originalColor;
         }
     }
 
