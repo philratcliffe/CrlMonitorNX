@@ -70,7 +70,12 @@ echo ""
 echo "Cleaning previous publish output..."
 rm -rf "${PUBLISH_DIR}"
 
-echo "Publishing self-contained Windows build..."
+echo ""
+echo "Restoring dotnet tools (obfuscar required for code obfuscation)..."
+dotnet tool restore
+
+echo ""
+echo "Publishing self-contained Windows build with obfuscation..."
 dotnet publish "${PROJECT_FILE}" -c Release -r win-x64 --self-contained true \
     /p:PublishSingleFile=true \
     /p:DebugType=None \
