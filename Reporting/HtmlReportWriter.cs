@@ -50,6 +50,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".uri-toggle{color:#2563eb;text-decoration:none;font-size:12px;margin-left:4px;}");
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine(".uri-full{white-space:nowrap;margin-left:4px;}");
+        _ = builder.AppendLine(".issuer{white-space:normal;word-break:keep-all;}");
         _ = builder.AppendLine("</style>");
         _ = builder.AppendLine("<script>");
         _ = builder.AppendLine("function toggleUri(id){var full=document.getElementById(id+'-full');var short=document.getElementById(id+'-short');var link=document.getElementById(id+'-link');if(full.style.display==='none'){full.style.display='inline';short.style.display='none';link.textContent='(hide)';}else{full.style.display='none';short.style.display='inline';link.textContent='(show)';}}");
@@ -115,7 +116,7 @@ internal static class HtmlReportWriter
         {
             _ = builder.AppendLine(FormattableString.Invariant($"<td>{escapedUri}</td>"));
         }
-        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"issuer\">{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.ThisUpdate)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.NextUpdate)}</td>"));
