@@ -204,29 +204,36 @@ if [ ! -f "${TEMP_VERIFY_DIR}/CrlMonitor.exe" ]; then
     exit 1
 fi
 
-# Use strings to check for readable class names (should NOT find them in obfuscated exe)
+# Use strings to verify CrlMonitor classes are obfuscated in the exe
 if command -v strings >/dev/null 2>&1; then
-    echo "Checking for clean (non-obfuscated) class names in exe..."
+    echo "Searching exe for readable CrlMonitor class names..."
 
-    # Look for class names that should have been obfuscated
-    # If we find them clearly readable, obfuscation may have failed
+    # Search for specific CrlMonitor classes that should be obfuscated
+    # Note: Microsoft/.NET and third-party classes will remain readable
     FOUND_CLEAN_NAMES=0
 
     if strings "${TEMP_VERIFY_DIR}/CrlMonitor.exe" | grep -q "CrlMonitor\.ConfigLoader"; then
-        echo "⚠️  Warning: Found readable 'CrlMonitor.ConfigLoader' in exe"
+        echo "❌ CRITICAL: Found readable 'CrlMonitor.ConfigLoader' in exe"
         FOUND_CLEAN_NAMES=1
     fi
 
     if strings "${TEMP_VERIFY_DIR}/CrlMonitor.exe" | grep -q "CrlMonitor\.Crl\.CrlParser"; then
-        echo "⚠️  Warning: Found readable 'CrlMonitor.Crl.CrlParser' in exe"
+        echo "❌ CRITICAL: Found readable 'CrlMonitor.Crl.CrlParser' in exe"
         FOUND_CLEAN_NAMES=1
     fi
 
-    if [ "${FOUND_CLEAN_NAMES}" -eq 0 ]; then
-        echo "✓ No readable class names found in exe (expected for obfuscated code)"
-    else
-        echo "ℹ️  Some metadata strings present (may be references, not actual code)"
+    if strings "${TEMP_VERIFY_DIR}/CrlMonitor.exe" | grep -q "CrlMonitor\.Program"; then
+        echo "❌ CRITICAL: Found readable 'CrlMonitor.Program' in exe"
+        FOUND_CLEAN_NAMES=1
     fi
+
+    if [ "${FOUND_CLEAN_NAMES}" -eq 1 ]; then
+        echo "❌ Obfuscation verification failed - readable class names found"
+        rm -rf "${TEMP_VERIFY_DIR}"
+        exit 1
+    fi
+
+    echo "✓ Searched exe: no readable CrlMonitor class names found"
 else
     echo "ℹ️  'strings' command not available - skipping exe content check"
 fi
