@@ -40,7 +40,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".table-wrapper{overflow-x:auto;}");
         _ = builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
         _ = builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
-        _ = builder.AppendLine("td{padding:12px;border-bottom:1px solid #e5e7eb;}");
+        _ = builder.AppendLine("td{padding:12px;border-bottom:1px solid #e5e7eb;line-height:1.4;}");
         _ = builder.AppendLine("tr:nth-child(even){background:#f9fafb;}");
         _ = builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
         _ = builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
@@ -132,7 +132,17 @@ internal static class HtmlReportWriter
 
     private static string FormatDate(DateTime? value)
     {
-        return TimeFormatter.FormatUtc(value);
+        var formatted = TimeFormatter.FormatUtc(value);
+        if (string.IsNullOrEmpty(formatted))
+        {
+            return string.Empty;
+        }
+
+        // Split date and time onto separate lines (yyyy-MM-dd<br>HH:mm:ssZ)
+        var spaceIndex = formatted.IndexOf(' ', StringComparison.Ordinal);
+        return spaceIndex > 0
+            ? formatted[0..spaceIndex] + "<br>" + formatted[(spaceIndex + 1)..]
+            : formatted;
     }
 
     private static Summary BuildSummary(IReadOnlyList<CrlCheckResult> results)
