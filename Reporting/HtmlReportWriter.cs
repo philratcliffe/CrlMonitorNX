@@ -51,7 +51,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine("</style>");
         _ = builder.AppendLine("<script>");
-        _ = builder.AppendLine("function toggleUri(id){var full=document.getElementById(id);var short=full.previousElementSibling.previousElementSibling;var link=document.getElementById(id+'-link');if(full.style.display==='none'){full.style.display='inline';short.style.display='none';link.textContent='(hide)';}else{full.style.display='none';short.style.display='inline';link.textContent='(show)';}}");
+        _ = builder.AppendLine("function toggleUri(id){var full=document.getElementById(id+'-full');var short=document.getElementById(id+'-short');var link=document.getElementById(id+'-link');if(full.style.display==='none'){full.style.display='inline';short.style.display='none';link.textContent='(hide)';}else{full.style.display='none';short.style.display='inline';link.textContent='(show)';}}");
         _ = builder.AppendLine("</script>");
         _ = builder.AppendLine("</head><body>");
         _ = builder.AppendLine("<div class=\"container\">");
@@ -103,11 +103,11 @@ internal static class HtmlReportWriter
         {
             var truncated = Escape(fullUri[0..maxUriLength] + "...");
             var uriId = FormattableString.Invariant($"uri{rowIndex}");
-            _ = builder.Append("<td><span class=\"uri-short\">");
+            _ = builder.Append(FormattableString.Invariant($"<td><span id=\"{uriId}-short\" class=\"uri-short\">"));
             _ = builder.Append(truncated);
-            _ = builder.Append("</span>");
+            _ = builder.Append("</span>&nbsp;");
             _ = builder.Append(FormattableString.Invariant($"<a href=\"#\" class=\"uri-toggle\" id=\"{uriId}-link\" onclick=\"toggleUri('{uriId}'); return false;\">(show)</a>"));
-            _ = builder.Append(FormattableString.Invariant($"<span id=\"{uriId}\" class=\"uri-full\" style=\"display:none;\">{escapedUri}</span>"));
+            _ = builder.Append(FormattableString.Invariant($"<span id=\"{uriId}-full\" class=\"uri-full\" style=\"display:none;\">{escapedUri}</span>"));
             _ = builder.AppendLine("</td>");
         }
         else
