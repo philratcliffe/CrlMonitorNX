@@ -51,6 +51,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine(".uri-full{white-space:nowrap;margin-left:4px;}");
         _ = builder.AppendLine(".issuer{word-break:normal;overflow-wrap:normal;hyphens:none;}");
+        _ = builder.AppendLine(".dt{white-space:nowrap;}");
         _ = builder.AppendLine("</style>");
         _ = builder.AppendLine("<script>");
         _ = builder.AppendLine("function toggleUri(id){var full=document.getElementById(id+'-full');var short=document.getElementById(id+'-short');var link=document.getElementById(id+'-link');if(full.style.display==='none'){full.style.display='inline';short.style.display='none';link.textContent='(hide)';}else{full.style.display='none';short.style.display='inline';link.textContent='(show)';}}");
@@ -118,14 +119,14 @@ internal static class HtmlReportWriter
         }
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"issuer\">{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
-        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.ThisUpdate)}</td>"));
-        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(parsed?.NextUpdate)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.ThisUpdate)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.NextUpdate)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.ContentLength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.DownloadDuration?.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(CsvReportFormatter.NormalizeSignatureStatus(result.SignatureStatus))}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{parsed?.RevokedSerialNumbers?.Count.ToString(CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
-        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.CheckedAtUtc)}</td>"));
-        _ = builder.AppendLine(FormattableString.Invariant($"<td>{FormatDate(result.PreviousFetchUtc)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(result.CheckedAtUtc)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(result.PreviousFetchUtc)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed == null ? string.Empty : parsed.IsDelta ? "Delta" : "Full")}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.ErrorInfo ?? string.Empty)}</td>"));
         _ = builder.AppendLine("</tr>");
