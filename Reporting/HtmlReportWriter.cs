@@ -19,6 +19,9 @@ internal static class HtmlReportWriter
             _ = Directory.CreateDirectory(directory);
         }
 
+        // Copy favicon to report directory
+        await CopyFaviconAsync(directory, cancellationToken).ConfigureAwait(false);
+
         var html = BuildHtml(run);
         await File.WriteAllTextAsync(path, html, Encoding.UTF8, cancellationToken).ConfigureAwait(false);
     }
@@ -30,6 +33,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("<!DOCTYPE html>");
         _ = builder.AppendLine("<html lang=\"en\"><head>");
         _ = builder.AppendLine("<meta charset=\"utf-8\" />");
+        _ = builder.AppendLine("<link rel=\"icon\" type=\"image/png\" href=\"favicon.png\">");
         _ = builder.AppendLine("<title>CRL Health Report — CrlMonitor</title>");
         _ = builder.AppendLine("<style>");
         _ = builder.AppendLine("body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fb;color:#1f2937;margin:0;padding:0;}");
@@ -224,6 +228,22 @@ internal static class HtmlReportWriter
 
         var build = version.Build >= 0 ? version.Build : 0;
         return FormattableString.Invariant($"v{version.Major}.{version.Minor}.{build}");
+    }
+
+    private static async Task CopyFaviconAsync(string? targetDirectory, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(targetDirectory))
+        {
+            return;
+        }
+
+        var sourceFavicon = Path.Combine(AppContext.BaseDirectory, "Reporting", "favicon.png");
+        var targetFavicon = Path.Combine(targetDirectory, "favicon.png");
+
+        if (File.Exists(sourceFavicon))
+        {
+            await Task.Run(() => File.Copy(sourceFavicon, targetFavicon, overwrite: true), cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private readonly record struct Summary(int Total, int Ok, int Warning, int Expiring, int Expired, int Errors);

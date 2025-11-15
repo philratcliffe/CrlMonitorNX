@@ -46,6 +46,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>examples/%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
+    <None Include="Reporting/favicon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>Reporting/favicon.png</Link>
+    </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
 
