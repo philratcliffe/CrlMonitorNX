@@ -41,6 +41,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
         _ = builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
         _ = builder.AppendLine("td{padding:12px;border-bottom:1px solid #e5e7eb;line-height:1.4;}");
+        _ = builder.AppendLine("td:last-child,th:last-child{min-width:220px;}");
         _ = builder.AppendLine("tr:nth-child(even){background:#f9fafb;}");
         _ = builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
         _ = builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
