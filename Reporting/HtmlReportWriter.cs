@@ -40,6 +40,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".summary-label{font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}");
         _ = builder.AppendLine(".summary-value{font-size:28px;font-weight:600;color:#111827;margin-top:4px;}");
         _ = builder.AppendLine(".header-divider{border-bottom:1px solid #e5e7eb;margin:12px 0 24px 0;}");
+        _ = builder.AppendLine(".report-meta{color:#6b7280;font-size:14px;margin-bottom:20px;}");
         _ = builder.AppendLine(".table-wrapper{overflow-x:auto;}");
         _ = builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
         _ = builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
@@ -61,9 +62,9 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("</head><body>");
         _ = builder.AppendLine("<div class=\"container\">");
         _ = builder.AppendLine("<div class=\"card\">");
-        _ = builder.Append(FormattableString.Invariant($"<h1 class=\"header-divider\">CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}"));
-        AppendLicenseInfo(builder);
-        _ = builder.AppendLine("</p>");
+        _ = builder.AppendLine("<h1 class=\"header-divider\">CRL Health Report</h1>");
+        var licenseInfo = GetLicenseInfo();
+        _ = builder.AppendLine(FormattableString.Invariant($"<p class=\"report-meta\">Generated: {TimeFormatter.FormatUtc(run.GeneratedAtUtc)} &middot; {licenseInfo}</p>"));
         _ = builder.AppendLine("<div class=\"summary-grid\">");
         AppendSummaryCard(builder, "CRLs Checked", summary.Total, null);
         AppendSummaryCard(builder, "CRLs OK", summary.Ok, null);
@@ -97,12 +98,12 @@ internal static class HtmlReportWriter
         return builder.ToString();
     }
 
-    private static void AppendLicenseInfo(StringBuilder builder)
+    private static string GetLicenseInfo()
     {
         var license = LicenseBootstrapper.ValidatedLicense;
         if (license == null)
         {
-            return;
+            return string.Empty;
         }
 
         if (license.Type == LicenseType.Trial)
@@ -112,15 +113,17 @@ internal static class HtmlReportWriter
             var trialStatus = LicenseBootstrapper.TrialStatus;
             if (trialStatus != null)
             {
-                _ = builder.Append(FormattableString.Invariant($"<br>Licence: Trial — {trialStatus.DaysRemaining} days remaining"));
+                return FormattableString.Invariant($"(Licence: Trial — {trialStatus.DaysRemaining} days remaining)");
             }
         }
         else
         {
             // For Standard licenses, show expiration date
             var expiryDate = license.Expiration.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            _ = builder.Append(FormattableString.Invariant($"<br>Licence: Standard — expires {expiryDate}"));
+            return FormattableString.Invariant($"(Licence: Standard — expires {expiryDate})");
         }
+
+        return string.Empty;
     }
 
     private static void AppendSummaryCard(StringBuilder builder, string label, int value, string? color)
