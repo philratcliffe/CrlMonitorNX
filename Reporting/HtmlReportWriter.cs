@@ -46,8 +46,8 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
         _ = builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
         _ = builder.AppendLine(".status-EXPIRED,.status-ERROR{color:#dc2626;font-weight:600;}");
-        _ = builder.AppendLine("tr.row-ERROR{background:#fee2e2;}");
-        _ = builder.AppendLine("tr.row-EXPIRED{background:#fee2e2;}");
+        _ = builder.AppendLine("tr.row-ERROR{background:#fff;border-left:6px solid #dc2626;}");
+        _ = builder.AppendLine("tr.row-EXPIRED{background:#fff;border-left:6px solid #f97316;}");
         _ = builder.AppendLine(".uri-toggle{color:#2563eb;text-decoration:none;font-size:12px;margin-left:4px;}");
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine(".uri-full{white-space:nowrap;margin-left:4px;}");
