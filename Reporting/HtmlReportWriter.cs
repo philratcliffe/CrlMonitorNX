@@ -39,6 +39,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".summary-card{padding:16px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;}");
         _ = builder.AppendLine(".summary-label{font-size:14px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;}");
         _ = builder.AppendLine(".summary-value{font-size:28px;font-weight:600;color:#111827;margin-top:4px;}");
+        _ = builder.AppendLine(".header-divider{border-bottom:1px solid #e5e7eb;margin:12px 0 24px 0;}");
         _ = builder.AppendLine(".table-wrapper{overflow-x:auto;}");
         _ = builder.AppendLine("table{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;}");
         _ = builder.AppendLine("th{background:#111827;color:#f9fafb;text-align:left;padding:12px;border-bottom:2px solid #0f172a;}");
@@ -60,7 +61,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("</head><body>");
         _ = builder.AppendLine("<div class=\"container\">");
         _ = builder.AppendLine("<div class=\"card\">");
-        _ = builder.Append(FormattableString.Invariant($"<h1>CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}"));
+        _ = builder.Append(FormattableString.Invariant($"<h1>CRL Health Report</h1><p class=\"header-divider\">Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}"));
         AppendLicenseInfo(builder);
         _ = builder.AppendLine("</p>");
         _ = builder.AppendLine("<div class=\"summary-grid\">");
