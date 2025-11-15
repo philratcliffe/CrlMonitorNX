@@ -33,7 +33,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("<!DOCTYPE html>");
         _ = builder.AppendLine("<html lang=\"en\"><head>");
         _ = builder.AppendLine("<meta charset=\"utf-8\" />");
-        _ = builder.AppendLine("<link rel=\"icon\" type=\"image/png\" href=\"favicon.png\">");
+        _ = builder.AppendLine("<link rel=\"icon\" type=\"image/png\" href=\"favicon.png?v=1\">");
         _ = builder.AppendLine("<title>CRL Health Report — CrlMonitor</title>");
         _ = builder.AppendLine("<style>");
         _ = builder.AppendLine("body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fb;color:#1f2937;margin:0;padding:0;}");
