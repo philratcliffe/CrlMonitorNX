@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Obfuscator>
+  <!-- Input/Output paths - will be substituted by MSBuild at runtime -->
+  <!-- INPATH and OUTPATH must be set as environment variables or substituted -->
+  <Var name="InPath" value="INPATH_PLACEHOLDER" />
+  <Var name="OutPath" value="OUTPATH_PLACEHOLDER" />
+
+  <!-- Basic obfuscation settings -->
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="HideStrings" value="true" />
+  <Var name="OptimizeMethods" value="true" />
+  <Var name="SuppressIldasm" value="true" />
+  <Var name="UseUnicodeNames" value="true" />
+
+  <!-- Main assembly to obfuscate (ONLY CrlMonitor.dll) -->
+  <Module file="$(InPath)/CrlMonitor.dll">
+    <!-- Note: All JSON-serialized classes already use [JsonPropertyName] attributes -->
+    <!-- This protects JSON field names even when C# property names are obfuscated -->
+    <!-- No explicit SkipType entries needed due to JsonPropertyName protection -->
+  </Module>
+
+  <!-- Note: All 3rd party DLLs (BouncyCastle, Serilog, etc.) will be copied as-is -->
+</Obfuscator>

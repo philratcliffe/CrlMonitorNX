@@ -48,4 +48,48 @@
     </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
+
+  <!-- Obfuscation integration for PublishSingleFile builds -->
+  <Target Name="ObfuscateBeforeSingleFile"
+          AfterTargets="_CopyFilesToPublishDirectory"
+          BeforeTargets="GenerateSingleFileBundle"
+          Condition="'$(PublishSingleFile)' == 'true' AND '$(Configuration)' == 'Release'">
+
+    <PropertyGroup>
+      <!-- For single-file publishing, obfuscate files from the output directory before bundling -->
+      <!-- Trim trailing slash/backslash to avoid double-slash in paths -->
+      <IntermediatePublishDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)').TrimEnd('\').TrimEnd('/'))</IntermediatePublishDir>
+      <ObfuscatedOutputDir>$([MSBuild]::EnsureTrailingSlash('$(IntermediateOutputPath)obfuscated').TrimEnd('\').TrimEnd('/'))</ObfuscatedOutputDir>
+    </PropertyGroup>
+
+    <Message Text="====== Running Obfuscar on CrlMonitor.dll ======" Importance="high" />
+    <Message Text="Input path: $(IntermediatePublishDir)" Importance="high" />
+    <Message Text="Output path: $(ObfuscatedOutputDir)" Importance="high" />
+
+    <!-- Create obfuscated output directory -->
+    <MakeDir Directories="$(ObfuscatedOutputDir)" />
+
+    <!-- Create temporary obfuscar config with paths substituted -->
+    <PropertyGroup>
+      <TempObfuscarConfig>$(IntermediateOutputPath)obfuscar-temp.xml</TempObfuscarConfig>
+      <ObfuscarTemplate>$([System.IO.File]::ReadAllText('obfuscar.xml'))</ObfuscarTemplate>
+      <ObfuscarConfigWithPaths>$(ObfuscarTemplate.Replace('INPATH_PLACEHOLDER', '$(IntermediatePublishDir)').Replace('OUTPATH_PLACEHOLDER', '$(ObfuscatedOutputDir)'))</ObfuscarConfigWithPaths>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(TempObfuscarConfig)"
+                      Lines="$(ObfuscarConfigWithPaths)"
+                      Overwrite="true"
+                      Encoding="UTF-8" />
+
+    <!-- Run Obfuscar (requires obfuscar.globaltool to be installed) -->
+    <Exec Command="dotnet obfuscar.console &quot;$(TempObfuscarConfig)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
+
+    <!-- Replace clean CrlMonitor.dll with obfuscated version -->
+    <Copy SourceFiles="$(ObfuscatedOutputDir)/CrlMonitor.dll"
+          DestinationFiles="$(IntermediatePublishDir)/CrlMonitor.dll"
+          OverwriteReadOnlyFiles="true" />
+
+    <Message Text="====== Obfuscation complete - replaced CrlMonitor.dll with obfuscated version ======" Importance="high" />
+  </Target>
 </Project>
