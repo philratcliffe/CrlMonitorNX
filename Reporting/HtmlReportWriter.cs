@@ -104,19 +104,21 @@ internal static class HtmlReportWriter
             return;
         }
 
-        var licenseType = license.Type == LicenseType.Trial ? "Trial" : "Standard";
-        var expiryDate = license.Expiration.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-        _ = builder.Append(FormattableString.Invariant($"<br>Licence: {licenseType} — expires {expiryDate}"));
-
-        // For trial licenses, show days remaining
         if (license.Type == LicenseType.Trial)
         {
+            // For trials, only show days remaining (not license expiration)
+            // License expiration is defense-in-depth and may not match trial period
             var trialStatus = LicenseBootstrapper.TrialStatus;
             if (trialStatus != null)
             {
-                _ = builder.Append(FormattableString.Invariant($" — {trialStatus.DaysRemaining} days remaining"));
+                _ = builder.Append(FormattableString.Invariant($"<br>Licence: Trial — {trialStatus.DaysRemaining} days remaining"));
             }
+        }
+        else
+        {
+            // For Standard licenses, show expiration date
+            var expiryDate = license.Expiration.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            _ = builder.Append(FormattableString.Invariant($"<br>Licence: Standard — expires {expiryDate}"));
         }
     }
 
