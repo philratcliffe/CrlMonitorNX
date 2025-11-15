@@ -45,6 +45,8 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".status-OK{color:#16a34a;font-weight:600;}");
         _ = builder.AppendLine(".status-WARNING,.status-EXPIRING{color:#f97316;font-weight:600;}");
         _ = builder.AppendLine(".status-EXPIRED,.status-ERROR{color:#dc2626;font-weight:600;}");
+        _ = builder.AppendLine("tr.row-ERROR{background:#fee2e2;}");
+        _ = builder.AppendLine("tr.row-EXPIRED{background:#fee2e2;}");
         _ = builder.AppendLine("</style></head><body>");
         _ = builder.AppendLine("<div class=\"container\">");
         _ = builder.AppendLine("<div class=\"card\">");
@@ -84,7 +86,8 @@ internal static class HtmlReportWriter
     {
         var parsed = result.ParsedCrl;
         var statusClass = $"status-{result.Status.ToDisplayString()}";
-        _ = builder.AppendLine("<tr>");
+        var rowClass = result.Status is CrlStatus.Error or CrlStatus.Expired ? " class=\"row-" + result.Status.ToDisplayString() + "\"" : string.Empty;
+        _ = builder.AppendLine("<tr" + rowClass + ">");
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(result.Uri.ToString())}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
