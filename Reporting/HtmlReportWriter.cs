@@ -50,7 +50,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".uri-toggle{color:#2563eb;text-decoration:none;font-size:12px;margin-left:4px;}");
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine(".uri-full{white-space:nowrap;margin-left:4px;}");
-        _ = builder.AppendLine(".issuer{word-break:normal;overflow-wrap:normal;hyphens:none;}");
+        _ = builder.AppendLine(".issuer{word-break:keep-all;overflow-wrap:normal;}");
         _ = builder.AppendLine(".dt{white-space:nowrap;}");
         _ = builder.AppendLine("</style>");
         _ = builder.AppendLine("<script>");
@@ -117,7 +117,7 @@ internal static class HtmlReportWriter
         {
             _ = builder.AppendLine(FormattableString.Invariant($"<td>{escapedUri}</td>"));
         }
-        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"issuer\">{Escape(parsed?.Issuer ?? string.Empty)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"issuer\">{ProtectHyphens(Escape(parsed?.Issuer ?? string.Empty))}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.ThisUpdate)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.NextUpdate)}</td>"));
@@ -161,6 +161,13 @@ internal static class HtmlReportWriter
     private static string Escape(string value)
     {
         return System.Net.WebUtility.HtmlEncode(value);
+    }
+
+    private static string ProtectHyphens(string value)
+    {
+        // Replace regular hyphen with non-breaking hyphen (U+2011)
+        // Prevents line breaks inside hyphenated names like "GlobalSign nv-sa"
+        return value.Replace("-", "&#8209;", StringComparison.Ordinal);
     }
 
     private static string GetVersion()
