@@ -234,7 +234,9 @@ internal static class ConfigLoader
 
     private static string ResolvePath(string baseDirectory, string path)
     {
-        return Path.IsPathRooted(path) ? path : Path.GetFullPath(Path.Combine(baseDirectory, path));
+        // Expand environment variables (e.g., %ProgramData%, $HOME)
+        var expandedPath = Environment.ExpandEnvironmentVariables(path);
+        return Path.IsPathRooted(expandedPath) ? expandedPath : Path.GetFullPath(Path.Combine(baseDirectory, expandedPath));
     }
 
     private static string? ResolveOptionalPath(string baseDirectory, string? path)
