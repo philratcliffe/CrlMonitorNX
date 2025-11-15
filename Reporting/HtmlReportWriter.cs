@@ -50,7 +50,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(".uri-toggle{color:#2563eb;text-decoration:none;font-size:12px;margin-left:4px;}");
         _ = builder.AppendLine(".uri-toggle:hover{text-decoration:underline;}");
         _ = builder.AppendLine(".uri-full{white-space:nowrap;margin-left:4px;}");
-        _ = builder.AppendLine(".issuer{white-space:normal;word-break:keep-all;}");
+        _ = builder.AppendLine(".issuer{word-break:normal;overflow-wrap:normal;hyphens:none;}");
         _ = builder.AppendLine("</style>");
         _ = builder.AppendLine("<script>");
         _ = builder.AppendLine("function toggleUri(id){var full=document.getElementById(id+'-full');var short=document.getElementById(id+'-short');var link=document.getElementById(id+'-link');if(full.style.display==='none'){full.style.display='inline';short.style.display='none';link.textContent='(hide)';}else{full.style.display='none';short.style.display='inline';link.textContent='(show)';}}");
