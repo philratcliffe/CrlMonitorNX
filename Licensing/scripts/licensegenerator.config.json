@@ -2,7 +2,7 @@
   "keysPath": "~/.CrlMonitorLicenseKeys/crl-monitor-license-keys.txt",
   "algorithm": "ecdsa",
   "defaultExpiryMonths": 12,
-  "expiry_date_utc": "2025-11-14T23:59:59Z",
+  "expiry_date_utc": "2025-11-22T23:59:59Z",
   "_expiry_date_utc_comment": "Set to yyyy-MM-dd or yyyy-MM-ddTHH:mm:ssZ",
   "companyName": "Red Kestrel",
   "productName": "CrlMonitor",
