@@ -61,7 +61,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("</head><body>");
         _ = builder.AppendLine("<div class=\"container\">");
         _ = builder.AppendLine("<div class=\"card\">");
-        _ = builder.Append(FormattableString.Invariant($"<h1>CRL Health Report</h1><p class=\"header-divider\">Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}"));
+        _ = builder.Append(FormattableString.Invariant($"<h1 class=\"header-divider\">CRL Health Report</h1><p>Generated at {TimeFormatter.FormatUtc(run.GeneratedAtUtc)}"));
         AppendLicenseInfo(builder);
         _ = builder.AppendLine("</p>");
         _ = builder.AppendLine("<div class=\"summary-grid\">");
