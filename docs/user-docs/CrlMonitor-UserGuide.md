@@ -39,7 +39,7 @@ The application reads a JSON configuration file defining CRLs, email settings, r
 #### Top-Level Settings
 
 * `console_reports` (bool) – Enable console output (default: true)
-* `console_verbose` (bool) – Show detailed console output including full table (default: false)
+* `console_verbose` (bool) – Show detailed result notes and diagnostics vs simplified error summary (default: false)
 * `csv_reports` (bool) – Enable CSV report generation (default: true)
 * `csv_output_path` (string, required) – Path to CSV report file
 * `csv_append_timestamp` (bool) – Append timestamp to CSV filename (default: false)
@@ -238,10 +238,17 @@ Cooldown prevents repeated notifications if the CRL remains in the same state. S
 
 Logging uses Serilog with rolling daily files. Main settings:
 
-* `logging.min_level` – Verbose, Debug, Information, Warning, Error, Fatal
-* `logging.log_file_path` – Relative paths resolve to `%ProgramData%\RedKestrel\CrlMonitor` on Windows
-* `logging.rolling_interval` – Day, Hour, etc.
-* `logging.retained_file_count_limit` – Number of old logs to keep
+* `logging.min_level` – Verbose, Debug, Information, Warning, Error, Fatal (default: Information)
+* `logging.log_file_path` – Path to log file (default: "CrlMonitor.log")
+* `logging.rolling_interval` – Day, Hour, Minute, etc. (default: Day)
+* `logging.retained_file_count_limit` – Number of old logs to keep (default: 7)
+
+### Log File Location
+
+* **Relative paths** (e.g., "CrlMonitor.log") resolve to `%ProgramData%\RedKestrel\CrlMonitor\` on Windows
+  * Default location: `C:\ProgramData\RedKestrel\CrlMonitor\CrlMonitor.log`
+  * Fallback: Executable directory if ProgramData is not writable
+* **Absolute paths** (e.g., "C:\Logs\CrlMonitor.log") are used as-is
 
 Log files include timestamps, log level, message, and exception details.
 
