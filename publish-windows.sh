@@ -78,6 +78,7 @@ echo ""
 echo "Publishing self-contained Windows build with obfuscation..."
 dotnet publish "${PROJECT_FILE}" -c Release -r win-x64 --self-contained true \
     /p:PublishSingleFile=true \
+    /p:IncludeNativeLibrariesForSelfExtract=true \
     /p:DebugType=None \
     /p:DebugSymbols=false \
     /p:DefineConstants="WINDOWS"
