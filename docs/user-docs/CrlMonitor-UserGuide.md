@@ -3,7 +3,7 @@
 ## Quick Start
 
 1. Place `CrlMonitor.exe` and `config.json` in a suitable folder
-   (e.g., `C:\Program Files\CrlMonitor\`).
+   (e.g., `C:\CrlMonitor\`).
 2. Edit `config.json` and add your CRL URIs and SMTP details.
 3. Run a manual test:
    `CrlMonitor.exe config.json`
@@ -20,7 +20,7 @@ CrlMonitor checks Certificate Revocation Lists (CRLs), validates signatures, mon
 
 ## 2. Installation
 
-Extract the release ZIP to a folder such as `C:\Program Files\CrlMonitor\`. Ensure the account used to run the scheduled task (often LocalSystem) has read/write access to the folder and to any report/output locations.
+Extract the release ZIP to a folder such as `C:\CrlMonitor\`. Ensure the account used to run the scheduled task (often LocalSystem) has read/write access to the folder and to any report/output locations.
 
 ## 3. Configuration File
 
@@ -184,7 +184,7 @@ Most deployments run CrlMonitor automatically.
 2. Choose **Create Task…**.
 3. Set **Run as** to `LocalSystem` or a suitable service account.
 4. Add an **Action** calling:
-   `C:\Program Files\CrlMonitor\CrlMonitor.exe C:\ProgramData\RedKestrel\CrlMonitor\config.json`
+   `C:\CrlMonitor\CrlMonitor.exe C:\ProgramData\RedKestrel\CrlMonitor\config.json`
 5. Add a **Trigger**:
 
    * Daily (every 24 hours), or
