@@ -29,7 +29,7 @@ public static class HtmlReportWriterTests
         Assert.True(File.Exists(path));
         var content = await File.ReadAllTextAsync(path).ConfigureAwait(true);
         Assert.Contains("CRLs Checked", content, StringComparison.Ordinal);
-        Assert.Contains("CRLs Failed", content, StringComparison.Ordinal);
+        Assert.Contains("CRL Errors", content, StringComparison.Ordinal);
         Assert.Contains("http://example.com", content, StringComparison.Ordinal);
         Assert.Contains("http://bad", content, StringComparison.Ordinal);
         Assert.Contains("ERROR", content, StringComparison.Ordinal);

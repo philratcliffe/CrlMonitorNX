@@ -12,9 +12,10 @@
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 6,
   "max_crl_size_bytes": 10000000,
+  "use_system_proxy": true,
   "state_file_path": "%ProgramData%/RedKestrel/CrlMonitor/crlmonitor-state.json",
   "html_report_enabled": true,
-  "html_report_path": "%ProgramData%/RedKestrel/CrlMonitor/reports/crl-report.html",
+  "html_report_path": "/Users/philratcliffe/Downloads/crl-report.html",
   "html_report_url": "https://example.com/crl/crl-report.html",
   "smtp": {
     "host": "smtp.gmail.com",

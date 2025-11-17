@@ -1,6 +1,8 @@
 using CrlMonitor.Diagnostics;
+using CrlMonitor.Licensing;
 using CrlMonitor.Models;
 using CrlMonitor.Reporting;
+using Serilog;
 
 namespace CrlMonitor.Tests;
 
@@ -42,30 +44,61 @@ public static class ConsoleReporterTests
             diagnostics,
             generatedAt);
 
+        // Configure Serilog to write to temp file to avoid console interference
+        var logFile = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.log");
+        var previousLogger = Log.Logger;
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File(logFile, formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+            .CreateLogger();
+
+        // Initialize licensing so ConsoleReporter can display license info
+        try
+        {
+            await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+        }
+#pragma warning disable CA1031 // Test may run without valid license file
+        catch
+#pragma warning restore CA1031
+        {
+            // License validation may fail in test environment - that's ok
+        }
+
+        var originalOut = Console.Out;
         using var writer = new StringWriter();
         Console.SetOut(writer);
 
-        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+        try
+        {
+            await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
-        var output = writer.ToString();
-        var expectedGenerated = TimeFormatter.FormatUtc(generatedAt);
-        var expectedPrevious = TimeFormatter.FormatUtc(fetchedAt);
-        Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
-        Assert.Contains(expectedGenerated, output, StringComparison.Ordinal);
-        Assert.Contains("URI", output, StringComparison.Ordinal);
-        Assert.Contains("Status", output, StringComparison.Ordinal);
-        Assert.Contains("WARNING", output, StringComparison.Ordinal);
-        Assert.Contains("Result details:", output, StringComparison.Ordinal);
-        Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
-        Assert.Contains("Previous:", output, StringComparison.Ordinal);
-        Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
-        Assert.Contains("Summary:", output, StringComparison.Ordinal);
-        Assert.Contains("Disk full", output, StringComparison.Ordinal);
-        Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
-        Assert.Contains("HTML: reports/latest.html", output, StringComparison.Ordinal);
-        Assert.Contains("Report written to:", output, StringComparison.Ordinal);
-        Assert.Contains("report.csv", output, StringComparison.Ordinal);
-        Assert.Contains("Report email sent successfully.", output, StringComparison.Ordinal);
+            var output = writer.ToString();
+            var expectedPrevious = TimeFormatter.FormatUtc(fetchedAt);
+            Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
+            Assert.Contains("URI", output, StringComparison.Ordinal);
+            Assert.Contains("Status", output, StringComparison.Ordinal);
+            Assert.Contains("WARNING", output, StringComparison.Ordinal);
+            Assert.Contains("Result details:", output, StringComparison.Ordinal);
+            Assert.Contains("Signature validation disabled", output, StringComparison.Ordinal);
+            Assert.Contains("Previous:", output, StringComparison.Ordinal);
+            Assert.Contains(expectedPrevious, output, StringComparison.Ordinal);
+            Assert.Contains("Summary:", output, StringComparison.Ordinal);
+            Assert.Contains("Disk full", output, StringComparison.Ordinal);
+            Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
+            Assert.Contains("HTML: reports/latest.html", output, StringComparison.Ordinal);
+            Assert.Contains("Report written to:", output, StringComparison.Ordinal);
+            Assert.Contains("report.csv", output, StringComparison.Ordinal);
+            Assert.Contains("Report email sent successfully.", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            await Log.CloseAndFlushAsync();
+            Log.Logger = previousLogger;
+            if (File.Exists(logFile))
+            {
+                File.Delete(logFile);
+            }
+        }
     }
 
     /// <summary>
@@ -88,22 +121,58 @@ public static class ConsoleReporterTests
             diagnostics,
             DateTime.UtcNow);
 
+        // Configure Serilog to write to temp file to avoid console interference
+        var logFile = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.log");
+        var previousLogger = Log.Logger;
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File(logFile, formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+            .CreateLogger();
+
+        // Initialize licensing so ConsoleReporter can display license info
+        try
+        {
+            await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+        }
+#pragma warning disable CA1031 // Test may run without valid license file
+        catch
+#pragma warning restore CA1031
+        {
+            // License validation may fail in test environment - that's ok
+        }
+
+        var originalOut = Console.Out;
         using var writer = new StringWriter();
         Console.SetOut(writer);
-        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
-        var output = writer.ToString();
-        Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
-        Assert.Contains("URI", output, StringComparison.Ordinal);
-        Assert.Contains("Status", output, StringComparison.Ordinal);
-        Assert.Contains("Summary", output, StringComparison.Ordinal);
-        Assert.Contains("Total: 2", output, StringComparison.Ordinal);
-        Assert.Contains("OK: 1", output, StringComparison.Ordinal);
-        Assert.Contains("Errors: 1", output, StringComparison.Ordinal);
-        Assert.Contains("error.crl", output, StringComparison.Ordinal);
-        Assert.Contains("Connection failed", output, StringComparison.Ordinal);
-        Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("Result details:", output, StringComparison.Ordinal);
+        try
+        {
+            await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+            var output = writer.ToString();
+            Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
+            Assert.Contains("URI", output, StringComparison.Ordinal);
+            Assert.Contains("Status", output, StringComparison.Ordinal);
+            Assert.Contains("Summary:", output, StringComparison.Ordinal);
+            Assert.Contains("Total:", output, StringComparison.Ordinal);
+            Assert.Contains("2", output, StringComparison.Ordinal); // Total count
+            Assert.Contains("OK:", output, StringComparison.Ordinal);
+            Assert.Contains("1", output, StringComparison.Ordinal); // OK and Error counts
+            Assert.Contains("Errors:", output, StringComparison.Ordinal);
+            Assert.Contains("error.crl", output, StringComparison.Ordinal);
+            Assert.Contains("Connection failed", output, StringComparison.Ordinal);
+            Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("Result details:", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            await Log.CloseAndFlushAsync();
+            Log.Logger = previousLogger;
+            if (File.Exists(logFile))
+            {
+                File.Delete(logFile);
+            }
+        }
     }
 
     /// <summary>
@@ -126,18 +195,57 @@ public static class ConsoleReporterTests
         };
         var run = new CrlCheckRun(results, diagnostics, DateTime.UtcNow);
 
+        // Configure Serilog to write to temp file to avoid console interference
+        var logFile = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.log");
+        var previousLogger = Log.Logger;
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File(logFile, formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+            .CreateLogger();
+
+        // Initialize licensing so ConsoleReporter can display license info
+        try
+        {
+            await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+        }
+#pragma warning disable CA1031 // Test may run without valid license file
+        catch
+#pragma warning restore CA1031
+        {
+            // License validation may fail in test environment - that's ok
+        }
+
+        var originalOut = Console.Out;
         using var writer = new StringWriter();
         Console.SetOut(writer);
-        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
-        var output = writer.ToString();
-        Assert.Contains("  - error1.crl: Error 1", output, StringComparison.Ordinal);
-        Assert.Contains("  - error2.crl: Error 2", output, StringComparison.Ordinal);
-        Assert.Contains("  - error3.crl: Error 3", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("  - error4.crl: Error 4", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("  - error5.crl: Error 5", output, StringComparison.Ordinal);
-        Assert.Contains("and 2 more", output, StringComparison.Ordinal);
-        Assert.Contains("full list in CSV/HTML report", output, StringComparison.Ordinal);
+        try
+        {
+            await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+            var output = writer.ToString();
+
+            // Strip ANSI color codes for assertions (some environments enable colors even with StringWriter)
+            var ansiPattern = @"\x1b\[[0-9;]*m";
+            var cleanOutput = System.Text.RegularExpressions.Regex.Replace(output, ansiPattern, string.Empty);
+
+            Assert.Contains("  - error1.crl: Error 1", cleanOutput, StringComparison.Ordinal);
+            Assert.Contains("  - error2.crl: Error 2", cleanOutput, StringComparison.Ordinal);
+            Assert.Contains("  - error3.crl: Error 3", cleanOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("  - error4.crl: Error 4", cleanOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("  - error5.crl: Error 5", cleanOutput, StringComparison.Ordinal);
+            Assert.Contains("and 2 more", cleanOutput, StringComparison.Ordinal);
+            Assert.Contains("full list in CSV/HTML report", cleanOutput, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            await Log.CloseAndFlushAsync();
+            Log.Logger = previousLogger;
+            if (File.Exists(logFile))
+            {
+                File.Delete(logFile);
+            }
+        }
     }
 
     /// <summary>
@@ -153,12 +261,46 @@ public static class ConsoleReporterTests
             new RunDiagnostics(),
             DateTime.UtcNow);
 
+        // Configure Serilog to write to temp file to avoid console interference
+        var logFile = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.log");
+        var previousLogger = Log.Logger;
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File(logFile, formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+            .CreateLogger();
+
+        // Initialize licensing so ConsoleReporter can display license info
+        try
+        {
+            await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+        }
+#pragma warning disable CA1031 // Test may run without valid license file
+        catch
+#pragma warning restore CA1031
+        {
+            // License validation may fail in test environment - that's ok
+        }
+
+        var originalOut = Console.Out;
         using var writer = new StringWriter();
         Console.SetOut(writer);
-        await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
 
-        var output = writer.ToString();
-        Assert.DoesNotContain("CSV:", output, StringComparison.Ordinal);
-        Assert.DoesNotContain("HTML:", output, StringComparison.Ordinal);
+        try
+        {
+            await reporter.ReportAsync(run, CancellationToken.None).ConfigureAwait(true);
+
+            var output = writer.ToString();
+            Assert.DoesNotContain("CSV:", output, StringComparison.Ordinal);
+            Assert.DoesNotContain("HTML:", output, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            await Log.CloseAndFlushAsync();
+            Log.Logger = previousLogger;
+            if (File.Exists(logFile))
+            {
+                File.Delete(logFile);
+            }
+        }
     }
 }

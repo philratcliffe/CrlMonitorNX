@@ -1,4 +1,5 @@
 using CrlMonitor.Licensing;
+using Serilog;
 
 namespace CrlMonitor.Tests.Licensing;
 
@@ -43,12 +44,29 @@ public static class LicenseBootstrapperTests
         context.WriteTrialLicense(now.AddDays(10));
         context.SeedTrialTimestamp(now);
 
-        using var capture = ConsoleCapture.Start();
-        await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+        var logFile = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}.log");
 
-        var output = capture.GetOutput();
-        Assert.Contains("Trial mode", output, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("30", output, StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            // Configure Serilog to write to temp log file
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File(logFile, formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+                .CreateLogger();
+
+            await LicenseBootstrapper.EnsureLicensedAsync(CancellationToken.None);
+            await Log.CloseAndFlushAsync();
+
+            var logContents = await File.ReadAllTextAsync(logFile);
+            Assert.Contains("Trial period: VALID", logContents, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("30 days remaining", logContents, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (File.Exists(logFile))
+            {
+                File.Delete(logFile);
+            }
+        }
     }
 
     /// <summary>

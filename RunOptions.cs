@@ -15,6 +15,7 @@ internal sealed record RunOptions(
     TimeSpan FetchTimeout,
     int MaxParallelFetches,
     string StateFilePath,
+    bool UseSystemProxy,
     IReadOnlyList<CrlConfigEntry> Crls,
     ReportOptions? Reports,
     AlertOptions? Alerts);

@@ -1,3 +1,4 @@
+using System.Net;
 using CrlMonitor.Crl;
 using CrlMonitor.Fetching;
 using CrlMonitor.Reporting;
@@ -61,33 +62,60 @@ internal static class Program
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        using var httpClient = new HttpClient();
-        var httpFetcher = new HttpCrlFetcher(httpClient);
-        var ldapFetcher = new LdapCrlFetcher(new SystemLdapConnectionFactory());
-        var fileFetcher = new FileCrlFetcher();
-        var resolver = new FetcherResolver(new[]
+        HttpClient httpClient;
+        if (options.UseSystemProxy)
         {
-            new FetcherMapping(FetcherSchemes.Http, httpFetcher),
-            new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher),
-            new FetcherMapping(FetcherSchemes.File, fileFetcher)
-        });
-        using var stateStore = new FileStateStore(options.StateFilePath);
-        var runner = new CrlCheckRunner(
-            resolver,
-            new CrlParser(SignatureValidationMode.CaCertificate),
-            new CrlSignatureValidator(),
-            new CrlHealthEvaluator(),
-            stateStore);
-        var requests = BuildRequests(options.Crls);
-        var run = await runner.RunAsync(
-            requests,
-            options.FetchTimeout,
-            options.MaxParallelFetches,
-            cancellationToken).ConfigureAwait(false);
+#pragma warning disable CA2000 // HttpClient disposes handler when disposeHandler: true
+            var handler = new HttpClientHandler
+#pragma warning restore CA2000
+            {
+                UseProxy = true,
+                Proxy = WebRequest.GetSystemWebProxy(),
+                DefaultProxyCredentials = CredentialCache.DefaultCredentials,
+                CheckCertificateRevocationList = true
+            };
+            httpClient = new HttpClient(handler, disposeHandler: true);
+        }
+        else
+        {
+#pragma warning disable CA2000 // HttpClient disposes handler when disposeHandler: true
+            var handler = new HttpClientHandler
+#pragma warning restore CA2000
+            {
+                CheckCertificateRevocationList = true
+            };
+            httpClient = new HttpClient(handler, disposeHandler: true);
+        }
 
-        var reportingStatus = new ReportingStatus();
-        var reporters = BuildReporters(options, stateStore, reportingStatus);
-        await reporters.ReportAsync(run, cancellationToken).ConfigureAwait(false);
+        using (httpClient)
+        {
+            var httpFetcher = new HttpCrlFetcher(httpClient);
+            var ldapFetcher = new LdapCrlFetcher(new SystemLdapConnectionFactory());
+            var fileFetcher = new FileCrlFetcher();
+            var resolver = new FetcherResolver(new[]
+            {
+                new FetcherMapping(FetcherSchemes.Http, httpFetcher),
+                new FetcherMapping(FetcherSchemes.Ldap, ldapFetcher),
+                new FetcherMapping(FetcherSchemes.File, fileFetcher)
+            });
+            using var stateStore = new FileStateStore(options.StateFilePath);
+            var runner = new CrlCheckRunner(
+                resolver,
+                new CrlParser(SignatureValidationMode.CaCertificate),
+                new CrlSignatureValidator(),
+                new CrlHealthEvaluator(),
+                stateStore);
+            var requests = BuildRequests(options.Crls);
+            var run = await runner.RunAsync(
+                requests,
+                options.FetchTimeout,
+                options.MaxParallelFetches,
+                cancellationToken).ConfigureAwait(false);
+
+            var reportingStatus = new ReportingStatus();
+            var reporters = BuildReporters(options, stateStore, reportingStatus);
+            await reporters.ReportAsync(run, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static IReadOnlyList<CrlConfigEntry> BuildRequests(IReadOnlyList<CrlConfigEntry> entries)

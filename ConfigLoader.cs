@@ -91,6 +91,7 @@ internal static class ConfigLoader
             TimeSpan.FromSeconds(timeoutSeconds),
             maxParallel,
             ResolvePath(configDirectory, stateFilePath),
+            document.UseSystemProxy ?? true,
             entries,
             reportOptions,
             alertOptions);
@@ -470,6 +471,9 @@ internal static class ConfigLoader
 
         [JsonPropertyName("max_crl_size_bytes")]
         public long? MaxCrlSizeBytes { get; init; }
+
+        [JsonPropertyName("use_system_proxy")]
+        public bool? UseSystemProxy { get; init; }
 
         [JsonPropertyName("reports")]
         public ReportsDocument? Reports { get; init; }
