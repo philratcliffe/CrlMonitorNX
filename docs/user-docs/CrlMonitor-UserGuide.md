@@ -2,15 +2,21 @@
 
 ## Quick Start
 
-1. Place `CrlMonitor.exe` and `config.json` in a suitable folder
-   (e.g., `C:\CrlMonitor\`).
-2. Edit `config.json` and add your CRL URIs and SMTP details.
-3. Run a manual test:
-   `CrlMonitor.exe config.json`
-4. Verify the generated HTML/CSV reports.
-5. Create a Scheduled Task to run it automatically (e.g., every 24 hours).
+1. Extract the release ZIP to `C:\CrlMonitor\`
+2. Run `CrlMonitor.exe` once to accept the EULA
+3. Edit `config.json`:
+   - Add your CRL URIs to the `uris` section
+   - Set `html_report_path` and `csv_output_path` to desired locations
+4. Run: `CrlMonitor.exe config.json`
+5. Verify the generated HTML/CSV reports at the configured paths
 
-That's enough to get a fully working installation.
+You now have a working CRL monitoring tool.
+
+### Next Steps (Optional)
+
+* **Email Reports** – Enable `reports.enabled` and configure SMTP settings for scheduled email reports
+* **Email Alerts** – Enable `alerts.enabled` and configure SMTP for status-based alerts
+* **Scheduled Task** – Create a Windows Scheduled Task to run automatically (see Section 5)
 
 ---
 
