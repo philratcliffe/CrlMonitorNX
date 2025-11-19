@@ -63,6 +63,11 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
         Console.WriteLine();
         this.WriteSummary(run.Results);
+        if (LicenseBootstrapper.ValidatedLicense?.Type == Standard.Licensing.LicenseType.Trial)
+        {
+            WriteTrialUpgradeMessage();
+        }
+
         WriteResultNotes(run.Results);
         WriteDiagnostics(run);
     }
@@ -80,6 +85,10 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         WriteSimpleSummary(run.Results);
         WriteErrorSummary(run.Results);
         this.WriteReportPaths();
+        if (LicenseBootstrapper.ValidatedLicense?.Type == Standard.Licensing.LicenseType.Trial)
+        {
+            WriteTrialUpgradeMessage();
+        }
     }
 
     private static void WriteSimpleSummary(IReadOnlyList<CrlCheckResult> results)
@@ -430,6 +439,27 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     private static string Truncate(string value, int width)
     {
         return string.IsNullOrWhiteSpace(value) || value.Length <= width ? value : width <= 3 ? value[..width] : value[..(width - 3)] + "...";
+    }
+
+    /// <summary>
+    /// Displays upgrade message for trial users with their request code.
+    /// </summary>
+    private static void WriteTrialUpgradeMessage()
+    {
+        var requestCode = LicenseBootstrapper.CreateRequestCode();
+        var colorEnabled = IsColorEnabled();
+
+        Console.WriteLine();
+        if (colorEnabled)
+        {
+            Console.WriteLine($"{Ansi.Cyan}You are using a trial license. To upgrade, please email{Ansi.Reset}");
+            Console.WriteLine($"{Ansi.Cyan}sales@redkestrel.co.uk with your request code: {Ansi.White}{requestCode}{Ansi.Reset}");
+        }
+        else
+        {
+            Console.WriteLine("You are using a trial license. To upgrade, please email");
+            Console.WriteLine($"sales@redkestrel.co.uk with your request code: {requestCode}");
+        }
     }
 
     private static bool IsColorEnabled()

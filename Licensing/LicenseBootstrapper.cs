@@ -60,7 +60,11 @@ internal static class LicenseBootstrapper
 #endif
     }
 
-    private static string CreateRequestCode()
+    /// <summary>
+    /// Generates a request code for this machine. Used for standard license generation.
+    /// </summary>
+    /// <returns>Machine-bound request code.</returns>
+    public static string CreateRequestCode()
     {
         var generator = new RequestCodeGenerator();
         var options = new RequestCodeGeneratorOptions {
