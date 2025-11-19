@@ -267,7 +267,7 @@ internal static class ConfigLoader
     }
 
     /// <summary>
-    /// Validates that a path appears to be a file path (has filename), not just a directory.
+    /// Validates that a path appears to be a file path (has filename with extension), not just a directory.
     /// </summary>
     /// <param name="path">Path to validate.</param>
     /// <param name="configFieldName">Config field name for error message.</param>
@@ -288,11 +288,22 @@ internal static class ConfigLoader
             throw new InvalidOperationException(errorMsg);
         }
 
-        // Check if the last part looks like a filename (has an extension or doesn't look like a directory)
+        // Check if the last part has a filename with an extension
         var fileName = Path.GetFileName(path);
         if (string.IsNullOrWhiteSpace(fileName))
         {
             var errorMsg = $"{configFieldName} must include a filename. " +
+                          $"Current value: '{path}'. " +
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+            Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        // Ensure filename has an extension (to distinguish from directory names)
+        var extension = Path.GetExtension(path);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            var errorMsg = $"{configFieldName} must include a filename with an extension. " +
                           $"Current value: '{path}'. " +
                           $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
             Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
