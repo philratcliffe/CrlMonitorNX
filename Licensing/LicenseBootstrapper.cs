@@ -128,6 +128,12 @@ internal static class LicenseBootstrapper
             throw new InvalidOperationException(message);
         }
 
+        // Request code mismatch errors already contain detailed message with request codes
+        if (validation.Error == LicenseValidationError.RequestCodeMismatch)
+        {
+            throw new InvalidOperationException(reason);
+        }
+
         // Soften wording for common error messages
         if (reason.Contains("expired", StringComparison.OrdinalIgnoreCase))
         {
