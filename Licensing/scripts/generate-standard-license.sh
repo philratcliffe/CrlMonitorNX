@@ -254,34 +254,9 @@ OUTPUT_PATH="${OUTPUT_PATH/#\~/$HOME}"
 OUTPUT_DIR="$(dirname "$OUTPUT_PATH")"
 mkdir -p "$OUTPUT_DIR"
 
-echo
-echo "Generating standard license with:"
-echo "  Customer:     $CUSTOMER_NAME"
-echo "  Email:        $CUSTOMER_EMAIL"
-echo "  Request code: ${REQUEST_CODE:0:20}..."
-echo "  Expires:      $EXPIRY_ISO"
-echo "  Output:       $OUTPUT_PATH"
+echo "dotnet run --project \"$GENERATOR_PROJECT\" -- generate-license --type standard --expires \"$EXPIRY_ISO\" --request-code \"$REQUEST_CODE\" --user-name \"$CUSTOMER_NAME\" --user-email \"$CUSTOMER_EMAIL\" --output \"$OUTPUT_PATH\""
 echo
 
-COMMAND_TEXT=$(cat <<EOF
-dotnet run --project "$GENERATOR_PROJECT" -- \\
-  generate-license \\
-  --config "$CONFIG_PATH" \\
-  --keys "$KEY_PATH" \\
-  --expires "$EXPIRY_ISO" \\
-  --type standard \\
-  --request-code "$REQUEST_CODE" \\
-  --user-name "$CUSTOMER_NAME" \\
-  --user-email "$CUSTOMER_EMAIL" \\
-  --output "$OUTPUT_PATH"
-EOF
-)
-
-echo "Invoking LicenseGenerator with:"
-printf '%s\n' "$COMMAND_TEXT"
-echo
-
-echo "Generating standard license..."
 env LICENSE_PASSPHRASE="$PASSPHRASE" \
   dotnet run --project "$GENERATOR_PROJECT" -- \
   generate-license \
@@ -290,18 +265,14 @@ env LICENSE_PASSPHRASE="$PASSPHRASE" \
   --expires "$EXPIRY_ISO" \
   --type standard \
   --request-code "$REQUEST_CODE" \
+  --host-name "" \
   --user-name "$CUSTOMER_NAME" \
   --user-email "$CUSTOMER_EMAIL" \
-  --output "$OUTPUT_PATH" | sed '/^License created:/d'
+  --output "$OUTPUT_PATH" 2>&1 | grep -v "^License created:" | grep -v "^Build started" | grep -v "MSBuild version"
 
-if [[ $? -eq 0 ]]; then
+if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
   echo
-  echo "✓ Standard license written to:"
-  echo "  $OUTPUT_PATH"
-  echo
-  echo "Send this license file to:"
-  echo "  Customer: $CUSTOMER_NAME"
-  echo "  Email:    $CUSTOMER_EMAIL"
+  echo "License written to: $OUTPUT_PATH"
 else
   echo "✗ License generation failed" >&2
   exit 1
