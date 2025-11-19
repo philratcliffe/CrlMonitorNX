@@ -60,7 +60,7 @@ The application reads a JSON configuration file defining CRLs, email settings, r
 * `max_parallel_fetches` (int, required) – Maximum concurrent fetches (1-64)
 * `max_crl_size_bytes` (int) – Global maximum CRL size in bytes (default: 10485760 = 10MB)
 * `use_system_proxy` (bool) – Use system proxy with integrated Windows auth (default: true)
-* `state_file_path` (string, required) – Path to state file for tracking alert history
+* `state_file_path` (string, required) – Path to state file for tracking alert history. The application creates this file automatically; the parent directory must exist. Default: `%ProgramData%/RedKestrel/CrlMonitor/state.json`. Leave at default unless you have specific requirements.
 
 #### Logging Section
 
