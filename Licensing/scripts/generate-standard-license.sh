@@ -265,7 +265,6 @@ env LICENSE_PASSPHRASE="$PASSPHRASE" \
   --expires "$EXPIRY_ISO" \
   --type standard \
   --request-code "$REQUEST_CODE" \
-  --host-name "" \
   --user-name "$CUSTOMER_NAME" \
   --user-email "$CUSTOMER_EMAIL" \
   --output "$OUTPUT_PATH" 2>&1 | grep -v "^License created:" | grep -v "^Build started" | grep -v "MSBuild version"
