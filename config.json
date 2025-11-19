@@ -7,7 +7,7 @@
   },
   "console_reports": true,
   "csv_append_timestamp": false,
-  "csv_output_path": "%ProgramData%/RedKestrel/CrlMonitor/reports/crl-report.csv",
+  "csv_output_path": "/Users/Philratcliffe/Downloads/crl-report.csv",
   "csv_reports": true,
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 6,
@@ -56,9 +56,8 @@
     {
       "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
       "signature_validation_mode": "ca-cert",
-      "ca_certificate_path":"examples/CA-certs/DigiCertGlobalRootCA.crt",
-      "expiry_threshold": 0.1,
-      "max_crl_size_bytes": 2097152
+      "ca_certificate_path":"examples/CA-certs/GlobalSignRSAOVSSLCA2018.pem",
+      "expiry_threshold": 0.8
     },
     {
       "uri": "http://c.pki.goog/we1/ty82fqB0hAw.crl",

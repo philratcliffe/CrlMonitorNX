@@ -1,5 +1,6 @@
 using Org.BouncyCastle.X509;
 using CrlMonitor.Crl;
+using Serilog;
 
 namespace CrlMonitor.Validation;
 
@@ -37,6 +38,12 @@ internal sealed class CrlSignatureValidator : ICrlSignatureValidator
         {
             var parser = new X509CertificateParser();
             var cert = parser.ReadCertificate(File.ReadAllBytes(entry.CaCertificatePath));
+            if (cert == null)
+            {
+                Log.Error("CA certificate parsing failed for {CertPath}. File may be malformed or not in PEM/DER format.", entry.CaCertificatePath);
+                return SignatureValidationResult.Failure("CA certificate could not be parsed. Ensure file is valid PEM or DER format.");
+            }
+
             parsedCrl.RawCrl.Verify(cert.GetPublicKey());
             return SignatureValidationResult.Valid();
         }

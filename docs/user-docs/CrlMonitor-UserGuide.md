@@ -382,9 +382,15 @@ Run the application manually once to accept the EULA. The acceptance is stored i
   },
   "uris": [
     {
-      "uri": "http://crl.example.com/root-ca.crl",
+      "uri": "http://crl3.digicert.com/DigiCertGlobalRootCA.crl",
       "signature_validation_mode": "ca-cert",
-      "ca_certificate_path": "certs/root-ca.crt",
+      "ca_certificate_path": "examples/CA-certs/DigiCertGlobalRootCA.crt",
+      "expiry_threshold": 0.8
+    },
+    {
+      "uri": "http://crl.globalsign.com/gsrsaovsslca2018.crl",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path": "examples/CA-certs/GlobalSignRSAOVSSLCA2018.pem",
       "expiry_threshold": 0.8
     }
   ]

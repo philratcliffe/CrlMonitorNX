@@ -1,6 +1,7 @@
 using CrlMonitor.Crl;
 using CrlMonitor.Validation;
 using CrlMonitor.Tests.TestUtilities;
+using Org.BouncyCastle.X509;
 
 namespace CrlMonitor.Tests;
 
@@ -73,6 +74,60 @@ public static class CrlSignatureValidatorTests
 
         Assert.Equal("Invalid", result.Status);
         Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+    }
+
+    /// <summary>
+    /// Ensures real-world GlobalSign CRL validates with intermediate cert.
+    /// </summary>
+    [Fact]
+    public static void ValidateGlobalSignCrlWithIntermediateCert()
+    {
+        var crlPath = Path.Combine(AppContext.BaseDirectory, "examples", "crls", "GlobalSignRSAOVSSLCA2018.crl");
+        var certPath = Path.Combine(AppContext.BaseDirectory, "examples", "CA-certs", "GlobalSignRSAOVSSLCA2018.pem");
+
+        if (!File.Exists(crlPath))
+        {
+            throw new FileNotFoundException($"Test CRL not found: {crlPath}");
+        }
+
+        if (!File.Exists(certPath))
+        {
+            throw new FileNotFoundException($"Test cert not found: {certPath}");
+        }
+
+        var crlBytes = File.ReadAllBytes(crlPath);
+        var parser = new X509CrlParser();
+        var rawCrl = parser.ReadCrl(crlBytes);
+
+        var revokedCerts = rawCrl.GetRevokedCertificates();
+        var serialNumbers = revokedCerts != null
+            ? revokedCerts.Cast<Org.BouncyCastle.X509.X509CrlEntry>()
+                .Select(entry => entry.SerialNumber.ToString(16).ToUpperInvariant())
+                .ToList()
+            : [];
+
+        var parsed = new ParsedCrl(
+            rawCrl.IssuerDN.ToString(),
+            rawCrl.ThisUpdate,
+            rawCrl.NextUpdate?.ToUniversalTime(),
+            serialNumbers,
+            false,
+            "Pending",
+            null,
+            rawCrl);
+
+        var validator = new CrlSignatureValidator();
+        var entry = new CrlConfigEntry(
+            new Uri("http://crl.globalsign.com/gsrsaovsslca2018.crl"),
+            SignatureValidationMode.CaCertificate,
+            certPath,
+            0.8,
+            null,
+            10 * 1024 * 1024);
+
+        var result = validator.Validate(parsed, entry);
+
+        Assert.Equal("Valid", result.Status);
     }
 
     private sealed class TempFile : IDisposable
