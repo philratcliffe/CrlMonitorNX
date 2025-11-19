@@ -95,6 +95,36 @@ public static class EulaAcceptanceManagerTests
         Assert.Equal(metadata.EffectiveDate, record.AcceptedLicenseEffectiveDate);
     }
 
+    /// <summary>
+    /// Verifies that acceptance method is recorded as AutoAccept when using flag.
+    /// </summary>
+    [Fact]
+    public static async Task EnsureAcceptedRecordsAutoAcceptMethod()
+    {
+        using var scope = new AcceptanceTestScope();
+        EulaAcceptanceManager.PromptOverride = (_, _) => ValueTask.FromResult(true);
+
+        await EulaAcceptanceManager.EnsureAcceptedAsync(CancellationToken.None, autoAccept: true);
+
+        var record = scope.ReadRecord();
+        Assert.Equal("AutoAccept", record.AcceptanceMethod);
+    }
+
+    /// <summary>
+    /// Verifies that acceptance method is recorded as Interactive when using prompt.
+    /// </summary>
+    [Fact]
+    public static async Task EnsureAcceptedRecordsInteractiveMethod()
+    {
+        using var scope = new AcceptanceTestScope();
+        EulaAcceptanceManager.PromptOverride = (_, _) => ValueTask.FromResult(true);
+
+        await EulaAcceptanceManager.EnsureAcceptedAsync(CancellationToken.None, autoAccept: false);
+
+        var record = scope.ReadRecord();
+        Assert.Equal("Interactive", record.AcceptanceMethod);
+    }
+
     private sealed class AcceptanceTestScope : IDisposable
     {
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };

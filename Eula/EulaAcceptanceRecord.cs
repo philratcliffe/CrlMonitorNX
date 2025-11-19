@@ -18,4 +18,7 @@ internal sealed class EulaAcceptanceRecord
 
     [JsonPropertyName("AcceptedLicenseEffectiveDate")]
     public string? AcceptedLicenseEffectiveDate { get; set; }
+
+    [JsonPropertyName("AcceptanceMethod")]
+    public string? AcceptanceMethod { get; set; }
 }

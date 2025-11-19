@@ -31,7 +31,8 @@ internal static class EulaAcceptanceManager
             AcceptedDate = DateTime.UtcNow,
             AcceptedLicenseHash = metadata.Hash,
             AcceptedLicenseVersion = metadata.Version,
-            AcceptedLicenseEffectiveDate = metadata.EffectiveDate
+            AcceptedLicenseEffectiveDate = metadata.EffectiveDate,
+            AcceptanceMethod = autoAccept ? "AutoAccept" : "Interactive"
         };
         SaveAcceptance(acceptanceRecord);
     }
