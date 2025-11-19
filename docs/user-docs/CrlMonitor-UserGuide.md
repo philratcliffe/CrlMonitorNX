@@ -3,7 +3,7 @@
 ## Quick Start
 
 1. Extract the release ZIP to `C:\CrlMonitor\`
-2. Run `CrlMonitor.exe` once to accept the EULA
+2. Run `CrlMonitor.exe` once to accept the EULA (or use `--accept-eula` for automated deployments)
 3. Edit `config.json`:
    - Add your CRL URIs to the `uris` section
    - Set `html_report_path` and `csv_output_path` to desired locations
@@ -11,6 +11,8 @@
 5. Verify the generated HTML/CSV reports at the configured paths
 
 You now have a working CRL monitoring tool.
+
+**Note for automated deployments:** Use `CrlMonitor.exe --accept-eula config.json` to bypass interactive EULA acceptance.
 
 ### Next Steps (Optional)
 
@@ -200,7 +202,7 @@ Most deployments run CrlMonitor automatically.
 
 * Console output does not appear in Task Scheduler. Check logs and reports at the paths defined in `config.json`.
 * Ensure the task user has write permissions to the log/report folders.
-* The EULA must be accepted on first run. Run manually once before scheduling.
+* The EULA must be accepted on first run. Run manually once before scheduling, or use `--accept-eula` flag in automated deployments.
 * License file must be accessible to the scheduled task account.
 
 ## 6. Reports
@@ -316,6 +318,14 @@ Confirm reporting is enabled in the config and that the scheduled-task user has 
 ### EULA not accepted
 
 Run the application manually once to accept the EULA. The acceptance is stored in `%ProgramData%\RedKestrel\CrlMonitor` and persists for scheduled runs.
+
+**For automated deployments (IaC/Ansible/SCCM):** Use the `--accept-eula` flag to bypass interactive acceptance:
+
+```
+CrlMonitor.exe --accept-eula config.json
+```
+
+This is particularly useful for Infrastructure as Code deployments and automated configuration management.
 
 ### License validation failing
 

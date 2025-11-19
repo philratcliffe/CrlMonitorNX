@@ -71,6 +71,30 @@ public static class EulaAcceptanceManagerTests
         _ = await Assert.ThrowsAsync<InvalidOperationException>(() => EulaAcceptanceManager.EnsureAcceptedAsync(CancellationToken.None));
     }
 
+    /// <summary>
+    /// Verifies that autoAccept flag bypasses prompt and creates acceptance file.
+    /// </summary>
+    [Fact]
+    public static async Task EnsureAcceptedAutoAcceptsWhenFlagSet()
+    {
+        using var scope = new AcceptanceTestScope();
+        var metadata = EulaMetadataProvider.GetMetadata();
+        var called = false;
+        EulaAcceptanceManager.PromptOverride = (_, _) => {
+            called = true;
+            return ValueTask.FromResult(true);
+        };
+
+        await EulaAcceptanceManager.EnsureAcceptedAsync(CancellationToken.None, autoAccept: true);
+
+        Assert.False(called, "Prompt should not be called when autoAccept is true");
+        var record = scope.ReadRecord();
+        Assert.True(record.LicenseAccepted);
+        Assert.Equal(metadata.Hash, record.AcceptedLicenseHash);
+        Assert.Equal(metadata.Version, record.AcceptedLicenseVersion);
+        Assert.Equal(metadata.EffectiveDate, record.AcceptedLicenseEffectiveDate);
+    }
+
     private sealed class AcceptanceTestScope : IDisposable
     {
         private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };

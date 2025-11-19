@@ -12,7 +12,7 @@ internal static class EulaAcceptanceManager
 
     internal static Func<EulaMetadata, CancellationToken, ValueTask<bool>>? PromptOverride { get; set; }
 
-    public static async Task EnsureAcceptedAsync(CancellationToken cancellationToken)
+    public static async Task EnsureAcceptedAsync(CancellationToken cancellationToken, bool autoAccept = false)
     {
         var metadata = EulaMetadataProvider.GetMetadata();
         var record = LoadAcceptance();
@@ -21,7 +21,7 @@ internal static class EulaAcceptanceManager
             return;
         }
 
-        if (!await PromptForAcceptanceAsync(metadata, cancellationToken).ConfigureAwait(false))
+        if (!autoAccept && !await PromptForAcceptanceAsync(metadata, cancellationToken).ConfigureAwait(false))
         {
             throw new InvalidOperationException("Licence agreement not accepted.\nPlease run the application again and accept the EULA to continue.");
         }

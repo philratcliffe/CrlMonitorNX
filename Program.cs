@@ -26,11 +26,12 @@ internal static class Program
     {
         try
         {
+            var autoAcceptEula = HasFlag(args, "--accept-eula");
             var configPath = ResolveConfigPath(args);
             LoggingSetup.Initialize(configPath);
             LoggingSetup.LogStartup();
 
-            await EulaAcceptanceManager.EnsureAcceptedAsync(cancellationToken).ConfigureAwait(false);
+            await EulaAcceptanceManager.EnsureAcceptedAsync(cancellationToken, autoAcceptEula).ConfigureAwait(false);
             await LicenseBootstrapper.EnsureLicensedAsync(cancellationToken).ConfigureAwait(false);
 
             var options = ConfigLoader.Load(configPath);
@@ -157,9 +158,17 @@ internal static class Program
         return new CompositeReporter(reporters);
     }
 
+    private static bool HasFlag(string[] args, string flag)
+    {
+        return args.Any(arg => string.Equals(arg, flag, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string ResolveConfigPath(string[] args)
     {
-        if (args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+        // Filter out flags to find config path
+        var nonFlags = args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)).ToArray();
+
+        if (nonFlags.Length == 0 || string.IsNullOrWhiteSpace(nonFlags[0]))
         {
             var defaultPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "config.json"));
             if (File.Exists(defaultPath))
@@ -172,7 +181,7 @@ internal static class Program
                 $"Configuration path argument is required (default '{defaultPath}' not found).");
         }
 
-        return Path.GetFullPath(args[0]);
+        return Path.GetFullPath(nonFlags[0]);
     }
 
     private static void ReportError(string message)
@@ -185,10 +194,14 @@ internal static class Program
     private static void PrintUsage()
     {
 #pragma warning disable CA1303 // CLI tool emits English-only usage instructions; no localization planned
-        Console.WriteLine("Usage: CrlMonitor <path-to-config.json>");
+        Console.WriteLine("Usage: CrlMonitor [--accept-eula] <path-to-config.json>");
+        Console.WriteLine();
+        Console.WriteLine("Options:");
+        Console.WriteLine("  --accept-eula    Automatically accept EULA (for automated deployments)");
         Console.WriteLine();
         Console.WriteLine("Examples:");
         Console.WriteLine("  CrlMonitor config.json");
+        Console.WriteLine("  CrlMonitor --accept-eula config.json");
         Console.WriteLine("  CrlMonitor ./configs/prod.json");
         Console.WriteLine();
         Console.WriteLine("If no argument is supplied, the application looks for 'config.json' in the executable directory.");
