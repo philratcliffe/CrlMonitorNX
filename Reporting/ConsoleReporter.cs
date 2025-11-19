@@ -454,7 +454,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         if (colorEnabled)
         {
             Console.WriteLine($"{Ansi.Grey}You are using a trial license. To upgrade, please email{Ansi.Reset}");
-            Console.WriteLine($"{Ansi.Grey}sales@redkestrel.co.uk with your request code: {Ansi.White}{requestCode}{Ansi.Reset}");
+            Console.WriteLine($"{Ansi.Grey}sales@redkestrel.co.uk with your request code: {requestCode}{Ansi.Reset}");
         }
         else
         {
