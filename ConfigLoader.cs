@@ -278,12 +278,14 @@ internal static class ConfigLoader
             return;
         }
 
+        var exampleFilename = GetExampleFilename(configFieldName);
+
         // Check if path ends with directory separator
         if (path.EndsWith('/') || path.EndsWith('\\'))
         {
             var errorMsg = $"{configFieldName} must be a file path, not a directory. " +
                           $"Current value: '{path}'. " +
-                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/{exampleFilename}'";
             Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
             throw new InvalidOperationException(errorMsg);
         }
@@ -294,7 +296,7 @@ internal static class ConfigLoader
         {
             var errorMsg = $"{configFieldName} must include a filename. " +
                           $"Current value: '{path}'. " +
-                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/{exampleFilename}'";
             Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
             throw new InvalidOperationException(errorMsg);
         }
@@ -305,10 +307,20 @@ internal static class ConfigLoader
         {
             var errorMsg = $"{configFieldName} must include a filename with an extension. " +
                           $"Current value: '{path}'. " +
-                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/{exampleFilename}'";
             Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
             throw new InvalidOperationException(errorMsg);
         }
+    }
+
+    private static string GetExampleFilename(string configFieldName)
+    {
+        return configFieldName switch {
+            "csv_output_path" => "crl-report.csv",
+            "html_report_path" => "crl-report.html",
+            "state_file_path" => "crl-report.json",
+            _ => "crl-report.txt"
+        };
     }
 
     private static ReportOptions? ParseReportOptions(ReportsDocument? document, SmtpOptions? smtp)
