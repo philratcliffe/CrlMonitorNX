@@ -123,6 +123,7 @@ echo "Checking required files..."
 required_files=(
     "CrlMonitor.exe"
     "config.json"
+    "EULA.txt"
 )
 
 for file in "${required_files[@]}"; do

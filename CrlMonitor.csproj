@@ -50,6 +50,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>Reporting/favicon.png</Link>
     </None>
+    <None Include="EULA.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <EmbeddedResource Include="EULA.txt" />
   </ItemGroup>
 

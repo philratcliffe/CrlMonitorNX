@@ -4,12 +4,12 @@
   "defaultExpiryMonths": 12,
   "expiry_date_utc": "2025-11-22T23:59:59Z",
   "_expiry_date_utc_comment": "Set to yyyy-MM-dd or yyyy-MM-ddTHH:mm:ssZ",
-  "companyName": "Red Kestrel",
+  "companyName": "ACME",
   "productName": "CrlMonitor",
   "defaultLicenseType": "trial",
   "outputRoot": "~/RiderProjects/CrlMonitorNX/Licensing/generated_licenses",
-  "defaultUserName": "Trial User",
-  "defaultUserEmail": "support@redkestrel.co.uk",
+  "defaultUserName": "ACME",
+  "defaultUserEmail": "fred@acme.com",
   "defaultHostName": "",
   "attributes": {
     "Product": "CrlMonitor"
