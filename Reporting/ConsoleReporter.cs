@@ -49,6 +49,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             this.WriteSummaryReport(run);
         }
 
+        Console.WriteLine();
         return Task.CompletedTask;
     }
 

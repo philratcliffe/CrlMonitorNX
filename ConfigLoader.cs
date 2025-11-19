@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using CrlMonitor.Crl;
 using CrlMonitor.Models;
 using CrlMonitor.Notifications;
+using Serilog;
 
 namespace CrlMonitor;
 
@@ -51,7 +52,11 @@ internal static class ConfigLoader
             throw new InvalidOperationException("Configuration file is empty.");
 
         var csvPath = RequirePath(document.CsvOutputPath, nameof(document.CsvOutputPath));
+        ValidateFilePath(csvPath, "csv_output_path");
+
         var stateFilePath = RequirePath(document.StateFilePath, nameof(document.StateFilePath));
+        ValidateFilePath(stateFilePath, "state_file_path");
+
         var timeoutSeconds = document.FetchTimeoutSeconds ?? throw new InvalidOperationException("fetch_timeout_seconds is required.");
         var maxParallel = document.MaxParallelFetches ?? throw new InvalidOperationException("max_parallel_fetches is required.");
         if (timeoutSeconds is < MinFetchTimeoutSeconds or > MaxFetchTimeoutSeconds)
@@ -76,6 +81,17 @@ internal static class ConfigLoader
         var htmlEnabled = document.HtmlReportEnabled ?? false;
         var htmlPath = ResolveOptionalPath(configDirectory, document.HtmlReportPath);
         var consoleVerbose = document.ConsoleVerbose ?? false;
+
+        if (htmlEnabled)
+        {
+            if (string.IsNullOrWhiteSpace(htmlPath))
+            {
+                throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.");
+            }
+
+            ValidateFilePath(document.HtmlReportPath!, "html_report_path");
+        }
+
         return htmlEnabled && string.IsNullOrWhiteSpace(htmlPath)
             ? throw new InvalidOperationException("html_report_path is required when html_report_enabled is true.")
             : new RunOptions(
@@ -248,6 +264,40 @@ internal static class ConfigLoader
     private static string RequirePath(string? value, string name)
     {
         return string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException($"{name} is required.") : value;
+    }
+
+    /// <summary>
+    /// Validates that a path appears to be a file path (has filename), not just a directory.
+    /// </summary>
+    /// <param name="path">Path to validate.</param>
+    /// <param name="configFieldName">Config field name for error message.</param>
+    private static void ValidateFilePath(string path, string configFieldName)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        // Check if path ends with directory separator
+        if (path.EndsWith('/') || path.EndsWith('\\'))
+        {
+            var errorMsg = $"{configFieldName} must be a file path, not a directory. " +
+                          $"Current value: '{path}'. " +
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+            Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
+
+        // Check if the last part looks like a filename (has an extension or doesn't look like a directory)
+        var fileName = Path.GetFileName(path);
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            var errorMsg = $"{configFieldName} must include a filename. " +
+                          $"Current value: '{path}'. " +
+                          $"Example: '%ProgramData%/RedKestrel/CrlMonitor/report.html'";
+            Log.Error("Configuration validation failed: {ErrorMessage}", errorMsg);
+            throw new InvalidOperationException(errorMsg);
+        }
     }
 
     private static ReportOptions? ParseReportOptions(ReportsDocument? document, SmtpOptions? smtp)
