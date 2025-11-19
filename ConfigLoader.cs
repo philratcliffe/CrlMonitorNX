@@ -251,7 +251,8 @@ internal static class ConfigLoader
 
     private static string ResolvePath(string baseDirectory, string path)
     {
-        // Expand environment variables (e.g., %ProgramData%, $HOME)
+        // Expand environment variables (Windows only: %ProgramData%, %TEMP%, etc.)
+        // Note: Environment.ExpandEnvironmentVariables only works on Windows
         var expandedPath = Environment.ExpandEnvironmentVariables(path);
         return Path.IsPathRooted(expandedPath) ? expandedPath : Path.GetFullPath(Path.Combine(baseDirectory, expandedPath));
     }

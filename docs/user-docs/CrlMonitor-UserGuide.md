@@ -42,6 +42,8 @@ The application reads a JSON configuration file defining CRLs, email settings, r
 * **html_report_path / csv_output_path** – report file locations
 * **use_system_proxy** – enable system proxy for HTTP fetches (default: true)
 
+**Environment Variables (Windows only):** Path strings support environment variable expansion using `%VARIABLE%` syntax (e.g., `%ProgramData%\RedKestrel\CrlMonitor\report.csv`). Common variables include `%ProgramData%`, `%TEMP%`, `%USERPROFILE%`, and `%APPDATA%`.
+
 ### Configuration Fields
 
 #### Top-Level Settings

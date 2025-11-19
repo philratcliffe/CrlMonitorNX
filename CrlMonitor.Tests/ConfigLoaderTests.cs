@@ -823,6 +823,161 @@ public static class ConfigLoaderTests
         Assert.Contains("ldap", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Ensures environment variables are expanded in output paths (Windows only).
+    /// </summary>
+    [Fact]
+    public static void LoadExpandsEnvironmentVariablesInPaths()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Environment.ExpandEnvironmentVariables only works on Windows
+            return;
+        }
+
+        // Set up test environment variable
+        var testVarName = "CRLMONITOR_TEST_PATH";
+        var previousValue = Environment.GetEnvironmentVariable(testVarName);
+        var testPath = Path.Combine(Path.GetTempPath(), "crlmonitor-test");
+        Environment.SetEnvironmentVariable(testVarName, testPath);
+
+        try
+        {
+            using var temp = new TempFolder();
+            var configPath = temp.WriteJson("config.json", $$"""
+            {
+              "console_reports": true,
+              "csv_reports": true,
+              "csv_output_path": "%{{testVarName}}%/report.csv",
+              "csv_append_timestamp": false,
+              "html_report_enabled": true,
+              "html_report_path": "%{{testVarName}}%/report.html",
+              "fetch_timeout_seconds": 30,
+              "max_parallel_fetches": 1,
+              "state_file_path": "%{{testVarName}}%/state.json",
+              "uris": [
+                { "uri": "http://example.com/root.crl" }
+              ]
+            }
+            """);
+
+            var options = ConfigLoader.Load(configPath);
+
+            Assert.Equal(Path.Combine(testPath, "report.csv"), options.CsvOutputPath);
+            Assert.Equal(Path.Combine(testPath, "report.html"), options.HtmlReportPath);
+            Assert.Equal(Path.Combine(testPath, "state.json"), options.StateFilePath);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(testVarName, previousValue);
+        }
+    }
+
+    /// <summary>
+    /// Ensures multiple environment variables can be used in a single path (Windows only).
+    /// </summary>
+    [Fact]
+    public static void LoadExpandsMultipleEnvironmentVariablesInPath()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Environment.ExpandEnvironmentVariables only works on Windows
+            return;
+        }
+
+        var testVar1 = "CRLMONITOR_TEST_DIR";
+        var testVar2 = "CRLMONITOR_TEST_SUBDIR";
+        var previousValue1 = Environment.GetEnvironmentVariable(testVar1);
+        var previousValue2 = Environment.GetEnvironmentVariable(testVar2);
+
+        Environment.SetEnvironmentVariable(testVar1, Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
+        Environment.SetEnvironmentVariable(testVar2, "crl-output");
+
+        try
+        {
+            using var temp = new TempFolder();
+            var configPath = temp.WriteJson("config.json", $$"""
+            {
+              "console_reports": true,
+              "csv_reports": true,
+              "csv_output_path": "%{{testVar1}}%/%{{testVar2}}%/report.csv",
+              "csv_append_timestamp": false,
+              "fetch_timeout_seconds": 30,
+              "max_parallel_fetches": 1,
+              "state_file_path": "state.json",
+              "uris": [
+                { "uri": "http://example.com/root.crl" }
+              ]
+            }
+            """);
+
+            var options = ConfigLoader.Load(configPath);
+
+            var expectedPath = Path.Combine(Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar), "crl-output", "report.csv");
+            Assert.Equal(expectedPath, options.CsvOutputPath);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(testVar1, previousValue1);
+            Environment.SetEnvironmentVariable(testVar2, previousValue2);
+        }
+    }
+
+    /// <summary>
+    /// Ensures CA certificate paths support environment variable expansion (Windows only).
+    /// </summary>
+    [Fact]
+    public static void LoadExpandsEnvironmentVariablesInCaCertPath()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Environment.ExpandEnvironmentVariables only works on Windows
+            return;
+        }
+
+        var testVarName = "CRLMONITOR_CERT_DIR";
+        var previousValue = Environment.GetEnvironmentVariable(testVarName);
+
+        using var temp = new TempFolder();
+        var certDir = Path.Combine(temp.Path, "certificates");
+        _ = Directory.CreateDirectory(certDir);
+        var caCertPath = Path.Combine(certDir, "ca.pem");
+        File.WriteAllText(caCertPath, "dummy cert");
+
+        Environment.SetEnvironmentVariable(testVarName, certDir);
+
+        try
+        {
+            var configPath = temp.WriteJson("config.json", $$"""
+            {
+              "console_reports": true,
+              "csv_reports": true,
+              "csv_output_path": "report.csv",
+              "csv_append_timestamp": false,
+              "fetch_timeout_seconds": 30,
+              "max_parallel_fetches": 1,
+              "state_file_path": "state.json",
+              "uris": [
+                {
+                  "uri": "http://example.com/root.crl",
+                  "signature_validation_mode": "ca-cert",
+                  "ca_certificate_path": "%{{testVarName}}%/ca.pem"
+                }
+              ]
+            }
+            """);
+
+            var options = ConfigLoader.Load(configPath);
+
+            var entry = Assert.Single(options.Crls);
+            Assert.Equal(caCertPath, entry.CaCertificatePath);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(testVarName, previousValue);
+        }
+    }
+
     private sealed class TempFolder : IDisposable
     {
         public string Path { get; } = Directory.CreateTempSubdirectory().FullName;
