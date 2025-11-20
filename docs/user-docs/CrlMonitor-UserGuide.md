@@ -46,7 +46,7 @@ The application reads a JSON configuration file defining CRLs, email settings, r
 * **html_report_path / csv_output_path** – report file locations
 * **use_system_proxy** – enable system proxy for HTTP fetches (default: true)
 
-**Environment Variables (Windows only):** Path strings support environment variable expansion using `%VARIABLE%` syntax (e.g., `%ProgramData%\RedKestrel\CrlMonitor\report.csv`). Common variables include `%ProgramData%`, `%TEMP%`, `%USERPROFILE%`, and `%APPDATA%`.
+**Environment Variables (Windows only):** Path strings support environment variable expansion using `%VARIABLE%` syntax (e.g., `%ProgramData%/RedKestrel/CrlMonitor/report.csv`). Common variables include `%ProgramData%`, `%TEMP%`, `%USERPROFILE%`, and `%APPDATA%`.
 
 ### Configuration Fields
 
@@ -181,7 +181,7 @@ Or using full path:
 CrlMonitor.exe C:\CrlMonitor\config.json
 ```
 
-**Configuration File Location:** Keep `config.json` with `CrlMonitor.exe` (e.g., `C:\CrlMonitor\config.json`). If no argument supplied, app looks in exe directory. Output files (logs, reports, state) default to `%ProgramData%\RedKestrel\CrlMonitor\` following Windows conventions for application data.
+**Configuration File Location:** Keep `config.json` with `CrlMonitor.exe` (e.g., `C:\CrlMonitor\config.json`). If no argument supplied, app looks in exe directory. Output files (logs, reports, state) default to `%ProgramData%/RedKestrel/CrlMonitor/` following Windows conventions for application data.
 
 ### Exit Codes
 
@@ -259,8 +259,8 @@ Logging uses Serilog with rolling daily files. Main settings:
 
 ### Log File Location
 
-* **Relative paths** (e.g., "CrlMonitor.log") resolve to `%ProgramData%\RedKestrel\CrlMonitor\` on Windows
-  * Default location: `C:\ProgramData\RedKestrel\CrlMonitor\CrlMonitor.log`
+* **Relative paths** (e.g., "CrlMonitor.log") resolve to `%ProgramData%/RedKestrel/CrlMonitor/` on Windows
+  * Default location: `C:/ProgramData/RedKestrel/CrlMonitor/CrlMonitor.log`
   * Fallback: Executable directory if ProgramData is not writable
 * **Absolute paths** (e.g., "C:\Logs\CrlMonitor.log") are used as-is
 
