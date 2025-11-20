@@ -12,7 +12,7 @@
 
 You now have a working CRL monitoring tool.
 
-**Note for automated deployments:** Use `CrlMonitor.exe --accept-eula config.json` to bypass interactive EULA acceptance.
+**Note for automated deployments:** Use `CrlMonitor.exe --accept-eula config.json` to bypass interactive EULA acceptance. The EULA text is available in `EULA.txt` (included in the release ZIP) and at https://redkestrel.co.uk/products/crlmonitor/EULA
 
 ### Next Steps (Optional)
 
@@ -320,6 +320,8 @@ Confirm reporting is enabled in the config and that the scheduled-task user has 
 ### EULA not accepted
 
 Run the application manually once to accept the EULA. The acceptance is stored in `%ProgramData%\RedKestrel\CrlMonitor` and persists for scheduled runs.
+
+**Reading the EULA:** The EULA text is available in `EULA.txt` (included in the release ZIP) and online at https://redkestrel.co.uk/products/crlmonitor/EULA
 
 **For automated deployments (IaC/Ansible/SCCM):** Use the `--accept-eula` flag to bypass interactive acceptance:
 
