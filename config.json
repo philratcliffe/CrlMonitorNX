@@ -29,7 +29,7 @@
     "enabled": false,
     "report_frequency_hours": 24,
     "recipients": [
-      "pki-admin@redkestrel.co.uk"
+      "pki-admin@example.com"
     ],
     "subject": "CRL Health Report",
     "include_summary": true,
@@ -38,8 +38,8 @@
   "alerts": {
     "enabled": false,
     "recipients": [
-      "alert@redkestrel.co.uk",
-      "admin@redkestrel.co.uk"
+      "alert@example.com",
+      "admin@example.com"
     ],
     "statuses": ["ERROR", "EXPIRED", "EXPIRING"],
     "cooldown_hours": 0.1,
