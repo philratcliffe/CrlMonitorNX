@@ -161,7 +161,7 @@ The application reads a JSON configuration file defining CRLs, email settings, r
 ```
 
 * `uri` (string, required) – CRL URI (http/https/ldap/ldaps/file)
-* `signature_validation_mode` (string) – Validation mode: "none", "ca-cert", "self-signed"
+* `signature_validation_mode` (string) – Validation mode: "none", "ca-cert"
 * `ca_certificate_path` (string) – Path to CA certificate (required if mode is "ca-cert")
 * `expiry_threshold` (float) – Fraction of lifetime remaining before warning (0.1-1.0, default: 0.8)
 * `max_crl_size_bytes` (int) – Per-CRL size limit (overrides global setting)
