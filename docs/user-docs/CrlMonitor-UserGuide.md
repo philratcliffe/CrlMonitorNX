@@ -12,7 +12,11 @@
 
 You now have a working CRL monitoring tool.
 
-**Note for automated deployments:** Use `CrlMonitor.exe --accept-eula config.json` to bypass interactive EULA acceptance. The EULA text is available in `EULA.txt` (included in the release ZIP) and at https://redkestrel.co.uk/products/crlmonitor/EULA
+**Note for automated deployments:** Use `CrlMonitor.exe --accept-eula config.json` to bypass interactive EULA acceptance.
+
+**By running CrlMonitor with the `--accept-eula` flag, you indicate your acceptance of the End User License Agreement found in `EULA.txt`. If you do not agree to these terms, do not use this flag.**
+
+The EULA text is available in `EULA.txt` (included in the release ZIP) and at https://redkestrel.co.uk/products/crlmonitor/EULA
 
 ### Next Steps (Optional)
 
@@ -328,6 +332,8 @@ Run the application manually once to accept the EULA. The acceptance is stored i
 ```
 CrlMonitor.exe --accept-eula config.json
 ```
+
+**By running CrlMonitor with the `--accept-eula` flag, you indicate your acceptance of the End User License Agreement found in `EULA.txt`. If you do not agree to these terms, do not use this flag.**
 
 This is particularly useful for Infrastructure as Code deployments and automated configuration management.
 
