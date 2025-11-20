@@ -173,21 +173,25 @@ internal static class HtmlReportWriter
         // Collapsible URI
         var fullUri = result.Uri.ToString();
         var escapedUri = Escape(fullUri);
+        var isHttpScheme = result.Uri.Scheme is "http" or "https";
         const int maxUriLength = 40;
         if (fullUri.Length > maxUriLength)
         {
             var truncated = Escape(fullUri[0..maxUriLength] + "...");
+            var truncatedWrapped = isHttpScheme ? FormattableString.Invariant($"<a href=\"{escapedUri}\">{truncated}</a>") : truncated;
+            var fullWrapped = isHttpScheme ? FormattableString.Invariant($"<a href=\"{escapedUri}\">{escapedUri}</a>") : escapedUri;
             var uriId = FormattableString.Invariant($"uri{rowIndex}");
             _ = builder.Append(FormattableString.Invariant($"<td><span id=\"{uriId}-short\" class=\"uri-short\">"));
-            _ = builder.Append(truncated);
+            _ = builder.Append(truncatedWrapped);
             _ = builder.Append("</span>&nbsp;");
             _ = builder.Append(FormattableString.Invariant($"<a href=\"#\" class=\"uri-toggle\" id=\"{uriId}-link\" onclick=\"toggleUri('{uriId}'); return false;\">(show)</a>"));
-            _ = builder.Append(FormattableString.Invariant($"<span id=\"{uriId}-full\" class=\"uri-full\" style=\"display:none;\">{escapedUri}</span>"));
+            _ = builder.Append(FormattableString.Invariant($"<span id=\"{uriId}-full\" class=\"uri-full\" style=\"display:none;\">{fullWrapped}</span>"));
             _ = builder.AppendLine("</td>");
         }
         else
         {
-            _ = builder.AppendLine(FormattableString.Invariant($"<td>{escapedUri}</td>"));
+            var wrappedUri = isHttpScheme ? FormattableString.Invariant($"<a href=\"{escapedUri}\">{escapedUri}</a>") : escapedUri;
+            _ = builder.AppendLine(FormattableString.Invariant($"<td>{wrappedUri}</td>"));
         }
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"issuer\">{ProtectHyphens(Escape(parsed?.Issuer ?? string.Empty))}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
