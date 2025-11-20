@@ -1,13 +1,13 @@
 {
   "logging": {
     "min_level": "Information",
-    "log_file_path": "CrlMonitor.log",
+    "log_file_path": "%ProgramData%/RedKestrel/CrlMonitor/CrlMonitor.log",
     "rolling_interval": "Day",
     "retained_file_count_limit": 7
   },
   "console_reports": true,
   "csv_append_timestamp": false,
-  "csv_output_path": "/Users/Philratcliffe/Downloads/crl-report.csv",
+  "csv_output_path": "%ProgramData%/RedKestrel/CrlMonitor/crl-report.csv",
   "csv_reports": true,
   "fetch_timeout_seconds": 30,
   "max_parallel_fetches": 6,
@@ -15,7 +15,7 @@
   "use_system_proxy": true,
   "state_file_path": "%ProgramData%/RedKestrel/CrlMonitor/crlmonitor-state.json",
   "html_report_enabled": true,
-  "html_report_path": "/Users/philratcliffe/Downloads/crl-report.html",
+  "html_report_path": "%ProgramData%/RedKestrel/CrlMonitor/crl-report.html",
   "html_report_url": "https://example.com/crl/crl-report.html",
   "smtp": {
     "host": "smtp.gmail.com",

@@ -174,10 +174,10 @@ CrlMonitor.exe config.json
 Or using full path:
 
 ```
-CrlMonitor.exe C:\ProgramData\RedKestrel\CrlMonitor\config.json
+CrlMonitor.exe C:\CrlMonitor\config.json
 ```
 
-If no argument is supplied, the application looks for `config.json` in the executable directory.
+**Configuration File Location:** Keep `config.json` with `CrlMonitor.exe` (e.g., `C:\CrlMonitor\config.json`). If no argument supplied, app looks in exe directory. Output files (logs, reports, state) default to `%ProgramData%\RedKestrel\CrlMonitor\` following Windows conventions for application data.
 
 ### Exit Codes
 
@@ -194,7 +194,7 @@ Most deployments run CrlMonitor automatically.
 2. Choose **Create Task…**.
 3. Set **Run as** to `LocalSystem` or a suitable service account.
 4. Add an **Action** calling:
-   `C:\CrlMonitor\CrlMonitor.exe C:\ProgramData\RedKestrel\CrlMonitor\config.json`
+   `C:\CrlMonitor\CrlMonitor.exe C:\CrlMonitor\config.json`
 5. Add a **Trigger**:
 
    * Daily (every 24 hours), or
