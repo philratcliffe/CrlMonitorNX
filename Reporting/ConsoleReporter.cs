@@ -177,25 +177,27 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
         if (hasCsv)
         {
+            var csvPath = NormalizePathForDisplay(this._status.CsvPath);
             if (colorEnabled)
             {
-                Console.WriteLine($"  {Ansi.White}CSV: {this._status.CsvPath}{Ansi.Reset}");
+                Console.WriteLine($"  {Ansi.White}CSV: {csvPath}{Ansi.Reset}");
             }
             else
             {
-                Console.WriteLine($"  CSV: {this._status.CsvPath}");
+                Console.WriteLine($"  CSV: {csvPath}");
             }
         }
 
         if (hasHtml)
         {
+            var htmlPath = NormalizePathForDisplay(this._status.HtmlReportPath);
             if (colorEnabled)
             {
-                Console.WriteLine($"  {Ansi.White}HTML: {this._status.HtmlReportPath}{Ansi.Reset}");
+                Console.WriteLine($"  {Ansi.White}HTML: {htmlPath}{Ansi.Reset}");
             }
             else
             {
-                Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
+                Console.WriteLine($"  HTML: {htmlPath}");
             }
         }
     }
@@ -341,7 +343,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         Console.WriteLine("Report written to:");
         if (this._status.CsvWritten && !string.IsNullOrWhiteSpace(this._status.CsvPath))
         {
-            Console.WriteLine($"  CSV: {this._status.CsvPath}");
+            Console.WriteLine($"  CSV: {NormalizePathForDisplay(this._status.CsvPath)}");
         }
         else
         {
@@ -350,7 +352,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
 
         if (this._status.HtmlWritten && !string.IsNullOrWhiteSpace(this._status.HtmlReportPath))
         {
-            Console.WriteLine($"  HTML: {this._status.HtmlReportPath}");
+            Console.WriteLine($"  HTML: {NormalizePathForDisplay(this._status.HtmlReportPath)}");
         }
         else
         {
@@ -440,6 +442,20 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     private static string Truncate(string value, int width)
     {
         return string.IsNullOrWhiteSpace(value) || value.Length <= width ? value : width <= 3 ? value[..width] : value[..(width - 3)] + "...";
+    }
+
+    /// <summary>
+    /// Normalizes path separators for console display on Windows (backslash).
+    /// </summary>
+    private static string NormalizePathForDisplay(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return path ?? string.Empty;
+        }
+
+        // On Windows, normalize to backslashes for console display
+        return OperatingSystem.IsWindows() ? path.Replace('/', '\\') : path;
     }
 
     /// <summary>

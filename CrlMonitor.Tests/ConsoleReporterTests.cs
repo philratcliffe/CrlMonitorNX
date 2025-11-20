@@ -73,6 +73,7 @@ public static class ConsoleReporterTests
 
             var output = writer.ToString();
             var expectedPrevious = TimeFormatter.FormatUtc(fetchedAt);
+            var expectedHtmlPath = OperatingSystem.IsWindows() ? "HTML: reports\\latest.html" : "HTML: reports/latest.html";
             Assert.Contains("Red Kestrel CrlMonitor", output, StringComparison.Ordinal);
             Assert.Contains("URI", output, StringComparison.Ordinal);
             Assert.Contains("Status", output, StringComparison.Ordinal);
@@ -84,7 +85,7 @@ public static class ConsoleReporterTests
             Assert.Contains("Summary:", output, StringComparison.Ordinal);
             Assert.Contains("Disk full", output, StringComparison.Ordinal);
             Assert.Contains("CSV: report.csv", output, StringComparison.Ordinal);
-            Assert.Contains("HTML: reports/latest.html", output, StringComparison.Ordinal);
+            Assert.Contains(expectedHtmlPath, output, StringComparison.Ordinal);
             Assert.Contains("Report written to:", output, StringComparison.Ordinal);
             Assert.Contains("report.csv", output, StringComparison.Ordinal);
             Assert.Contains("Report email sent successfully.", output, StringComparison.Ordinal);
