@@ -61,7 +61,8 @@
     },
     {
       "uri": "http://c.pki.goog/we1/ty82fqB0hAw.crl",
-      "signature_validation_mode": "none",
+      "signature_validation_mode": "ca-cert",
+      "ca_certificate_path":"examples/CA-certs/we1.crt",
       "expiry_threshold": 0.8
     },
     {
