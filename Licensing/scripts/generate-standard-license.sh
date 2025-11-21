@@ -243,10 +243,13 @@ if [[ -z "$CONFIG_EXPIRY_RAW" ]]; then
   IFS='|' read -r EXPIRY_DATE EXPIRY_ISO <<< "$(calc_expiry_date)"
 fi
 
-# Sanitize customer name for filename
+# Sanitize customer name for filename (lowercase with dashes)
 CUSTOMER_SLUG=$(echo "$CUSTOMER_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
 
-default_output_dir="$REPO_ROOT/Licensing/generated_licenses/standard"
+# Sanitize customer name for directory (remove spaces but preserve case)
+CUSTOMER_DIR=$(echo "$CUSTOMER_NAME" | sed 's/[^a-zA-Z0-9]//g')
+
+default_output_dir="$REPO_ROOT/Licensing/generated_licenses/standard/$CUSTOMER_DIR"
 mkdir -p "$default_output_dir"
 default_output="${default_output_dir}/${EXPIRY_DATE}-${CUSTOMER_SLUG}.lic"
 OUTPUT_PATH="${OUTPUT_PATH:-$default_output}"
