@@ -254,8 +254,20 @@ OUTPUT_PATH="${OUTPUT_PATH/#\~/$HOME}"
 OUTPUT_DIR="$(dirname "$OUTPUT_PATH")"
 mkdir -p "$OUTPUT_DIR"
 
-echo "dotnet run --project \"$GENERATOR_PROJECT\" -- generate-license --type standard --expires \"$EXPIRY_ISO\" --request-code \"$REQUEST_CODE\" --user-name \"$CUSTOMER_NAME\" --user-email \"$CUSTOMER_EMAIL\" --output \"$OUTPUT_PATH\""
-echo
+cat <<EOF
+Running:
+  dotnet run --project "$GENERATOR_PROJECT" -- \\
+    generate-license \\
+    --config "$CONFIG_PATH" \\
+    --keys "$KEY_PATH" \\
+    --expires "$EXPIRY_ISO" \\
+    --type standard \\
+    --request-code "$REQUEST_CODE" \\
+    --user-name "$CUSTOMER_NAME" \\
+    --user-email "$CUSTOMER_EMAIL" \\
+    --output "$OUTPUT_PATH"
+
+EOF
 
 env LICENSE_PASSPHRASE="$PASSPHRASE" \
   dotnet run --project "$GENERATOR_PROJECT" -- \
