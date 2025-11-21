@@ -263,8 +263,8 @@ Running:
     --expires "$EXPIRY_ISO" \\
     --type standard \\
     --request-code "$REQUEST_CODE" \\
-    --user-name "$CUSTOMER_NAME" \\
-    --user-email "$CUSTOMER_EMAIL" \\
+    --customer-name "$CUSTOMER_NAME" \\
+    --customer-email "$CUSTOMER_EMAIL" \\
     --output "$OUTPUT_PATH"
 
 EOF
@@ -277,8 +277,8 @@ env LICENSE_PASSPHRASE="$PASSPHRASE" \
   --expires "$EXPIRY_ISO" \
   --type standard \
   --request-code "$REQUEST_CODE" \
-  --user-name "$CUSTOMER_NAME" \
-  --user-email "$CUSTOMER_EMAIL" \
+  --customer-name "$CUSTOMER_NAME" \
+  --customer-email "$CUSTOMER_EMAIL" \
   --output "$OUTPUT_PATH" 2>&1 | grep -v "^License created:" | grep -v "^Build started" | grep -v "MSBuild version"
 
 if [[ ${PIPESTATUS[0]} -eq 0 ]]; then
