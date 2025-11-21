@@ -217,7 +217,7 @@ CrlMonitor generates two optional report types.
 
 ### HTML Report
 
-A detailed dashboard including summary counts and a full table of CRLs with status, issuer, timestamps, signature verification, size, download time, revocation count, and previous check time.
+A detailed dashboard including summary counts and a full table of CRLs with status, issuer, timestamps, expiry countdown, signature verification, size, download time, revocation count, and previous check time.
 
 Configured by:
 
@@ -227,7 +227,12 @@ Configured by:
 
 ### CSV Report
 
-A machine-readable CSV listing all CRL rows with columns: URI, Status, Fetch Time, Error, Issuer, This Update, Next Update, Signature Valid, Download Time, Size Bytes, Revocations, Previous Fetch.
+A machine-readable CSV listing all CRL rows with columns: URI, Status, Fetch Time, Error, Issuer, This Update, Next Update, Expires In, Signature Valid, Download Time, Size Bytes, Revocations, Previous Fetch.
+
+The **Expires In** column shows time until the CRL expires in human-readable format:
+* Days (when > 48 hours): "12 days", "3 days"
+* Hours (when ≤ 48 hours): "36 hours", "5 hours"
+* "Expired" when past Next Update time
 
 Configured by:
 
