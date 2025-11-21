@@ -283,8 +283,8 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             CultureInfo.InvariantCulture,
             TableRowFormat,
             "URI",
-            "Next Update",
-            "Expires In",
+            "NextUpdate",
+            "ExpiresIn",
             "Status");
 
         Console.WriteLine(header);
