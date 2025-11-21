@@ -24,10 +24,10 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     private const int ConsoleWidth = 80;
     private const int UriColumnWidth = 45;
     private const int NextUpdateColumnWidth = 15;
-    private const int DaysColumnWidth = 6;
+    private const int ExpiresInColumnWidth = 11;
     private const int StatusColumnWidth = 10;
     private const int MaxErrorsInSummary = 3;
-    private static readonly CompositeFormat TableRowFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}{{1,-{NextUpdateColumnWidth}}}{{2,-{DaysColumnWidth}}}{{3,-{StatusColumnWidth}}}");
+    private static readonly CompositeFormat TableRowFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}{{1,-{NextUpdateColumnWidth}}}{{2,-{ExpiresInColumnWidth}}}{{3,-{StatusColumnWidth}}}");
     private static readonly CompositeFormat UriPadFormat = CompositeFormat.Parse($"{{0,-{UriColumnWidth}}}");
     private readonly ReportingStatus _status = status ?? throw new ArgumentNullException(nameof(status));
     private readonly bool _verbose = verbose;
@@ -284,7 +284,7 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             TableRowFormat,
             "URI",
             "Next Update",
-            "Days",
+            "Expires In",
             "Status");
 
         Console.WriteLine(header);
@@ -295,14 +295,14 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
     {
         var uri = Truncate(result.Uri.ToString(), UriColumnWidth);
         var nextUpdate = result.ParsedCrl?.NextUpdate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
-        var days = CalculateDaysRemaining(result.ParsedCrl?.NextUpdate);
+        var expiresIn = ExpiresInFormatter.Format(result.ParsedCrl?.NextUpdate);
         var statusDisplay = result.Status.ToDisplayString();
         var line = string.Format(
             CultureInfo.InvariantCulture,
             TableRowFormat,
             uri,
             nextUpdate,
-            days,
+            expiresIn,
             statusDisplay);
 
         if (IsColorEnabled())
@@ -314,17 +314,6 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
         {
             Console.WriteLine(line);
         }
-    }
-
-    private static string CalculateDaysRemaining(DateTime? nextUpdate)
-    {
-        if (!nextUpdate.HasValue)
-        {
-            return string.Empty;
-        }
-
-        var days = (int)Math.Round((nextUpdate.Value - DateTime.UtcNow).TotalDays, MidpointRounding.AwayFromZero);
-        return days.ToString(CultureInfo.InvariantCulture);
     }
 
     private void WriteSummary(IReadOnlyList<CrlCheckResult> results)
