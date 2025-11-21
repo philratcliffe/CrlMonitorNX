@@ -50,6 +50,7 @@ internal static class CsvReportFormatter
         csv.WriteField("Status");
         csv.WriteField("This_Update_UTC");
         csv.WriteField("Next_Update_UTC");
+        csv.WriteField("Expires_In");
         csv.WriteField("CRL_Size_bytes");
         csv.WriteField("Download_Duration_ms");
         csv.WriteField("Signature_Valid");
@@ -80,6 +81,7 @@ internal static class CsvReportFormatter
         csv.WriteField(result.Status.ToDisplayString());
         csv.WriteField(thisUpdate);
         csv.WriteField(nextUpdate);
+        csv.WriteField(ExpiresInFormatter.Format(parsed?.NextUpdate));
         csv.WriteField(size);
         csv.WriteField(downloadMs);
         csv.WriteField(signature);

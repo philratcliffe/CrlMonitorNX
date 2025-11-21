@@ -96,7 +96,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine("</div></div>");
         _ = builder.AppendLine("<div class=\"card table-wrapper\">");
         _ = builder.AppendLine("<table><thead><tr>");
-        _ = builder.AppendLine("<th>URI</th><th>Issuer</th><th>Status</th><th>This Update (UTC)</th><th>Next Update (UTC)</th><th>CRL Size</th><th>Download (ms)</th><th>Signature</th><th>Revocations</th><th>Checked (UTC)</th><th>Previous (UTC)</th><th>Type</th><th>Details</th>");
+        _ = builder.AppendLine("<th>URI</th><th>Issuer</th><th>Status</th><th>This Update (UTC)</th><th>Next Update (UTC)</th><th>Expires In</th><th>CRL Size</th><th>Download (ms)</th><th>Signature</th><th>Revocations</th><th>Checked (UTC)</th><th>Previous (UTC)</th><th>Type</th><th>Details</th>");
         _ = builder.AppendLine("</tr></thead><tbody>");
 
         // Sort by status priority: ERROR, EXPIRED, EXPIRING, WARNING, OK
@@ -197,6 +197,7 @@ internal static class HtmlReportWriter
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"{statusClass}\">{Escape(result.Status.ToDisplayString())}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.ThisUpdate)}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td class=\"dt\">{FormatDate(parsed?.NextUpdate)}</td>"));
+        _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(ExpiresInFormatter.Format(parsed?.NextUpdate))}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.ContentLength?.ToString(CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{result.DownloadDuration?.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture) ?? string.Empty}</td>"));
         _ = builder.AppendLine(FormattableString.Invariant($"<td>{Escape(CsvReportFormatter.NormalizeSignatureStatus(result.SignatureStatus))}</td>"));
