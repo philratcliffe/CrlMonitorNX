@@ -288,7 +288,17 @@ internal sealed class ConsoleReporter(ReportingStatus status, bool verbose = tru
             "Status");
 
         Console.WriteLine(header);
-        Console.WriteLine(new string('-', header.Length));
+
+        // Create separator with gaps matching column boundaries
+        var separator = string.Format(
+            CultureInfo.InvariantCulture,
+            TableRowFormat,
+            new string('-', UriColumnWidth - 1),
+            new string('-', NextUpdateColumnWidth - 1),
+            new string('-', ExpiresInColumnWidth - 1),
+            new string('-', StatusColumnWidth - 1));
+
+        Console.WriteLine(separator);
     }
 
     private static void WriteResultRow(CrlCheckResult result)
