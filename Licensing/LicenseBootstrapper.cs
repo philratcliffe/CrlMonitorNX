@@ -31,7 +31,12 @@ internal static class LicenseBootstrapper
     {
         var fileAccessor = new LicenseFileAccessor();
         var validator = new LicenseValidator(fileAccessor, new LicenseValidationOptions {
-            PublicKey = ResolvePublicKey()
+            PublicKey = ResolvePublicKey(),
+            RequestCodeBindings = new[]
+            {
+                RequestCodeBinding.MachineName,
+                RequestCodeBinding.MacAddress
+            }
         });
 
         var validation = await validator.ValidateAsync(cancellationToken).ConfigureAwait(false);

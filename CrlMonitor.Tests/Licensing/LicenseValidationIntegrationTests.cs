@@ -27,16 +27,23 @@ public static class LicenseValidationIntegrationTests
         // Write license to temp file
         using var temp = new TempFolder();
         var licensePath = Path.Combine(temp.Path, "test.lic");
-        await File.WriteAllTextAsync(licensePath, licenseXml);
+        await File.WriteAllTextAsync(licensePath, licenseXml).ConfigureAwait(false);
 
         // Now validate using the same validator logic as production
         var fileAccessor = new LicenseFileAccessor(
             new LicenseFileOptions { LicenseFilePath = licensePath });
         var validator = new LicenseValidator(
             fileAccessor,
-            new LicenseValidationOptions { PublicKey = GetTestPublicKey() });
+            new LicenseValidationOptions {
+                PublicKey = GetTestPublicKey(),
+                RequestCodeBindings = new[]
+                {
+                    RequestCodeBinding.MachineName,
+                    RequestCodeBinding.MacAddress
+                }
+            });
 
-        var result = await validator.ValidateAsync(CancellationToken.None);
+        var result = await validator.ValidateAsync(CancellationToken.None).ConfigureAwait(false);
 
         // Should succeed because we're on the same machine
         Assert.True(result.Success, $"Validation failed: {result.ErrorMessage}");
@@ -56,15 +63,22 @@ public static class LicenseValidationIntegrationTests
 
         using var temp = new TempFolder();
         var licensePath = Path.Combine(temp.Path, "test.lic");
-        await File.WriteAllTextAsync(licensePath, licenseXml);
+        await File.WriteAllTextAsync(licensePath, licenseXml).ConfigureAwait(false);
 
         var fileAccessor = new LicenseFileAccessor(
             new LicenseFileOptions { LicenseFilePath = licensePath });
         var validator = new LicenseValidator(
             fileAccessor,
-            new LicenseValidationOptions { PublicKey = GetTestPublicKey() });
+            new LicenseValidationOptions {
+                PublicKey = GetTestPublicKey(),
+                RequestCodeBindings = new[]
+                {
+                    RequestCodeBinding.MachineName,
+                    RequestCodeBinding.MacAddress
+                }
+            });
 
-        var result = await validator.ValidateAsync(CancellationToken.None);
+        var result = await validator.ValidateAsync(CancellationToken.None).ConfigureAwait(false);
 
         // Should fail with RequestCodeMismatch
         Assert.False(result.Success);
